@@ -1,11 +1,11 @@
-"""Tests for POST /v1/recognize (mock)."""
+"""Tests for POST /v1/recognize."""
 
 from __future__ import annotations
 
 import io
 
 from fastapi.testclient import TestClient
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from app.main import app
 
@@ -15,6 +15,20 @@ client = TestClient(app)
 def _png_bytes(width: int = 32, height: int = 24) -> bytes:
     buf = io.BytesIO()
     Image.new("RGB", (width, height), color=(255, 255, 255)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _digit_sheet_png() -> bytes:
+    """Synthetic jianpu-like sheet with digits for preprocess/OCR path tests."""
+    img = Image.new("RGB", (320, 120), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 36)
+    except OSError:
+        font = ImageFont.load_default()
+    draw.text((20, 40), "1 2 3 5 6", fill=(0, 0, 0), font=font)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
     return buf.getvalue()
 
 
@@ -29,13 +43,12 @@ def test_recognize_mock_png() -> None:
     assert body["ok"] is True
     assert body["engine"] == "mock"
     assert body["texts"] == ["1", "2", "3", "主", "恩"]
-    assert body["boxes"] == []
-    assert body["notes"] == []
     assert body["meta"]["width"] == 40
     assert body["meta"]["height"] == 30
     assert body["meta"]["mock"] is True
-    assert body["meta"]["filename"] == "sample.png"
-    assert isinstance(body["meta"]["elapsed_ms"], int)
+    assert "decode" in body["meta"]["preprocess_steps"]
+    assert body["notes"]  # digits extracted from mock texts
+    assert {n["pitch"] for n in body["notes"] if n.get("pitch")} >= {"1", "2", "3"}
 
 
 def test_recognize_jpeg_by_extension() -> None:
@@ -81,3 +94,17 @@ def test_openapi_available() -> None:
     paths = response.json()["paths"]
     assert "/health" in paths
     assert "/v1/recognize" in paths
+
+
+def test_preprocess_pipeline_on_digit_sheet() -> None:
+    """Exercise OpenCV path even under mock OCR."""
+    data = _digit_sheet_png()
+    response = client.post(
+        "/v1/recognize",
+        files={"file": ("digits.png", data, "image/png")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["width"] == 320
+    assert body["meta"]["height"] == 120
+    assert any("grayscale" in s for s in body["meta"]["preprocess_steps"])

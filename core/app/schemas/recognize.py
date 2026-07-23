@@ -32,6 +32,9 @@ class RecognizeMeta(BaseModel):
     filename: str | None = None
     content_type: str | None = None
     mock: bool = False
+    preprocess_steps: list[str] = Field(default_factory=list)
+    scale: float = 1.0
+    item_count: int = 0
 
 
 class RecognizeResponse(BaseModel):
@@ -48,3 +51,4 @@ class RecognizeResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str = "ok"
     version: str | None = None
+    engine: str | None = None

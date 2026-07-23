@@ -12,9 +12,9 @@
 
 ## 当前内容
 
-| 文件 | 说明 |
-|------|------|
-| （待添加） | PoC 样例见 Issue [#7](https://github.com/loootte/EnPu/issues/7) |
+| 文件 | 说明 | 来源 |
+|------|------|------|
+| `001_poc_digits.png` | PoC 合成样例：数字简谱风格行 + 英文说明文字，供 OpenCV/OCR 冒烟 | 仓库自制（OpenCV 绘制） |
 
 ## 建议命名
 

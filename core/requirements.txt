@@ -1,5 +1,5 @@
-# EnPu core — Phase 0 (#2 FastAPI skeleton)
-# Heavy OCR stack (OpenCV / PaddleOCR) lands in issue #3.
+# EnPu core — Phase 0
+# #2 FastAPI skeleton + #3 OpenCV / PaddleOCR pipeline
 
 fastapi>=0.110,<1
 uvicorn[standard]>=0.27,<1
@@ -7,6 +7,15 @@ python-multipart>=0.0.9
 pydantic>=2.0,<3
 pydantic-settings>=2.0,<3
 Pillow>=10.0,<12
+
+# Vision / OCR
+numpy>=1.24,<3
+opencv-python-headless>=4.8,<5
+setuptools>=65
+# Paddle: install matching wheel for your OS/Python if the default fails.
+# Windows CPU (verified on Python 3.12): paddlepaddle 3.0 + paddleocr 2.10
+paddlepaddle>=2.6.0,<3.1
+paddleocr>=2.7,<3
 
 # tests
 httpx>=0.27,<1
