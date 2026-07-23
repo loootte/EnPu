@@ -55,7 +55,16 @@ EnPu/
 └── README.md
 ```
 
-当前阶段：**Phase 0 — 桌面端 PoC**（先证明技术路线可行，不追求识别精度）。详见 [ROADMAP.md](./ROADMAP.md)。
+当前阶段：**Phase 2 — 编辑 / 试听 / 导出**（核心识别 + Score 导出已通；UI 可修正与试听）。详见 [ROADMAP.md](./ROADMAP.md)。
+
+### CI
+
+Push / PR 到 `main` 时 GitHub Actions 会：
+
+1. **core**：安装 `core/requirements-ci.txt`（无 Paddle）并以 mock 引擎跑 `pytest`  
+2. **desktop**：`npm ci` + `npm run build`（tsc + Vite）
+
+工作流：`.github/workflows/ci.yml`  
 
 ---
 

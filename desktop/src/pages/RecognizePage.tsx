@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImagePicker } from "../components/ImagePicker";
 import { ImagePreview } from "../components/ImagePreview";
 import { ResultPanel } from "../components/ResultPanel";
@@ -9,10 +9,16 @@ import {
   healthCheck,
   recognizeImage,
 } from "../lib/api";
+import {
+  emptyScore,
+  parseProjectJson,
+  scoreFromRecognize,
+} from "../lib/scoreUtils";
 import type {
   CoreConnectionState,
   HealthResponse,
   RecognizeResponse,
+  Score,
 } from "../lib/types";
 
 export function RecognizePage() {
@@ -20,11 +26,13 @@ export function RecognizePage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [result, setResult] = useState<RecognizeResponse | null>(null);
+  const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [coreState, setCoreState] = useState<CoreConnectionState>("unknown");
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
 
   // Object URL lifecycle for preview
   useEffect(() => {
@@ -58,6 +66,7 @@ export function RecognizePage() {
     setError(null);
     setInfo(null);
     setResult(null);
+    setScore(null);
     setFile(f);
     setInfo(`已选择：${f.name}（${Math.round(f.size / 1024)} KB）`);
   };
@@ -68,12 +77,15 @@ export function RecognizePage() {
     setInfo(null);
     setLoading(true);
     setResult(null);
+    setScore(null);
     try {
       const res = await recognizeImage(file, baseUrl);
       setResult(res);
+      setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
       setCoreState("online");
       setInfo(
-        `识别完成 · engine=${res.engine} · ${res.texts.length} 段文本 · ${res.meta.elapsed_ms} ms`,
+        `识别完成 · engine=${res.engine} · ${res.texts.length} 段文本 · ${res.meta.elapsed_ms} ms` +
+          (res.score ? " · 可编辑 Score" : " · 未解析出 Score"),
       );
       void refreshHealth();
     } catch (err) {
@@ -89,6 +101,34 @@ export function RecognizePage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onOpenProject = async (f: File) => {
+    setError(null);
+    setInfo(null);
+    try {
+      const text = await f.text();
+      const raw = JSON.parse(text) as unknown;
+      const proj = parseProjectJson(raw);
+      setScore(proj.score);
+      setResult(null);
+      setFile(null);
+      setInfo(`已打开工程：${f.name}${proj.title ? ` · ${proj.title}` : ""}`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "无法打开工程文件",
+      );
+    }
+  };
+
+  const onMessage = (kind: "info" | "error", message: string) => {
+    if (kind === "error") {
+      setError(message);
+      setInfo(null);
+    } else {
+      setInfo(message);
+      setError(null);
     }
   };
 
@@ -111,13 +151,13 @@ export function RecognizePage() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium tracking-[0.2em] text-indigo-300 uppercase">
-            EnPu · Desktop PoC
+            EnPu · Phase 2
           </p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-white">
             恩谱
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            导入简谱图片 · 预览 · 识别结果展示
+            导入识别 · 编辑修正 · 试听 · 导出 MusicXML / MIDI / JSON
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -176,10 +216,32 @@ export function RecognizePage() {
             </button>
             <button
               type="button"
-              disabled={loading || (!file && !result && !error)}
+              disabled={loading}
+              onClick={() => projectInputRef.current?.click()}
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
+            >
+              打开工程
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setScore(emptyScore("未命名"));
+                setResult(null);
+                setFile(null);
+                setInfo("已新建空白 Score，可直接编辑后导出");
+              }}
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
+            >
+              新建谱
+            </button>
+            <button
+              type="button"
+              disabled={loading || (!file && !result && !score && !error)}
               onClick={() => {
                 setFile(null);
                 setResult(null);
+                setScore(null);
                 setError(null);
                 setInfo(null);
               }}
@@ -187,17 +249,37 @@ export function RecognizePage() {
             >
               清空
             </button>
+            <input
+              ref={projectInputRef}
+              type="file"
+              accept=".json,.enpu.json,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void onOpenProject(f);
+              }}
+            />
           </div>
         </section>
 
         <section className="flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-slate-200">2. 识别结果</h2>
-          <ResultPanel result={result} loading={loading} />
+          <h2 className="text-sm font-semibold text-slate-200">
+            2. 编辑 · 试听 · 导出
+          </h2>
+          <ResultPanel
+            result={result}
+            loading={loading}
+            score={score}
+            onScoreChange={setScore}
+            coreOnline={coreState === "online"}
+            onMessage={onMessage}
+          />
         </section>
       </div>
 
       <footer className="pb-4 text-center text-xs text-slate-500">
-        Phase 0 · 需本地 core 运行（默认 {baseUrl}）· 完整联调脚本见 Issue #6
+        Phase 2 · 编辑/试听/导出（#12）· core 默认 {baseUrl}
       </footer>
     </div>
   );

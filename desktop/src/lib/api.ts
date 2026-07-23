@@ -4,7 +4,12 @@
  * Base URL: VITE_ENPU_CORE_URL or http://127.0.0.1:8765
  */
 
-import type { HealthResponse, RecognizeResponse } from "./types";
+import type {
+  ExportResponse,
+  HealthResponse,
+  RecognizeResponse,
+  Score,
+} from "./types";
 
 export const DEFAULT_CORE_BASE_URL = "http://127.0.0.1:8765";
 
@@ -127,4 +132,48 @@ export function isAllowedImageFile(file: File): boolean {
   const dot = name.lastIndexOf(".");
   if (dot < 0) return false;
   return ALLOWED_EXTENSIONS.has(name.slice(dot));
+}
+
+/**
+ * Export Score via POST /v1/export (issue #11 / UI #12).
+ */
+export async function exportScore(
+  score: Score,
+  format: "musicxml" | "midi",
+  baseUrl: string = getCoreBaseUrl(),
+  signal?: AbortSignal,
+): Promise<ExportResponse> {
+  const qs = new URLSearchParams({ format });
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/export?${qs.toString()}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(score),
+      signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+
+  if (!res.ok) {
+    let detail = `导出失败：HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") {
+        detail = body.detail;
+      } else if (body.detail != null) {
+        detail = JSON.stringify(body.detail);
+      }
+    } catch {
+      // ignore
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+
+  try {
+    return (await res.json()) as ExportResponse;
+  } catch {
+    throw new CoreApiError("导出响应不是合法 JSON", { kind: "parse" });
+  }
 }
