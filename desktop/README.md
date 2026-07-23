@@ -2,91 +2,93 @@
 
 **Tauri 2 + React + TypeScript + Tailwind** 桌面应用。
 
-通过 HTTP 调用本地或云端 `core` 识别服务（联调见 Issue #6）。
+通过 HTTP 调用本地或云端 `core` 识别服务。
+
+## 功能（当前）
+
+| 能力 | 状态 |
+|------|------|
+| Tauri 窗口壳 | ✅ #4 |
+| 图片导入 / 拖拽 / 预览 | ✅ #5 |
+| 调用 `/v1/recognize` 并展示 OCR / notes / JSON | ✅ #5 |
+| 核心在线状态指示 | ✅ #5 |
+| 一键双进程联调脚本打磨 | #6 |
 
 ## 环境要求（Windows）
 
 | 组件 | 说明 |
 |------|------|
-| Node.js | 20+（推荐 LTS） |
+| Node.js | 20+ |
 | Rust | stable（[rustup](https://rustup.rs/)） |
-| MSVC 工具链 | Visual Studio Build Tools：**Desktop development with C++** / `VCTools` 工作负载 |
+| MSVC | Visual Studio Build Tools + C++ 工作负载 |
 | WebView2 | Windows 10/11 通常已自带 |
 
-官方前置条件：https://v2.tauri.app/start/prerequisites/
-
-### 安装 Rust
-
-```powershell
-# https://rustup.rs/
-winget install Rustlang.Rustup
-# 或下载 rustup-init.exe 后：
-# .\rustup-init.exe -y
-```
-
-### 安装 C++ 生成工具（若 `tauri dev` 报 link.exe / MSVC 缺失）
-
-安装 [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)，勾选：
-
-- **使用 C++ 的桌面开发**（或 workload `Microsoft.VisualStudio.Workload.VCTools`）
+https://v2.tauri.app/start/prerequisites/
 
 ## 开发启动
+
+**终端 A — 识别核心**
+
+```powershell
+# 仓库根目录
+.\scripts\dev-core.ps1
+# → http://127.0.0.1:8765
+```
+
+**终端 B — 桌面**
 
 ```powershell
 cd desktop
 npm install
 npm run tauri dev
-# 等价：npm run tauri:dev
+# 或：.\scripts\dev-desktop.ps1
 ```
 
-仓库根目录：
-
-```powershell
-.\scripts\dev-desktop.ps1
-```
-
-成功后应弹出窗口标题 **「EnPu · 恩谱」**，界面为深色 Tailwind 壳，并可点击「调用 greet」验证 Rust 命令。
-
-仅前端（无原生窗口）：
+仅前端（浏览器预览 UI，仍可调本地 core）：
 
 ```powershell
 npm run dev
 # http://localhost:1420
 ```
 
+### 使用流程
+
+1. 确认 header 显示「核心在线」  
+2. 选择或拖入 `samples/001_poc_digits.png`（或任意 png/jpg）  
+3. 点击 **开始识别**  
+4. 右侧查看 OCR 文本 / 音高提示 / JSON  
+
+若核心未启动，界面会提示连接失败。
+
+### 环境变量
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `VITE_ENPU_CORE_URL` | `http://127.0.0.1:8765` | 识别核心 Base URL |
+
 ## 目录
 
 ```text
-desktop/
-├── src/
-│   ├── App.tsx           # 壳页面（#4）
-│   ├── index.css         # Tailwind 入口
-│   ├── components/       # #5 UI 组件
-│   ├── pages/
-│   └── lib/api.ts        # core HTTP 客户端（#6 扩展）
-├── src-tauri/
-│   ├── tauri.conf.json
-│   ├── Cargo.toml
-│   └── src/
-├── package.json
-└── README.md
+desktop/src/
+├── App.tsx
+├── pages/RecognizePage.tsx
+├── components/
+│   ├── ImagePicker.tsx
+│   ├── ImagePreview.tsx
+│   ├── ResultPanel.tsx
+│   └── StatusBanner.tsx
+└── lib/
+    ├── api.ts      # health + recognize
+    └── types.ts
 ```
-
-## 实现状态
-
-| 能力 | Issue | 状态 |
-|------|-------|------|
-| Tauri 2 + React + TS + Tailwind 壳 | #4 | **本版本** |
-| 导入 / 预览 / 结果展示 | #5 | 待实现 |
-| 本地 core 联调 | #6 | 待实现 |
 
 ## 常见问题
 
-**`error: linker 'link.exe' not found`**  
-未安装 MSVC。见上文 C++ 生成工具。
+**`linker 'link.exe' not found`**  
+安装 VS Build Tools（C++）。
 
-**首次 `tauri dev` 很慢**  
-Cargo 编译依赖，首次可能数分钟，属正常。
+**识别一直失败 / 核心离线**  
+先启动 core；检查防火墙是否拦截 localhost:8765。
 
-**与 core 联调**  
-先 `.\scripts\dev-core.ps1` 再开桌面；识别 UI 在 #5/#6。
+**首次 PaddleOCR 很慢**  
+core 首次下载模型，属正常。
