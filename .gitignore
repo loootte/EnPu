@@ -42,6 +42,9 @@ pip-wheel-metadata/
 /build/
 core/dist/
 core/build/
+*.spec.bak
+# PyInstaller leftover warns (optional local)
+core/warn-*.txt
 
 # PaddleOCR / ML model caches (download on first run; do not commit)
 **/.paddleocr/

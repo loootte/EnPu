@@ -96,3 +96,18 @@ npm run tauri build -- --debug
 |------|------|
 | `dev-core.ps1` | 仅 core（前台） |
 | `dev-desktop.ps1` | 仅 Tauri（前台） |
+
+### Core Sidecar 打包（Issue #8 PoC）
+
+将 FastAPI 核心打成独立 `enpu-core.exe`（默认 **mock** 引擎，约 ~100MB；不含 Paddle）：
+
+```powershell
+.\scripts\build-core-sidecar.ps1
+.\core\dist\enpu-core.exe --engine mock --port 8765
+```
+
+```bash
+./scripts/build-core-sidecar.sh
+```
+
+试验结论与体积/冷启动数据见 [docs/poc-sidecar.md](../docs/poc-sidecar.md)。

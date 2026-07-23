@@ -150,7 +150,8 @@ chmod +x scripts/start.sh scripts/stop.sh
 - [x] FastAPI 骨架 + mock `/v1/recognize`（#2）  
 - [x] OpenCV + PaddleOCR 识别流水线（#3）  
 - [x] Tauri 2 桌面壳（#4）  
-- [ ] 识别 UI：导入 / 预览 / 结果（#5）  
+- [ ] 识别 UI：导入 / 预览 / 结果（#5，若尚未合入 main）  
+- [x] 一键启停 + sidecar 试验（#8，`scripts/` · `docs/poc-sidecar.md`）  
 - [ ] 本地联调闭环（#6）  
 
 ---
