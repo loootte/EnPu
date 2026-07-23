@@ -6,7 +6,7 @@
 
 **仓库**：https://github.com/loootte/EnPu  
 **最后更新**：2026-07-24  
-**当前阶段**：Phase 2 — 编辑 / 试听 / 导出 UI MVP（#12）；Phase 1 核心导出已通，评测集待做
+**当前阶段**：Phase 4 打包流水线 MVP（#14）；Phase 2 UI 已通；评测集 / 云端（#13）待做
 
 ---
 
@@ -64,9 +64,9 @@
 |------|------|------------------|--------|------|
 | **Phase 0** | **桌面端 PoC** | **2–3 周** | **P0** | **✅ 完成（M1）** |
 | Phase 1 | 识别核心 MVP | 4–6 周 | P0 | 🔄 核心路径完成；评测集待做 |
-| Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | 🔄 **#12 MVP 进行中** |
-| Phase 3 | 云端双模式与部署 | 2–3 周 | P1 | 待开始 |
-| Phase 4 | 精度、体验与发布 | 4–6 周 | P2 | 待开始 |
+| Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | ✅ **#12 MVP** |
+| Phase 3 | 云端双模式与部署 | 2–3 周 | P1 | 待开始（#13） |
+| Phase 4 | 精度、体验与发布 | 4–6 周 | P2 | 🔄 **#14 打包流水线 MVP** |
 
 > 时间估算按 **1 名全栈 + 兼职算法** 节奏；可按人力压缩或拉长。
 
@@ -217,20 +217,20 @@
 
 ### 4.2 主要任务
 
-| ID | 任务 | 优先级 |
-|----|------|--------|
-| P4-1 | 拍照场景增强（透视变换、阴影、分辨率自适应） | P0 |
-| P4-2 | 反复记号、倚音、连音线、多行歌词等结构扩展 | P1 |
-| P4-3 | PyInstaller sidecar 与 Tauri 正式打包流水线（CI） | P0 |
-| P4-4 | 崩溃上报/日志开关、性能优化（首包体积、冷启动） | P1 |
-| P4-5 | 用户文档、快捷键、样例库 | P1 |
-| P4-6 | v0.1.0 公开发布（GitHub Release） | P0 |
+| ID | 任务 | 优先级 | 状态 |
+|----|------|--------|------|
+| P4-1 | 拍照场景增强（透视变换、阴影、分辨率自适应） | P0 | 待做 |
+| P4-2 | 反复记号、倚音、连音线、多行歌词等结构扩展 | P1 | 待做 |
+| P4-3 | PyInstaller sidecar 与 Tauri 正式打包流水线（CI） | P0 | ✅ **#14 MVP** |
+| P4-4 | 崩溃上报/日志开关、性能优化（首包体积、冷启动） | P1 | 待做 |
+| P4-5 | 用户文档、快捷键、样例库 | P1 | 部分（`docs/release-windows.md`） |
+| P4-6 | v0.1.0 公开发布（GitHub Release） | P0 | 🔄 流水线就绪；待打 tag |
 
 ### 4.3 验收标准
 
-1. 提供可下载的 Windows 安装包  
-2. 真实手机照片样例集上达到约定可用阈值  
-3. Release 附更新说明与已知问题  
+1. 提供可下载的 Windows 安装包 → **✅ 脚本/CI 可产 NSIS**（默认 mock sidecar）  
+2. 真实手机照片样例集上达到约定可用阈值 → **待评测集 / Paddle 包**  
+3. Release 附更新说明与已知问题 → **🔄 workflow 支持 tag Release**  
 
 ---
 
@@ -365,7 +365,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 | ✅ |
 | [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ✅ |
 | [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ 下一步 |
-| [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ⬜ |
+| [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ✅ |
 
 ---
 
@@ -380,6 +380,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-23 | Score Schema v0.1 定稿（#9）；OCR→Score 解析 MVP（#10）；下一步 #11 导出 |
 | 2026-07-23 | music21 导出 MusicXML/MIDI MVP（#11，`POST /v1/export`）；下一步 #12 UI 或评测集 |
 | 2026-07-24 | 桌面编辑/试听/导出 MVP（#12）；GitHub Actions CI（core pytest + desktop build） |
+| 2026-07-24 | Windows sidecar + Tauri NSIS 打包流水线（#14）；Release workflow；默认 mock 引擎 |
 
 ### Phase 0 完成摘要
 
@@ -402,6 +403,14 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 - ✅ 导出 JSON / MusicXML / MIDI；保存/打开 `.enpu.json` 工程  
 - ✅ CI：`.github/workflows/ci.yml`（mock 核心测试 + 前端 build）  
 - ⬜ 多页批处理；更强合成器 / 编辑器体验  
+
+### Phase 4 进展摘要
+
+- ✅ PyInstaller sidecar → Tauri `externalBin`；应用启停自动拉起/结束 core  
+- ✅ `scripts/build-release.ps1` / `prepare-sidecar.ps1` 可复现构建  
+- ✅ `.github/workflows/release-windows.yml`（artifact + tag Release）  
+- ✅ 文档：`docs/release-windows.md`  
+- ⬜ 正式 v0.1.0 签名安装包；内置 Paddle OCR（按需下载）；精度基线  
 
 ---
 

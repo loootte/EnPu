@@ -1,15 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for EnPu core sidecar (Phase 0 / issue #8 PoC).
+# PyInstaller spec for EnPu core sidecar (issue #8 PoC → #14 packaging).
 # Default build targets mock engine for a manageable binary.
-# Full PaddleOCR bundling is documented as deferred (size + native deps).
+# Full PaddleOCR bundling is deferred (size + native deps); document in release notes.
 
 from PyInstaller.utils.hooks import collect_submodules
 
 block_cipher = None
 
 hidden = []
-# Collect FastAPI / starlette / pydantic plugins lightly
-for pkg in ("uvicorn", "anyio", "starlette", "fastapi", "pydantic", "pydantic_settings"):
+for pkg in (
+    "uvicorn",
+    "anyio",
+    "starlette",
+    "fastapi",
+    "pydantic",
+    "pydantic_settings",
+    "music21",
+):
     try:
         hidden += collect_submodules(pkg)
     except Exception:
@@ -28,13 +35,18 @@ a = Analysis(
         "app.api",
         "app.api.v1",
         "app.api.v1.recognize",
+        "app.api.v1.export",
         "app.pipeline",
         "app.pipeline.runner",
         "app.pipeline.preprocess",
         "app.pipeline.ocr",
         "app.pipeline.parse",
+        "app.pipeline.barlines",
+        "app.pipeline.export",
         "app.schemas",
         "app.schemas.recognize",
+        "app.schemas.score",
+        "app.schemas.export",
         "uvicorn.logging",
         "uvicorn.loops",
         "uvicorn.loops.auto",
@@ -54,15 +66,17 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        # Keep paddle out of the PoC sidecar unless explicitly rebuilt with OCR extras.
+        # Keep paddle out of the default sidecar (GB-class risk).
         "paddle",
         "paddleocr",
         "paddlepaddle",
         "skimage",
-        "matplotlib",
-        "scipy",
         "torch",
         "tensorflow",
+        # music21 may soft-depend on matplotlib; exclude heavy optional bits
+        "IPython",
+        "jupyter",
+        "notebook",
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -86,7 +100,8 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # sidecar is a headless server; console helps debugging first runs
+    # console=False hides server window in production desktop package
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

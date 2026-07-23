@@ -70,6 +70,8 @@ desktop/dist-ssr/
 
 # --- Tauri / Rust ---
 desktop/src-tauri/target/
+desktop/src-tauri/binaries/enpu-core*
+!desktop/src-tauri/binaries/README.md
 **/*.rs.bk
 
 # --- Env & secrets ---

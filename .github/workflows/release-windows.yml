@@ -1,0 +1,94 @@
+# Windows installer + sidecar (issue #14)
+name: Release Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build NSIS + sidecar
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> target
+
+      - name: Install core deps + PyInstaller (no Paddle)
+        working-directory: core
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\pip.exe install -U pip
+          .\.venv\Scripts\pip.exe install -r requirements-ci.txt
+          .\.venv\Scripts\pip.exe install "pyinstaller>=6.0,<7"
+
+      - name: Build sidecar
+        working-directory: core
+        shell: pwsh
+        env:
+          ENPU_RECOGNIZE_ENGINE: mock
+        run: |
+          .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean enpu-core.spec
+          if (-not (Test-Path dist\enpu-core.exe)) { throw "sidecar missing" }
+          $mb = [math]::Round((Get-Item dist\enpu-core.exe).Length / 1MB, 2)
+          Write-Host "sidecar size: $mb MB"
+
+      - name: Prepare externalBin
+        shell: pwsh
+        run: .\scripts\prepare-sidecar.ps1 -SkipBuild
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: npm ci
+
+      - name: Tauri build (NSIS)
+        working-directory: desktop
+        shell: pwsh
+        env:
+          VITE_ENPU_CORE_URL: http://127.0.0.1:8765
+        run: npm run tauri -- build --bundles nsis
+
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: enpu-windows-nsis
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/**
+            core/dist/enpu-core.exe
+          if-no-files-found: error
+
+      - name: Attach to GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

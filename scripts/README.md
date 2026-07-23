@@ -74,6 +74,26 @@
 
 ---
 
+## Windows 安装包 / 发布构建（Issue #14）
+
+```powershell
+# 全量：sidecar + Tauri NSIS
+.\scripts\build-release.ps1
+
+# 分步
+.\scripts\build-core-sidecar.ps1
+.\scripts\prepare-sidecar.ps1 -SkipBuild   # → desktop/src-tauri/binaries/enpu-core-<triple>.exe
+cd desktop
+npm run tauri -- build --bundles nsis
+```
+
+产物：`desktop/src-tauri/target/release/bundle/nsis/*-setup.exe`  
+
+说明：[docs/release-windows.md](../docs/release-windows.md)  
+CI：`.github/workflows/release-windows.yml`（`workflow_dispatch` 或 tag `v*`）
+
+---
+
 ## 日志
 
 `scripts/.run/logs/`（gitignore）
