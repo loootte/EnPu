@@ -89,5 +89,7 @@ if ($texts.Count -gt 0) {
 
 Write-Host ""
 Write-Host "SMOKE PASSED" -ForegroundColor Green
-Write-Host "Next: open desktop UI, import samples\001_poc_digits.png, click 开始识别."
+Write-Host "Next: open desktop UI, import samples\001_poc_digits.png (or 002/003), click 开始识别."
+Write-Host "Other: .\scripts\smoke-poc.ps1 -Sample .\samples\002_scan_like.png"
+Write-Host "Checklist: docs\poc-acceptance.md"
 Write-Host "========================================"

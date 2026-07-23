@@ -160,6 +160,7 @@ cd EnPu
 - [x] 识别 UI：导入 / 预览 / 结果（#5）  
 - [x] 一键启停 + sidecar 试验（#8）  
 - [x] 本地联调闭环（#6，`start.ps1` / `smoke-poc.ps1` / `docs/poc-acceptance.md`）  
+- [x] 样例素材与验收清单（#7，`samples/` · `docs/poc-acceptance.md`）  
 
 ---
 
