@@ -1,6 +1,6 @@
 # EnPu Core API
 
-> 状态：#2 骨架 + #3 OpenCV/PaddleOCR 流水线。OpenAPI 以运行中的 `/docs` 为准。
+> 状态：#2–#3 识别流水线 + #9–#10 Score 解析 + #11 MusicXML/MIDI 导出。OpenAPI 以运行中的 `/docs` 为准。
 
 **Base URL（开发态）**：`http://127.0.0.1:8765`
 
@@ -93,8 +93,72 @@
 
 ---
 
+---
+
+## POST `/v1/export`
+
+将 **EnPu Score v0.1 JSON** 导出为 MusicXML 或 MIDI（Issue [#11](https://github.com/loootte/EnPu/issues/11)）。
+
+**Content-Type**：`application/json`（body = 完整 `Score` 文档）
+
+| Query | 类型 | 默认 | 说明 |
+|-------|------|------|------|
+| `format` | `musicxml` \| `midi` | `musicxml` | 导出格式 |
+| `download` | bool | `false` | `true` 时返回原始文件字节（带 `Content-Disposition`） |
+
+**响应** `200`（`download=false`，默认）
+
+```json
+{
+  "ok": true,
+  "format": "musicxml",
+  "filename": "示例诗歌_最小_.musicxml",
+  "media_type": "application/vnd.recordare.musicxml+xml",
+  "content_base64": "PD94bWwg...",
+  "byte_length": 4321,
+  "warnings": []
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `content_base64` | 文件内容的 Base64（UI 可直接保存） |
+| `media_type` | MusicXML 或 `audio/midi` |
+| `warnings` | 导出告警（如未知调号回退到 C） |
+
+**响应** `200`（`download=true`）
+
+- MusicXML：`application/vnd.recordare.musicxml+xml` 原始 XML  
+- MIDI：`audio/midi`，文件头 `MThd`  
+
+**错误**
+
+| HTTP | 说明 |
+|------|------|
+| `400` | 无声部 / 无音符 / 非法 Score |
+| `422` | body 不符合 Score schema |
+| `500` | 未安装 music21 或写出失败 |
+
+**示例**
+
+```powershell
+# JSON + base64
+curl.exe -X POST "http://127.0.0.1:8765/v1/export?format=musicxml" `
+  -H "Content-Type: application/json" `
+  --data-binary "@samples/scores/example-minimal.json"
+
+# 直接下载 MIDI 文件
+curl.exe -X POST "http://127.0.0.1:8765/v1/export?format=midi&download=true" `
+  -H "Content-Type: application/json" `
+  --data-binary "@samples/scores/example-minimal.json" `
+  -o out.mid
+```
+
+> 识别接口 `/v1/recognize` 返回的 `score` 可原样 POST 到本接口完成「识别 → 导出」链路。
+
+---
+
 ## 后续扩展
 
-- 完整简谱结构化（#9–#10）  
-- MusicXML / MIDI 导出（#11）  
 - 异步任务与云端鉴权（Phase 3）  
+- 桌面端一键导出 UI（#12）  
