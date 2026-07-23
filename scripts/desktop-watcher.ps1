@@ -33,16 +33,19 @@ while (Get-Process -Name "enpu-desktop" -ErrorAction SilentlyContinue) {
 }
 
 Log "desktop closed; stopping core + ui"
-$bash = "C:\Program Files\Git\bin\bash.exe"
+$stopPs1 = Join-Path $RepoRoot "scripts\stop.ps1"
 $stopSh = Join-Path $RepoRoot "scripts\stop.sh"
-if (Test-Path $bash) {
-  # Convert to Git Bash path: D:\foo -> /d/foo
+$bash = "C:\Program Files\Git\bin\bash.exe"
+
+if (Test-Path $stopPs1) {
+  & powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File $stopPs1 -FromWatcher -CorePort $CorePort -VitePort $VitePort 2>&1 | ForEach-Object { Log "$_" }
+} elseif (Test-Path $bash) {
   $drive = $RepoRoot.Substring(0, 1).ToLowerInvariant()
   $rest = $RepoRoot.Substring(2).Replace("\", "/")
   $unixRoot = "/$drive$rest"
   & $bash -lc "cd '$unixRoot' && ./scripts/stop.sh --from-watcher" 2>&1 | ForEach-Object { Log "$_" }
 } else {
-  Log "git bash not found; fallback port kill"
+  Log "no stop script; fallback port kill"
   foreach ($port in @($CorePort, $VitePort)) {
     Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue |
       ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }

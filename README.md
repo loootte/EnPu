@@ -83,41 +83,48 @@ git clone https://github.com/loootte/EnPu.git
 cd EnPu
 ```
 
-### 2. 一键启动 / 终止（推荐，Git Bash）
+### 2. 一键启动 / 终止（推荐）
+
+**PowerShell（Windows）**
+
+```powershell
+.\scripts\start.ps1                 # core + Vite + 桌面
+.\scripts\start.ps1 -Engine mock    # 快速联调
+.\scripts\smoke-poc.ps1             # API 冒烟（health + 样例识别）
+.\scripts\stop.ps1
+```
+
+**Git Bash**
 
 ```bash
-chmod +x scripts/start.sh scripts/stop.sh
-./scripts/start.sh          # core + Vite + 桌面窗口
-./scripts/stop.sh           # 全部停止
+./scripts/start.sh
+./scripts/stop.sh
 ```
 
 | 服务 | 地址 / 说明 |
 |------|-------------|
 | Core | http://127.0.0.1:8765/health |
 | Web UI | http://localhost:1420 |
-| Desktop | 原生窗口 **EnPu · 恩谱**（`enpu-desktop`） |
+| Desktop | 原生窗口 **EnPu · 恩谱** |
 | API 文档 | http://127.0.0.1:8765/docs |
 
-更多选项见 [scripts/README.md](./scripts/README.md)（如 `ENPU_UI=vite` 仅网页、`ENPU_DESKTOP_MODE=exe` 秒开已编译桌面）。
+更多选项：[scripts/README.md](./scripts/README.md)。
 
-### 3. 分进程启动（PowerShell）
+### 3. 分进程启动（调试）
 
 ```powershell
-# 终端 A — 识别核心
-.\scripts\dev-core.ps1
-
-# 终端 B — 桌面 Tauri
-.\scripts\dev-desktop.ps1
+.\scripts\dev-core.ps1      # 终端 A
+.\scripts\dev-desktop.ps1   # 终端 B
 ```
 
 ### 4. PoC 验收路径
 
-1. 启动服务后打开 UI（Vite 或 Tauri）  
-2. 从 `samples/` 导入一张简谱图  
-3. 点击识别 → 调用本地 `POST /v1/recognize`  
-4. 界面展示 OCR 文本或 JSON 结果  
+1. `.\scripts\start.ps1` 启动  
+2. `.\scripts\smoke-poc.ps1` 或 UI 导入 `samples/001_poc_digits.png`  
+3. 界面/API 得到 OCR 文本或 JSON  
+4. `.\scripts\stop.ps1`  
 
-联调与验收清单见 Issue [#6](https://github.com/loootte/EnPu/issues/6)、[#7](https://github.com/loootte/EnPu/issues/7)。
+勾选清单：[docs/poc-acceptance.md](./docs/poc-acceptance.md)（Issue #6）。
 
 ---
 
@@ -151,8 +158,8 @@ chmod +x scripts/start.sh scripts/stop.sh
 - [x] OpenCV + PaddleOCR 识别流水线（#3）  
 - [x] Tauri 2 桌面壳（#4）  
 - [x] 识别 UI：导入 / 预览 / 结果（#5）  
-- [x] 一键启停 + sidecar 试验（#8，`scripts/` · `docs/poc-sidecar.md`）  
-- [ ] 本地联调闭环打磨（#6）  
+- [x] 一键启停 + sidecar 试验（#8）  
+- [x] 本地联调闭环（#6，`start.ps1` / `smoke-poc.ps1` / `docs/poc-acceptance.md`）  
 
 ---
 

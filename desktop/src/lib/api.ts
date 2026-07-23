@@ -1,6 +1,7 @@
 /**
  * HTTP client for EnPu core (FastAPI).
- * Used by the recognize UI (#5); full dual-process polish in #6.
+ * Dual-process integration (#5 UI + #6 scripts/docs).
+ * Base URL: VITE_ENPU_CORE_URL or http://127.0.0.1:8765
  */
 
 import type { HealthResponse, RecognizeResponse } from "./types";
@@ -35,7 +36,7 @@ function friendlyNetworkError(err: unknown, baseUrl: string): CoreApiError {
     msg.includes("fetch")
   ) {
     return new CoreApiError(
-      `无法连接识别核心（${baseUrl}）。请先启动 core：.\\scripts\\dev-core.ps1`,
+      `无法连接识别核心（${baseUrl}）。请先启动：.\\scripts\\start.ps1 或 .\\scripts\\dev-core.ps1（Git Bash: ./scripts/start.sh）`,
       { kind: "network" },
     );
   }
