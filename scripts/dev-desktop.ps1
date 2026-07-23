@@ -2,9 +2,6 @@
 <#
 .SYNOPSIS
   Start EnPu desktop (Tauri) for local development.
-
-.DESCRIPTION
-  Scaffold script for Phase 0. Full behavior after issue #4 scaffolds Tauri project.
 #>
 
 $ErrorActionPreference = "Stop"
@@ -21,17 +18,13 @@ if (-not (Test-Path $DesktopDir)) {
 
 $PackageJson = Join-Path $DesktopDir "package.json"
 if (-not (Test-Path $PackageJson)) {
-    Write-Host ""
-    Write-Host "desktop/package.json not found — Tauri app not scaffolded yet." -ForegroundColor Yellow
-    Write-Host "Implement in issue #4, then re-run: .\scripts\dev-desktop.ps1"
-    Write-Host ""
-    Write-Host "Target command:"
-    Write-Host "  cd desktop"
-    Write-Host "  npm install"
-    Write-Host "  npm run tauri dev"
-    Write-Host ""
-    Write-Host "Remember to start core first (.\scripts\dev-core.ps1) for recognition."
-    exit 2
+    Write-Error "desktop/package.json missing."
+}
+
+# Ensure cargo on PATH when launched from fresh shells
+$cargoBin = Join-Path $env:USERPROFILE ".cargo\bin"
+if (Test-Path $cargoBin) {
+    $env:Path = "$cargoBin;" + $env:Path
 }
 
 Set-Location $DesktopDir
@@ -39,7 +32,15 @@ Set-Location $DesktopDir
 if (-not (Test-Path (Join-Path $DesktopDir "node_modules"))) {
     Write-Host "node_modules missing — running npm install..." -ForegroundColor Yellow
     npm install
+    if ($LASTEXITCODE -ne 0) { Write-Error "npm install failed" }
 }
 
-Write-Host "Starting Tauri dev..." -ForegroundColor Green
+if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) {
+    Write-Host "Rust (rustc) not found on PATH." -ForegroundColor Yellow
+    Write-Host "Install from https://rustup.rs/ then re-open the terminal."
+    exit 1
+}
+
+Write-Host "Starting Tauri dev (first compile may take several minutes)..." -ForegroundColor Green
+Write-Host "Tip: start core separately with .\scripts\dev-core.ps1"
 npm run tauri dev
