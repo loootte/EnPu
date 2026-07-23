@@ -48,11 +48,61 @@ function Assert-Cmd([string]$Name) {
   }
 }
 
+function Stop-EnPuBuildLocks {
+  <#
+    Kill running app/sidecar so NSIS packaging can overwrite
+    target/release/*.exe (Windows error 32: file in use).
+  #>
+  $names = @(
+    "enpu-desktop",
+    "enpu-core",
+    "EnPu",
+    "enpu-desktop-lib"  # unlikely, keep harmless
+  )
+  $killed = @()
+  foreach ($n in $names) {
+    Get-Process -Name $n -ErrorAction SilentlyContinue | ForEach-Object {
+      try {
+        Write-Host "  stopping PID $($_.Id) $($_.ProcessName) ($($_.Path))" -ForegroundColor Yellow
+        Stop-Process -Id $_.Id -Force -ErrorAction Stop
+        $killed += $n
+      } catch {
+        Write-Host "  warn: could not stop $($_.ProcessName) PID $($_.Id): $_" -ForegroundColor Yellow
+      }
+    }
+  }
+  # Also stop any process whose path is under src-tauri/target/release
+  $releaseRoot = Join-Path $Desktop "src-tauri\target\release"
+  if (Test-Path $releaseRoot) {
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+      Where-Object {
+        $_.ExecutablePath -and
+        $_.ExecutablePath.StartsWith($releaseRoot, [System.StringComparison]::OrdinalIgnoreCase)
+      } |
+      ForEach-Object {
+        try {
+          Write-Host "  stopping release-path PID $($_.ProcessId) $($_.Name)" -ForegroundColor Yellow
+          Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
+          $killed += $_.Name
+        } catch {}
+      }
+  }
+  if ($killed.Count -gt 0) {
+    Start-Sleep -Seconds 1
+    Write-Host "  released file locks ($($killed.Count) process(es))"
+  } else {
+    Write-Host "  no running EnPu/enpu-core processes"
+  }
+}
+
 Write-Host "=== EnPu Windows release build (#14) ===" -ForegroundColor Cyan
 Assert-Cmd "node"
 Assert-Cmd "npm"
 Assert-Cmd "cargo"
 Assert-Cmd "rustc"
+
+Write-Host "`n[0/3] Free file locks (close running EnPu / sidecar)..." -ForegroundColor Cyan
+Stop-EnPuBuildLocks
 
 # 1) Sidecar
 if (-not $SkipSidecarBuild) {
@@ -104,8 +154,28 @@ try {
   $cmd = "npm run tauri -- $argLine"
   Write-Host $cmd
   cmd.exe /c $cmd
-  if ($LASTEXITCODE -ne 0) {
-    throw "tauri build failed with exit $LASTEXITCODE"
+  $code = $LASTEXITCODE
+  if ($code -ne 0) {
+    # Common on Windows: NSIS step hits os error 32 if app/sidecar still running
+    Write-Host "`nBuild failed (exit $code). Retrying once after force-stop locks..." -ForegroundColor Yellow
+    Stop-EnPuBuildLocks
+    Start-Sleep -Seconds 2
+    cmd.exe /c $cmd
+    $code = $LASTEXITCODE
+  }
+  if ($code -ne 0) {
+    throw @"
+tauri build failed with exit $code
+
+If you saw: 另一个程序正在使用此文件 / os error 32
+  → Close EnPu window, stop enpu-core, then re-run:
+     .\scripts\stop.ps1 -ErrorAction SilentlyContinue
+     Get-Process enpu-desktop,enpu-core,EnPu -ErrorAction SilentlyContinue | Stop-Process -Force
+     .\scripts\build-release.ps1 -SkipSidecarBuild
+
+If you saw: Blocking waiting for file lock on build directory
+  → Another cargo/tauri build is running; close other terminals or wait, then retry.
+"@
   }
 } finally {
   Pop-Location

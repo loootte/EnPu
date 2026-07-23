@@ -46,6 +46,14 @@ enpu-core.exe  (PyInstaller sidecar)
 .\scripts\build-release.ps1 -Targets nsis -SkipSidecarBuild
 ```
 
+**打包前请关掉正在运行的 EnPu / enpu-core**（否则 NSIS 阶段会报 `os error 32` / 文件被占用）。  
+`build-release.ps1` 会尝试自动结束这些进程；若仍失败：
+
+```powershell
+Get-Process enpu-desktop,enpu-core,EnPu -ErrorAction SilentlyContinue | Stop-Process -Force
+.\scripts\build-release.ps1 -SkipSidecarBuild
+```
+
 步骤等价于：
 
 ```powershell
