@@ -15,9 +15,10 @@ chmod +x scripts/start.sh scripts/stop.sh   # 首次
 
 | 服务 | 说明 |
 |------|------|
-| **Core** | FastAPI → http://127.0.0.1:8765 |
-| **Vite** | Web UI → http://localhost:1420 |
+| **Core** | FastAPI → http://127.0.0.1:8765（**无控制台窗口**） |
+| **Vite** | Web UI → http://localhost:1420（**无控制台窗口**） |
 | **Desktop** | Tauri 窗口 `enpu-desktop`（恩谱） |
+| **Watcher** | 关闭桌面窗口后，**自动**执行 `stop.sh` 停掉 core + UI |
 
 桌面启动策略（`ENPU_DESKTOP_MODE`，默认 `auto`）：
 
@@ -40,6 +41,7 @@ chmod +x scripts/start.sh scripts/stop.sh   # 首次
 |------|------|------|
 | `ENPU_UI` | `both` | `both`（推荐）/ `vite` / `none` |
 | `ENPU_DESKTOP_MODE` | `auto` | `auto` / `exe` / `dev` |
+| `ENPU_AUTO_STOP` | `1` | `1`=关桌面后停 core+UI；`0`=不自动停 |
 | `ENPU_RECOGNIZE_ENGINE` | `paddleocr` | `paddleocr` 或 `mock` |
 | `ENPU_CORE_HOST` | `127.0.0.1` | 核心绑定地址 |
 | `ENPU_CORE_PORT` | `8765` | 核心端口 |

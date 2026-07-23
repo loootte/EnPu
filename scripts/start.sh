@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # EnPu one-click start: recognition core + Vite + desktop (Tauri)
+#
+# - Background services run WITHOUT console windows
+# - Closing the desktop app auto-stops core + UI
+#
 # Usage:
 #   ./scripts/start.sh
-#   ENPU_UI=both ./scripts/start.sh     # default: core + vite + desktop window
-#   ENPU_UI=vite ./scripts/start.sh     # core + browser UI only
-#   ENPU_UI=desktop ./scripts/start.sh  # core + vite + desktop (alias of both)
-#   ENPU_UI=tauri ./scripts/start.sh    # same as desktop
-#   ENPU_UI=none ./scripts/start.sh     # core only
-#   ENPU_RECOGNIZE_ENGINE=mock ./scripts/start.sh
-#   ENPU_DESKTOP_MODE=exe ./scripts/start.sh   # prefer prebuilt enpu-desktop.exe
-#   ENPU_DESKTOP_MODE=dev ./scripts/start.sh   # prefer `tauri dev` (hot reload)
+#   ENPU_UI=vite|both|none ./scripts/start.sh
+#   ENPU_DESKTOP_MODE=auto|exe|dev ./scripts/start.sh
+#   ENPU_RECOGNIZE_ENGINE=mock|paddleocr ./scripts/start.sh
+#   ENPU_AUTO_STOP=0 ./scripts/start.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,11 +22,10 @@ DESKTOP_DIR="${ROOT}/desktop"
 CORE_HOST="${ENPU_CORE_HOST:-127.0.0.1}"
 CORE_PORT="${ENPU_CORE_PORT:-8765}"
 VITE_PORT="${ENPU_VITE_PORT:-1420}"
-# default: both (vite + desktop app) — what most people expect from one-click start
 UI_MODE="${ENPU_UI:-both}"
 ENGINE="${ENPU_RECOGNIZE_ENGINE:-paddleocr}"
-# exe = launch prebuilt binary (fast); dev = tauri dev (hot reload); auto = exe if present else dev
 DESKTOP_MODE="${ENPU_DESKTOP_MODE:-auto}"
+AUTO_STOP="${ENPU_AUTO_STOP:-1}"
 
 mkdir -p "${LOG_DIR}"
 
@@ -42,14 +41,19 @@ to_win_path() {
   if command -v cygpath >/dev/null 2>&1; then
     cygpath -w "$p"
   else
-    # /d/foo -> d:\foo
     echo "$p" | sed -e 's|^/\([a-zA-Z]\)/|\1:\\|' -e 's|/|\\|g'
   fi
 }
 
+ps_quote() {
+  local s="$1"
+  s="${s//\'/\'\'}"
+  printf "%s" "$s"
+}
+
 core_python() {
   if is_windows; then
-    if [[ -x "${CORE_DIR}/.venv/Scripts/python.exe" ]]; then
+    if [[ -f "${CORE_DIR}/.venv/Scripts/python.exe" ]]; then
       echo "${CORE_DIR}/.venv/Scripts/python.exe"
       return
     fi
@@ -83,10 +87,6 @@ port_in_use() {
   fi
   if command -v lsof >/dev/null 2>&1; then
     lsof -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1
-    return $?
-  fi
-  if command -v ss >/dev/null 2>&1; then
-    ss -ltn 2>/dev/null | grep -q ":${port} "
     return $?
   fi
   return 1
@@ -129,6 +129,26 @@ process_running() {
   pgrep -f "${name}" >/dev/null 2>&1
 }
 
+# Start via hidden cmd.exe with shell redirection (avoids PowerShell file-lock hangs).
+# Args: workdir(win) log(win) command_line(for cmd /c)
+win_start_hidden_cmd() {
+  local workdir_win="$1"
+  local log_win="$2"
+  local cmdline="$3"
+  local ps
+  ps=$(
+    cat <<EOF
+\$wd = '$(ps_quote "${workdir_win}")'
+\$log = '$(ps_quote "${log_win}")'
+\$inner = '$(ps_quote "${cmdline}")'
+# /c runs then exits; WindowStyle Hidden = no console UI
+\$p = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', \$inner) -WorkingDirectory \$wd -WindowStyle Hidden -PassThru
+Write-Output \$p.Id
+EOF
+  )
+  powershell.exe -NoProfile -WindowStyle Hidden -Command "${ps}" 2>/dev/null | tr -d '\r' | tail -n 1
+}
+
 start_core() {
   if port_in_use "${CORE_PORT}"; then
     if curl -fsS --max-time 1 "http://${CORE_HOST}:${CORE_PORT}/health" >/dev/null 2>&1; then
@@ -142,15 +162,36 @@ start_core() {
   ensure_core_venv
   local py
   py="$(core_python)"
-  echo "[core] starting uvicorn (${ENGINE}) on http://${CORE_HOST}:${CORE_PORT}"
-  (
-    cd "${CORE_DIR}"
-    export ENPU_RECOGNIZE_ENGINE="${ENGINE}"
-    "${py}" -m uvicorn app.main:app --host "${CORE_HOST}" --port "${CORE_PORT}"
-  ) >"${LOG_DIR}/core.log" 2>&1 &
-  local pid=$!
+  echo "[core] starting uvicorn (${ENGINE}) — no console"
+  local log="${LOG_DIR}/core.log"
+  : >"${log}" || true
+
+  local pid
+  if is_windows; then
+    local w_py w_core w_log
+    w_py="$(to_win_path "${py}")"
+    w_core="$(to_win_path "${CORE_DIR}")"
+    w_log="$(to_win_path "${log}")"
+    # cmd redirection is fine under Hidden window
+    local cmd
+    cmd="set ENPU_RECOGNIZE_ENGINE=${ENGINE}&& \"${w_py}\" -m uvicorn app.main:app --host ${CORE_HOST} --port ${CORE_PORT} >> \"${w_log}\" 2>&1"
+    pid="$(win_start_hidden_cmd "${w_core}" "${w_log}" "${cmd}")"
+  else
+    pid="$(
+      cd "${CORE_DIR}"
+      export ENPU_RECOGNIZE_ENGINE="${ENGINE}"
+      nohup "${py}" -m uvicorn app.main:app --host "${CORE_HOST}" --port "${CORE_PORT}" \
+        >>"${log}" 2>&1 &
+      echo $!
+    )"
+  fi
+
+  if [[ -z "${pid:-}" || ! "${pid}" =~ ^[0-9]+$ ]]; then
+    echo "[error] failed to start core (see ${log})"
+    exit 1
+  fi
   write_pid CORE_PID "${pid}"
-  echo "[core] pid=${pid}  log=${LOG_DIR}/core.log"
+  echo "[core] pid=${pid}  log=${log}"
   wait_http "http://${CORE_HOST}:${CORE_PORT}/health" "core" 60 || true
 }
 
@@ -168,10 +209,6 @@ ensure_cargo_path() {
   if [[ -x "${HOME}/.cargo/bin/rustc" ]]; then
     export PATH="${HOME}/.cargo/bin:${PATH}"
   fi
-  # Windows user profile
-  if is_windows && [[ -x "/c/Users/${USER}/.cargo/bin/rustc" ]]; then
-    export PATH="/c/Users/${USER}/.cargo/bin:${PATH}"
-  fi
 }
 
 start_vite() {
@@ -180,19 +217,38 @@ start_vite() {
     return 0
   fi
   ensure_npm
-  echo "[vite] starting http://localhost:${VITE_PORT}"
-  (
-    cd "${DESKTOP_DIR}"
-    npm run dev -- --host localhost --port "${VITE_PORT}"
-  ) >"${LOG_DIR}/vite.log" 2>&1 &
-  local pid=$!
+  echo "[vite] starting http://localhost:${VITE_PORT} — no console"
+  local log="${LOG_DIR}/vite.log"
+  : >"${log}" || true
+
+  local pid
+  if is_windows; then
+    local w_desk w_log
+    w_desk="$(to_win_path "${DESKTOP_DIR}")"
+    w_log="$(to_win_path "${log}")"
+    # Use npm.cmd via cmd (hidden). Avoid PowerShell exclusive log locks.
+    local cmd
+    cmd="npm run dev -- --host localhost --port ${VITE_PORT} >> \"${w_log}\" 2>&1"
+    pid="$(win_start_hidden_cmd "${w_desk}" "${w_log}" "${cmd}")"
+  else
+    pid="$(
+      cd "${DESKTOP_DIR}"
+      nohup npm run dev -- --host localhost --port "${VITE_PORT}" \
+        >>"${log}" 2>&1 &
+      echo $!
+    )"
+  fi
+
+  if [[ -z "${pid:-}" || ! "${pid}" =~ ^[0-9]+$ ]]; then
+    echo "[error] failed to start vite (see ${log})"
+    exit 1
+  fi
   write_pid VITE_PID "${pid}"
-  echo "[vite] pid=${pid}  log=${LOG_DIR}/vite.log"
+  echo "[vite] pid=${pid}  log=${log}"
   wait_http "http://localhost:${VITE_PORT}/" "vite" 40 || true
 }
 
 write_tauri_override() {
-  # Let external Vite own :1420; Tauri only opens the native window.
   cat >"${DESKTOP_DIR}/tauri.dev.override.json" <<EOF
 {
   "build": {
@@ -225,25 +281,36 @@ start_desktop_exe() {
     return 1
   fi
   if process_running "enpu-desktop"; then
-    echo "[desktop] enpu-desktop already running"
+    echo "[desktop] already running"
     return 0
   fi
-  echo "[desktop] launching prebuilt binary: ${exe}"
+  echo "[desktop] launching window (no console host)"
   if is_windows; then
-    local wexe
+    local wexe wdesk
     wexe="$(to_win_path "${exe}")"
-    # start detaches a GUI process on Windows
-    cmd.exe //c start "" "${wexe}" >/dev/null 2>&1 || true
+    wdesk="$(to_win_path "${DESKTOP_DIR}")"
+    local ps pid
+    ps=$(
+      cat <<EOF
+\$p = Start-Process -FilePath '$(ps_quote "${wexe}")' -WorkingDirectory '$(ps_quote "${wdesk}")' -WindowStyle Normal -PassThru
+Write-Output \$p.Id
+EOF
+    )
+    pid="$(powershell.exe -NoProfile -WindowStyle Hidden -Command "${ps}" | tr -d '\r' | tail -n 1)"
+    if [[ -n "${pid}" && "${pid}" =~ ^[0-9]+$ ]]; then
+      write_pid DESKTOP_PID "${pid}"
+      echo "[desktop] pid=${pid}"
+    fi
   else
-    "${exe}" >"${LOG_DIR}/desktop.log" 2>&1 &
+    nohup "${exe}" >>"${LOG_DIR}/desktop.log" 2>&1 &
     write_pid DESKTOP_PID $!
   fi
   sleep 1
   if process_running "enpu-desktop"; then
-    echo "[ok] desktop window process detected"
+    echo "[ok] desktop window up"
     return 0
   fi
-  echo "[warn] desktop binary launched but process not detected yet"
+  echo "[warn] desktop process not detected yet"
   return 0
 }
 
@@ -253,63 +320,60 @@ start_desktop_dev() {
   write_tauri_override
 
   if process_running "enpu-desktop"; then
-    echo "[desktop] enpu-desktop already running"
+    echo "[desktop] already running"
     return 0
   fi
-
   if ! command -v rustc >/dev/null 2>&1 && ! desktop_exe_path >/dev/null 2>&1; then
-    echo "[desktop] rustc not found and no prebuilt enpu-desktop — skip desktop window"
-    echo "         Install Rust (https://rustup.rs) + VS C++ tools, then: cd desktop && npm run tauri build -- --debug"
+    echo "[desktop] no rustc and no prebuilt exe — skip window"
     return 0
   fi
 
-  echo "[desktop] starting Tauri dev window (log: ${LOG_DIR}/tauri.log)..."
+  echo "[desktop] starting tauri dev host — no console"
+  local log="${LOG_DIR}/tauri.log"
+  : >"${log}" || true
+
   if is_windows; then
-    local bat="${RUN_DIR}/start_tauri.bat"
-    local desk_win log_win
-    desk_win="$(to_win_path "${DESKTOP_DIR}")"
-    log_win="$(to_win_path "${LOG_DIR}/tauri.log")"
+    local w_desk w_log
+    w_desk="$(to_win_path "${DESKTOP_DIR}")"
+    w_log="$(to_win_path "${log}")"
     local vsdev="C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat"
-    cat >"${bat}" <<EOF
-@echo off
-setlocal
-if exist "${vsdev}" call "${vsdev}" -arch=x64 >nul 2>&1
-set PATH=%USERPROFILE%\\.cargo\\bin;%PATH%
-cd /d "${desk_win}"
-echo [tauri] cwd=%CD% >> "${log_win}"
-echo [tauri] starting... >> "${log_win}"
-call npx tauri dev --config tauri.dev.override.json >> "${log_win}" 2>&1
-echo [tauri] exited %ERRORLEVEL% >> "${log_win}"
-EOF
-    # Detach so start.sh can return; GUI app keeps running
-    cmd.exe //c start "EnPu-Tauri" /MIN cmd.exe //c "$(to_win_path "${bat}")" >/dev/null 2>&1 || true
-    echo "[desktop] tauri dev launched via VsDevCmd (may take a minute on first compile)"
+    local cmd
+    if [[ -f "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat" ]]; then
+      cmd="call \"${vsdev}\" -arch=x64 >nul 2>&1 && set PATH=%USERPROFILE%\\.cargo\\bin;%PATH% && cd /d \"${w_desk}\" && npx tauri dev --config tauri.dev.override.json >> \"${w_log}\" 2>&1"
+    else
+      cmd="set PATH=%USERPROFILE%\\.cargo\\bin;%PATH% && cd /d \"${w_desk}\" && npx tauri dev --config tauri.dev.override.json >> \"${w_log}\" 2>&1"
+    fi
+    local pid
+    pid="$(win_start_hidden_cmd "${w_desk}" "${w_log}" "${cmd}")"
+    if [[ -n "${pid}" && "${pid}" =~ ^[0-9]+$ ]]; then
+      write_pid TAURI_PID "${pid}"
+      echo "[desktop] tauri host pid=${pid}  log=${log}"
+    fi
   else
-    (
+    local pid
+    pid="$(
       cd "${DESKTOP_DIR}"
-      npm run tauri dev -- --config tauri.dev.override.json
-    ) >"${LOG_DIR}/tauri.log" 2>&1 &
-    write_pid TAURI_PID $!
-    echo "[desktop] tauri pid=$!  log=${LOG_DIR}/tauri.log"
+      nohup npm run tauri dev -- --config tauri.dev.override.json \
+        >>"${log}" 2>&1 &
+      echo $!
+    )"
+    write_pid TAURI_PID "${pid}"
+    echo "[desktop] tauri pid=${pid}"
   fi
 
-  # Wait briefly for window process
   local i
-  for ((i = 1; i <= 30; i++)); do
+  for ((i = 1; i <= 45; i++)); do
     if process_running "enpu-desktop"; then
-      echo "[ok] desktop window is up"
+      echo "[ok] desktop window up"
       return 0
     fi
     sleep 1
   done
-  echo "[warn] desktop not detected yet — check ${LOG_DIR}/tauri.log"
-  echo "       You can still use the browser UI: http://localhost:${VITE_PORT}"
+  echo "[warn] desktop not detected — see ${log}"
 }
 
 start_desktop() {
-  # Always keep Vite for live UI / Tauri devUrl
   start_vite
-
   local mode="${DESKTOP_MODE}"
   if [[ "${mode}" == "auto" ]]; then
     if desktop_exe_path >/dev/null 2>&1; then
@@ -318,70 +382,130 @@ start_desktop() {
       mode="dev"
     fi
   fi
-
   case "${mode}" in
     exe)
-      if start_desktop_exe; then
-        return 0
+      if ! start_desktop_exe; then
+        echo "[desktop] fallback to tauri dev"
+        start_desktop_dev
       fi
-      echo "[desktop] no prebuilt exe — falling back to tauri dev"
-      start_desktop_dev
       ;;
-    dev)
-      start_desktop_dev
-      ;;
-    *)
-      echo "[error] unknown ENPU_DESKTOP_MODE=${mode} (use auto|exe|dev)"
-      exit 1
-      ;;
+    dev) start_desktop_dev ;;
+    *) echo "[error] ENPU_DESKTOP_MODE=${mode}"; exit 1 ;;
   esac
 }
 
+start_desktop_watcher() {
+  if [[ "${AUTO_STOP}" != "1" ]]; then
+    echo "[watch] auto-stop disabled (ENPU_AUTO_STOP=0)"
+    return 0
+  fi
+
+  local i found=0
+  for ((i = 1; i <= 60; i++)); do
+    if process_running "enpu-desktop"; then
+      found=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "${found}" -ne 1 ]]; then
+    echo "[watch] desktop never appeared — watcher not armed"
+    return 0
+  fi
+
+  echo "[watch] armed: close desktop → stop core + UI"
+  local wlog="${LOG_DIR}/watcher.log"
+  : >"${wlog}" || true
+
+  if is_windows; then
+    local w_root w_log w_ps1
+    w_root="$(to_win_path "${ROOT}")"
+    w_log="$(to_win_path "${wlog}")"
+    w_ps1="$(to_win_path "${ROOT}/scripts/desktop-watcher.ps1")"
+    local ps pid
+    ps=$(
+      cat <<EOF
+\$p = Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+  '-NoProfile','-WindowStyle','Hidden','-ExecutionPolicy','Bypass',
+  '-File','$(ps_quote "${w_ps1}")',
+  '-RepoRoot','$(ps_quote "${w_root}")',
+  '-LogPath','$(ps_quote "${w_log}")',
+  '-CorePort','${CORE_PORT}',
+  '-VitePort','${VITE_PORT}'
+) -WindowStyle Hidden -PassThru
+Write-Output \$p.Id
+EOF
+    )
+    pid="$(powershell.exe -NoProfile -WindowStyle Hidden -Command "${ps}" | tr -d '\r' | tail -n 1)"
+    if [[ -n "${pid}" && "${pid}" =~ ^[0-9]+$ ]]; then
+      write_pid WATCHER_PID "${pid}"
+      echo "[watch] pid=${pid}  log=${wlog}"
+    else
+      echo "[warn] failed to start watcher"
+    fi
+  else
+    (
+      for _ in $(seq 1 120); do
+        pgrep -f 'enpu-desktop' >/dev/null 2>&1 && break
+        sleep 1
+      done
+      if ! pgrep -f 'enpu-desktop' >/dev/null 2>&1; then
+        echo "[watch] no desktop" >>"${wlog}"
+        exit 0
+      fi
+      echo "[watch] waiting for exit" >>"${wlog}"
+      while pgrep -f 'enpu-desktop' >/dev/null 2>&1; do sleep 2; done
+      echo "[watch] desktop closed" >>"${wlog}"
+      "${ROOT}/scripts/stop.sh" --from-watcher >>"${wlog}" 2>&1 || true
+    ) >/dev/null 2>&1 &
+    write_pid WATCHER_PID $!
+    echo "[watch] pid=$!"
+  fi
+}
+
 # --- main ---
-# normalize aliases
 case "${UI_MODE}" in
-  desktop|app|window) UI_MODE="both" ;;
-  tauri) UI_MODE="both" ;; # tauri implies vite + window for stable devUrl
+  desktop|app|window|tauri) UI_MODE="both" ;;
 esac
 
 echo "========================================"
 echo " EnPu start"
-echo " root:    ${ROOT}"
-echo " ui:      ${UI_MODE}"
-echo " desktop: ${DESKTOP_MODE}"
+echo " root:      ${ROOT}"
+echo " ui:        ${UI_MODE}"
+echo " desktop:   ${DESKTOP_MODE}"
+echo " auto-stop: ${AUTO_STOP}"
 echo "========================================"
 
 : >"${PID_FILE}"
 start_core
 
 case "${UI_MODE}" in
-  vite)
-    start_vite
-    ;;
+  vite) start_vite ;;
   both)
     start_desktop
+    start_desktop_watcher
     ;;
-  none)
-    echo "[ui] skipped (ENPU_UI=none)"
-    ;;
+  none) echo "[ui] skipped" ;;
   *)
-    echo "[error] unknown ENPU_UI=${UI_MODE} (use both|vite|none)"
-    echo "        tip: both = core + Vite + desktop window (default)"
+    echo "[error] ENPU_UI=${UI_MODE} (both|vite|none)"
     exit 1
     ;;
 esac
 
 echo ""
 echo "Started."
+echo "  • Background services: no console windows"
 echo "  Core:     http://${CORE_HOST}:${CORE_PORT}/health"
 echo "  Docs:     http://${CORE_HOST}:${CORE_PORT}/docs"
 if [[ "${UI_MODE}" == "vite" || "${UI_MODE}" == "both" ]]; then
   echo "  Web UI:   http://localhost:${VITE_PORT}"
 fi
 if [[ "${UI_MODE}" == "both" ]]; then
-  echo "  Desktop:  EnPu window (enpu-desktop)"
+  echo "  Desktop:  EnPu window"
+  if [[ "${AUTO_STOP}" == "1" ]]; then
+    echo "  Auto-stop: close desktop → core + UI stop"
+  fi
 fi
-echo "  PIDs:     ${PID_FILE}"
 echo "  Logs:     ${LOG_DIR}/"
-echo "Stop with:  ./scripts/stop.sh"
+echo "Manual stop: ./scripts/stop.sh"
 echo "========================================"
