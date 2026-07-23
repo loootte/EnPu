@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+from app.schemas.score import Score
 
 
 class BoundingBox(BaseModel):
@@ -38,6 +40,8 @@ class RecognizeMeta(BaseModel):
     preprocess_steps: list[str] = Field(default_factory=list)
     scale: float = 1.0
     item_count: int = 0
+    parse_mode: Literal["score", "hints", "ocr_only"] | None = None
+    parse_warnings: list[str] = Field(default_factory=list)
 
 
 class RecognizeResponse(BaseModel):
@@ -48,6 +52,10 @@ class RecognizeResponse(BaseModel):
     texts: list[str] = Field(default_factory=list)
     boxes: list[BoundingBox] = Field(default_factory=list)
     notes: list[NoteHint] = Field(default_factory=list)
+    score: Score | None = Field(
+        default=None,
+        description="Structured EnPu Score v0.1 when parse succeeds (#10).",
+    )
     meta: RecognizeMeta = Field(default_factory=RecognizeMeta)
 
 

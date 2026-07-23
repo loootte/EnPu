@@ -92,7 +92,7 @@ pytest
 2. **resize** — 长边超过 `ENPU_OCR_MAX_SIDE` 时缩小  
 3. **grayscale + denoise** — 灰度 + 可选 bilateral  
 4. **PaddleOCR** — 整图检测识别 → `texts` + `boxes`  
-5. **parse** — 从文本中提取数字 `1–7` 为 `notes[].pitch`（极简，非完整时值解析）
+5. **parse** — OCR → `Score` v0.1（音高/时值/小节；失败回退 hints / ocr_only）
 
 > 识别精度不是 Phase 0 目标；先打通链路。
 
@@ -112,8 +112,10 @@ pytest
 |------|-------|------|
 | FastAPI 骨架 + mock recognize | #2 | 已实现 |
 | OpenCV + PaddleOCR 最小流水线 | #3 | 已实现 |
-| PyInstaller sidecar / 一键启停试验 | #8 | **已记录** |
-| JSON Schema / 完整解析 / music21 | #9–#11 | 后续 |
+| PyInstaller sidecar / 一键启停试验 | #8 | 已记录 |
+| Score Schema v0.1 | #9 | 已实现 |
+| OCR → Score 解析 MVP | #10 | **已实现** |
+| music21 导出 MusicXML/MIDI | #11 | 后续 |
 
 ## Paddle 安装说明
 

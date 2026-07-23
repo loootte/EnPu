@@ -6,7 +6,7 @@
 
 **仓库**：https://github.com/loootte/EnPu  
 **最后更新**：2026-07-23  
-**当前阶段**：Phase 0 — 桌面端 PoC
+**当前阶段**：Phase 1 — 识别核心 MVP（Schema v0.1 + OCR→Score 解析进行中）
 
 ---
 
@@ -60,13 +60,13 @@
 
 ## 3. 阶段总览
 
-| 阶段 | 名称 | 目标时长（估算） | 优先级 |
-|------|------|------------------|--------|
-| **Phase 0** | **桌面端 PoC** | **2–3 周** | **P0（最高）** |
-| Phase 1 | 识别核心 MVP | 4–6 周 | P0 |
-| Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 |
-| Phase 3 | 云端双模式与部署 | 2–3 周 | P1 |
-| Phase 4 | 精度、体验与发布 | 4–6 周 | P2 |
+| 阶段 | 名称 | 目标时长（估算） | 优先级 | 状态 |
+|------|------|------------------|--------|------|
+| **Phase 0** | **桌面端 PoC** | **2–3 周** | **P0** | **✅ 完成（M1）** |
+| Phase 1 | 识别核心 MVP | 4–6 周 | P0 | 🔄 进行中 |
+| Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | 待开始 |
+| Phase 3 | 云端双模式与部署 | 2–3 周 | P1 | 待开始 |
+| Phase 4 | 精度、体验与发布 | 4–6 周 | P2 | 待开始 |
 
 > 时间估算按 **1 名全栈 + 兼职算法** 节奏；可按人力压缩或拉长。
 
@@ -129,23 +129,23 @@
 
 ### 1.2 主要任务
 
-| ID | 任务 | 优先级 |
-|----|------|--------|
-| P1-1 | 简谱版式调研与标注规范（数字、时值、小节线、调号、拍号、歌词） | P0 |
-| P1-2 | 图像流水线增强：倾斜矫正、去噪、谱表区域检测 | P0 |
-| P1-3 | 符号/数字序列解析：将 OCR 结果映射为音高+时值事件 | P0 |
-| P1-4 | 歌词行与音符行对齐策略 | P1 |
-| P1-5 | EnPu 内部 JSON Schema 定稿（v0.1） | P0 |
-| P1-6 | music21 导出 MusicXML / MIDI（MVP 子集） | P1 |
-| P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 |
-| P1-8 | 核心 API 版本化、错误码、任务超时与日志 | P1 |
+| ID | 任务 | 优先级 | 状态 |
+|----|------|--------|------|
+| P1-1 | 简谱版式调研与标注规范（数字、时值、小节线、调号、拍号、歌词） | P0 | ✅ 见 `docs/jianpu-schema.md` |
+| P1-2 | 图像流水线增强：倾斜矫正、去噪、谱表区域检测 | P0 | 部分（PoC 预处理）；增强待做 |
+| P1-3 | 符号/数字序列解析：OCR → 音高+时值 → `Score` | P0 | ✅ **#10 MVP** |
+| P1-4 | 歌词行与音符行对齐策略 | P1 | 🔄 MVP 简单 zip；精细对齐待做 |
+| P1-5 | EnPu 内部 JSON Schema 定稿（v0.1） | P0 | ✅ **#9** |
+| P1-6 | music21 导出 MusicXML / MIDI（MVP 子集） | P1 | 待做 **#11** |
+| P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 | 待做（现有 3 张合成样例） |
+| P1-8 | 核心 API 版本化、错误码、任务超时与日志 | P1 | 部分（v1 API）；增强待做 |
 
 ### 1.3 验收标准
 
-1. 内部 JSON 能描述：调号、拍号、至少一条旋律的音高序列与基础时值  
-2. 在评测集「清晰印刷」子集上，音高序列 top-line 正确率达到团队约定基线（建议先定 ≥60%，再迭代）  
-3. 可导出可被 MuseScore 打开的 MusicXML（允许缺失装饰音/复杂反复）  
-4. API 文档完整，输入输出有 Schema  
+1. 内部 JSON 能描述：调号、拍号、至少一条旋律的音高序列与基础时值 → **✅ Score v0.1 + parse MVP**  
+2. 在评测集「清晰印刷」子集上，音高序列 top-line 正确率达到团队约定基线（建议先定 ≥60%，再迭代） → **待评测集**  
+3. 可导出可被 MuseScore 打开的 MusicXML（允许缺失装饰音/复杂反复） → **#11**  
+4. API 文档完整，输入输出有 Schema → **进行中**（`docs/api.md` + OpenAPI）  
 
 ---
 
@@ -350,22 +350,22 @@ Step 7  （时间允许）Windows 安装包或 sidecar
 
 Issues 列表：https://github.com/loootte/EnPu/issues
 
-| # | 标题 | 阶段 | 依赖 |
-|---|------|------|------|
-| [#1](https://github.com/loootte/EnPu/issues/1) | [docs] 初始化 monorepo 目录与开发 README | P0 | — |
-| [#2](https://github.com/loootte/EnPu/issues/2) | [core] FastAPI 项目骨架与 /health、/v1/recognize | P0 | #1 |
-| [#3](https://github.com/loootte/EnPu/issues/3) | [core] OpenCV 预处理 + PaddleOCR 最小流水线 | P0 | #2 |
-| [#4](https://github.com/loootte/EnPu/issues/4) | [ui] Tauri 2 + React + TS + Tailwind 桌面壳 | P0 | #1 |
-| [#5](https://github.com/loootte/EnPu/issues/5) | [ui] 图片导入、预览与识别结果展示 | P0 | #4 |
-| [#6](https://github.com/loootte/EnPu/issues/6) | [poc] 桌面端与本地核心联调闭环 | P0 | #3 + #5 |
-| [#7](https://github.com/loootte/EnPu/issues/7) | [poc] 样例素材与 PoC 验收清单 | P0 | #6（素材可并行） |
-| [#8](https://github.com/loootte/EnPu/issues/8) | [poc]（可选）PyInstaller sidecar / 一键启动 | P0 | #3（非阻塞） |
-| [#9](https://github.com/loootte/EnPu/issues/9) | [core] 简谱 JSON Schema v0.1 与标注规范 | P1 | Phase 0 |
-| [#10](https://github.com/loootte/EnPu/issues/10) | [core] 音高/时值解析 MVP | P1 | #9 |
-| [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 |
-| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 |
-| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 |
-| [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 |
+| # | 标题 | 阶段 | 依赖 | 状态 |
+|---|------|------|------|------|
+| [#1](https://github.com/loootte/EnPu/issues/1) | [docs] 初始化 monorepo 目录与开发 README | P0 | — | ✅ |
+| [#2](https://github.com/loootte/EnPu/issues/2) | [core] FastAPI 项目骨架与 /health、/v1/recognize | P0 | #1 | ✅ |
+| [#3](https://github.com/loootte/EnPu/issues/3) | [core] OpenCV 预处理 + PaddleOCR 最小流水线 | P0 | #2 | ✅ |
+| [#4](https://github.com/loootte/EnPu/issues/4) | [ui] Tauri 2 + React + TS + Tailwind 桌面壳 | P0 | #1 | ✅ |
+| [#5](https://github.com/loootte/EnPu/issues/5) | [ui] 图片导入、预览与识别结果展示 | P0 | #4 | ✅ |
+| [#6](https://github.com/loootte/EnPu/issues/6) | [poc] 桌面端与本地核心联调闭环 | P0 | #3 + #5 | ✅ |
+| [#7](https://github.com/loootte/EnPu/issues/7) | [poc] 样例素材与 PoC 验收清单 | P0 | #6 | ✅ |
+| [#8](https://github.com/loootte/EnPu/issues/8) | [poc]（可选）PyInstaller sidecar / 一键启动 | P0 | #3 | ✅ |
+| [#9](https://github.com/loootte/EnPu/issues/9) | [core] 简谱 JSON Schema v0.1 与标注规范 | P1 | Phase 0 | ✅ |
+| [#10](https://github.com/loootte/EnPu/issues/10) | [core] 音高/时值解析 MVP | P1 | #9 | ✅ |
+| [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 | ⬜ 下一步 |
+| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ⬜ |
+| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ |
+| [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ⬜ |
 
 ---
 
@@ -376,7 +376,21 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-23 | 技术栈定为 Tauri2/React/TS/Tailwind + Python/FastAPI/OpenCV/PaddleOCR/music21 |
 | 2026-07-23 | 架构：核心独立服务；本地 sidecar + 可选云端；UI 可切换 |
 | 2026-07-23 | Milestone 1 = Windows 桌面 PoC，精度非目标 |
+| 2026-07-23 | Phase 0 / M1 完成（#1–#8） |
+| 2026-07-23 | Score Schema v0.1 定稿（#9）；OCR→Score 解析 MVP（#10）；下一步 #11 导出 |
+
+### Phase 0 完成摘要
+
+- 桌面 Tauri + 本地 FastAPI 双进程可识别样例图并展示 OCR/JSON  
+- 一键启停脚本、合成样例（CC0）、验收清单  
+- Sidecar / Paddle 打包试验结论见 `docs/poc-sidecar.md`  
+
+### Phase 1 进展摘要
+
+- ✅ 内部 `Score` v0.1（Pydantic + JSON Schema + 标注规范）  
+- ✅ `/v1/recognize` 返回 `score` + `parse_mode`（失败回退 hints / ocr_only）  
+- ⬜ MusicXML/MIDI 导出、评测集与准确率基线  
 
 ---
 
-*本文档随迭代更新；完成 Phase 0 后应修订时间表与准确率基线。*
+*本文档随迭代更新；Phase 1 完成后应固化准确率基线与导出覆盖范围。*

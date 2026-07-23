@@ -162,6 +162,7 @@ cd EnPu
 - [x] 本地联调闭环（#6，`start.ps1` / `smoke-poc.ps1` / `docs/poc-acceptance.md`）  
 - [x] 样例素材与验收清单（#7，`samples/` · `docs/poc-acceptance.md`）  
 - [x] 简谱 JSON Schema v0.1（#9，`docs/jianpu-schema.md`）  
+- [x] OCR → Score 解析 MVP（#10）  
 
 ---
 

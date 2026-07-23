@@ -124,10 +124,10 @@
 |------|------|------|
 | OCR 原始 | `RecognizeResponse.texts` / `boxes` | #2–#3 |
 | 轻量提示 | `NoteHint`（度数抽取） | #3 |
-| **结构化乐谱** | **`Score` v0.1** | **#9（本文）→ #10 解析填充** |
+| **结构化乐谱** | **`Score` v0.1** | **#9（本文）+ #10 解析 MVP** |
 | 导出 | MusicXML / MIDI | #11 |
 
-识别流水线最终应产出（或可转换成）`Score`，编辑器以 `Score` 读写。
+`/v1/recognize` 在解析成功时填充 `score`，`meta.parse_mode` 为 `score`；失败时 `score=null` 且 `parse_mode` 为 `hints` 或 `ocr_only`（不中断请求）。
 
 ---
 

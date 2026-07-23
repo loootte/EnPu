@@ -49,6 +49,11 @@ def test_recognize_mock_png() -> None:
     assert "decode" in body["meta"]["preprocess_steps"]
     assert body["notes"]  # digits extracted from mock texts
     assert {n["pitch"] for n in body["notes"] if n.get("pitch")} >= {"1", "2", "3"}
+    # #10 parse MVP: score or graceful fallback mode
+    assert body["meta"].get("parse_mode") in {"score", "hints", "ocr_only"}
+    if body["meta"]["parse_mode"] == "score":
+        assert body.get("score") is not None
+        assert body["score"]["schema_version"] == "0.1"
 
 
 def test_recognize_jpeg_by_extension() -> None:

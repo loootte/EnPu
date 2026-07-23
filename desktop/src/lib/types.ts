@@ -14,6 +14,36 @@ export interface NoteHint {
   extra?: Record<string, unknown>;
 }
 
+/** EnPu Score v0.1 (subset used by UI). */
+export interface ScoreNote {
+  pitch?: string | null;
+  duration?: string;
+  dots?: number;
+  is_rest?: boolean;
+  lyric?: string | null;
+  octave?: number;
+}
+
+export interface ScoreMeasure {
+  number: number;
+  notes: ScoreNote[];
+}
+
+export interface ScorePart {
+  id?: string;
+  name?: string;
+  measures: ScoreMeasure[];
+}
+
+export interface Score {
+  schema_version: string;
+  title?: string;
+  key?: string;
+  time_signature?: string;
+  tempo_bpm?: number | null;
+  parts: ScorePart[];
+}
+
 export interface RecognizeMeta {
   width: number;
   height: number;
@@ -24,6 +54,8 @@ export interface RecognizeMeta {
   preprocess_steps?: string[];
   scale?: number;
   item_count?: number;
+  parse_mode?: "score" | "hints" | "ocr_only" | null;
+  parse_warnings?: string[];
 }
 
 export interface RecognizeResponse {
@@ -32,6 +64,7 @@ export interface RecognizeResponse {
   texts: string[];
   boxes: BoundingBox[];
   notes: NoteHint[];
+  score?: Score | null;
   meta: RecognizeMeta;
 }
 
