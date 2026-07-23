@@ -36,13 +36,20 @@
 {
   "ok": true,
   "engine": "paddleocr",
-  "texts": ["1", "2", "3", "Key", "C"],
+  "texts": ["1  2  3  |  5  -  -", "主 恩 典"],
   "boxes": [
     { "x1": 10.0, "y1": 20.0, "x2": 40.0, "y2": 50.0, "score": 0.98 }
   ],
   "notes": [
-    { "pitch": "1", "text": "1", "extra": { "source": "ocr_digit", "score": 0.98 } }
+    { "pitch": "1", "text": "1  2  3  |  5  -  -", "extra": { "source": "ocr_digit" } }
   ],
+  "score": {
+    "schema_version": "0.1",
+    "title": "",
+    "key": "C",
+    "time_signature": "4/4",
+    "parts": [{ "id": "P1", "name": "melody", "measures": [] }]
+  },
   "meta": {
     "width": 640,
     "height": 280,
@@ -52,7 +59,9 @@
     "mock": false,
     "preprocess_steps": ["decode", "grayscale", "bilateral_denoise", "to_bgr"],
     "scale": 1.0,
-    "item_count": 5
+    "item_count": 5,
+    "parse_mode": "score",
+    "parse_warnings": []
   }
 }
 ```
@@ -62,7 +71,10 @@
 | `engine` | `paddleocr` 或 `mock` |
 | `texts` | OCR 字符串列表 |
 | `boxes` | 检测框（轴对齐） |
-| `notes` | 从文本提取的 `1–7` 音高提示（非完整解析） |
+| `notes` | 轻量音高提示（`1`–`7`） |
+| `score` | EnPu Score v0.1（#9/#10）；解析失败时为 `null` |
+| `meta.parse_mode` | `score` \| `hints` \| `ocr_only` |
+| `meta.parse_warnings` | 解析告警（不阻塞请求） |
 | `meta.preprocess_steps` | OpenCV 预处理步骤 |
 | `meta.mock` | 是否 mock 引擎 |
 
