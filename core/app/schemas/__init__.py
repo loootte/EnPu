@@ -1,1 +1,17 @@
-"""Pydantic request/response models (issue #2, schema #9)."""
+"""Pydantic request/response models."""
+
+from app.schemas.recognize import (
+    BoundingBox,
+    HealthResponse,
+    NoteHint,
+    RecognizeMeta,
+    RecognizeResponse,
+)
+
+__all__ = [
+    "BoundingBox",
+    "HealthResponse",
+    "NoteHint",
+    "RecognizeMeta",
+    "RecognizeResponse",
+]

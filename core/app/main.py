@@ -1,20 +1,53 @@
-"""
-FastAPI entrypoint for EnPu core.
+"""FastAPI entrypoint for EnPu core."""
 
-Implement in GitHub issue #2:
-  - FastAPI app with CORS
-  - GET /health
-  - POST /v1/recognize (mock, then real pipeline in #3)
+from __future__ import annotations
 
-Target start command (from core/ with venv active):
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-    uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
-"""
+from app import __version__
+from app.api.v1 import api_v1_router
+from app.config import get_settings
+from app.schemas.recognize import HealthResponse
 
-# from fastapi import FastAPI
-#
-# app = FastAPI(title="EnPu Core", version="0.0.0")
-#
-# @app.get("/health")
-# def health() -> dict[str, str]:
-#     return {"status": "ok"}
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+
+    application = FastAPI(
+        title=settings.app_name,
+        version=settings.app_version or __version__,
+        description=(
+            "EnPu recognition core — Chinese worship jianpu OMR service. "
+            "Phase 0: /health + mock /v1/recognize (#2). Real OCR in #3."
+        ),
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
+    )
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @application.get(
+        "/health",
+        response_model=HealthResponse,
+        tags=["health"],
+        summary="Health check",
+    )
+    def health() -> HealthResponse:
+        return HealthResponse(
+            status="ok",
+            version=settings.app_version or __version__,
+        )
+
+    application.include_router(api_v1_router)
+    return application
+
+
+app = create_app()
