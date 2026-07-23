@@ -26,6 +26,14 @@
 
 > 歌词与曲名均为 **示意占位**，不对应任何受版权保护的完整诗歌作品排版。
 
+## 结构化乐谱示例（Schema v0.1）
+
+| 文件 | 说明 |
+|------|------|
+| `scores/example-minimal.json` | 单声部 + 歌词的最小 EnPu Score（Issue #9） |
+
+规范文档：[`docs/jianpu-schema.md`](../docs/jianpu-schema.md)。
+
 ## 默认验收路径
 
 ```powershell

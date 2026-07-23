@@ -18,7 +18,10 @@ class BoundingBox(BaseModel):
 
 
 class NoteHint(BaseModel):
-    """Lightweight note placeholder; full schema in issue #9."""
+    """Lightweight OCR-derived pitch hint (pre-Score).
+
+    Full structured score is ``app.schemas.score.Score`` (v0.1, issue #9).
+    """
 
     pitch: str | None = None
     text: str | None = None
