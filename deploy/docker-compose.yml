@@ -1,0 +1,23 @@
+# EnPu cloud / container compose (Phase 3 / issue #13).
+# Scaffold only — service image and env will be filled when core is runnable.
+
+services:
+  enpu-core:
+    # build: ../core
+    image: enpu-core:scaffold
+    container_name: enpu-core
+    ports:
+      - "8765:8765"
+    environment:
+      - ENPU_CORE_HOST=0.0.0.0
+      - ENPU_CORE_PORT=8765
+    # volumes:
+    #   - ../samples:/samples:ro
+    profiles:
+      - not-ready
+    # Uncomment when Dockerfile is production-ready (issue #13):
+    # restart: unless-stopped
+
+# Usage (after implementation):
+#   docker compose --profile not-ready config   # inspect
+#   docker compose up --build
