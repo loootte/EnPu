@@ -19,7 +19,8 @@ def create_app() -> FastAPI:
         version=settings.app_version or __version__,
         description=(
             "EnPu recognition core — Chinese worship jianpu OMR service. "
-            "Phase 0: /health + mock /v1/recognize (#2). Real OCR in #3."
+            "Phase 0: OpenCV preprocess + PaddleOCR (#3). "
+            "Set ENPU_RECOGNIZE_ENGINE=mock for offline mode."
         ),
         docs_url="/docs",
         redoc_url="/redoc",
@@ -41,9 +42,11 @@ def create_app() -> FastAPI:
         summary="Health check",
     )
     def health() -> HealthResponse:
+        s = get_settings()
         return HealthResponse(
             status="ok",
-            version=settings.app_version or __version__,
+            version=s.app_version or __version__,
+            engine=s.recognize_engine,
         )
 
     application.include_router(api_v1_router)

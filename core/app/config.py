@@ -16,14 +16,21 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "EnPu Core"
-    app_version: str = "0.0.1"
+    app_version: str = "0.0.2"
     host: str = "127.0.0.1"
     port: int = 8765
     # Comma-separated origins; "*" allows all (dev-friendly for Tauri/WebView).
     cors_origins: str = "*"
     max_upload_bytes: int = 20 * 1024 * 1024  # 20 MiB
-    # mock | paddleocr (paddleocr wired in issue #3)
-    recognize_engine: str = "mock"
+    # mock | paddleocr
+    recognize_engine: str = "paddleocr"
+
+    # OCR / preprocess
+    ocr_lang: str = "ch"
+    ocr_use_angle_cls: bool = True
+    ocr_use_gpu: bool = False
+    ocr_max_side: int = 2000
+    ocr_denoise: bool = True
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -36,3 +43,8 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def clear_settings_cache() -> None:
+    """Drop cached settings (tests)."""
+    get_settings.cache_clear()

@@ -157,7 +157,7 @@ npm install
 - [x] 路线图与 Issue 拆分  
 - [x] Monorepo 目录与开发文档脚手架（#1）  
 - [x] FastAPI 骨架 + mock `/v1/recognize`（#2）  
-- [ ] OpenCV + PaddleOCR 识别流水线（#3）  
+- [x] OpenCV + PaddleOCR 识别流水线（#3）  
 - [ ] Tauri 桌面壳与识别 UI（#4、#5）  
 - [ ] 本地联调闭环（#6）  
 

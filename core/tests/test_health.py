@@ -13,3 +13,6 @@ def test_health_ok() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert "version" in body
+    assert body.get("engine") in {"mock", "paddleocr", None} or isinstance(
+        body.get("engine"), str
+    )

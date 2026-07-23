@@ -9,15 +9,17 @@ Python **FastAPI** 服务：图像预处理（OpenCV）→ OCR（PaddleOCR）→
 ```text
 core/
 ├── app/
-│   ├── main.py              # FastAPI 入口
-│   ├── config.py            # 环境变量配置（ENPU_*）
-│   ├── api/v1/recognize.py  # 识别接口
-│   ├── pipeline/            # 预处理 / OCR / 解析 / 导出（#3+）
-│   └── schemas/             # Pydantic 模型
+│   ├── main.py
+│   ├── config.py
+│   ├── api/v1/recognize.py
+│   ├── pipeline/
+│   │   ├── preprocess.py   # OpenCV
+│   │   ├── ocr.py          # PaddleOCR / mock
+│   │   ├── parse.py        # 数字音高初提取
+│   │   └── runner.py       # 端到端编排
+│   └── schemas/
 ├── tests/
 ├── requirements.txt
-├── pytest.ini
-├── Dockerfile
 └── README.md
 ```
 
@@ -28,10 +30,11 @@ cd core
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+# 首次使用 PaddleOCR 会下载模型，请保持网络畅通
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
 ```
 
-或在仓库根目录（自动创建 venv 并安装依赖）：
+或在仓库根目录：
 
 ```powershell
 .\scripts\dev-core.ps1
@@ -39,15 +42,20 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
 
 | URL | 说明 |
 |-----|------|
-| http://127.0.0.1:8765/health | 健康检查 |
-| http://127.0.0.1:8765/docs | OpenAPI Swagger |
-| http://127.0.0.1:8765/v1/recognize | 上传图片识别（当前为 **mock**） |
+| http://127.0.0.1:8765/health | 健康检查（含当前 engine） |
+| http://127.0.0.1:8765/docs | OpenAPI |
+| http://127.0.0.1:8765/v1/recognize | 上传图片识别 |
 
-### 手动试调 recognize
+### 试调样例
 
 ```powershell
-curl -Method POST -Uri http://127.0.0.1:8765/v1/recognize `
-  -Form "file=@..\samples\your.png"
+# 默认引擎 paddleocr（真实 OCR）
+curl.exe -X POST "http://127.0.0.1:8765/v1/recognize" `
+  -F "file=@..\samples\001_poc_digits.png"
+
+# 离线 mock（不加载 Paddle）
+$env:ENPU_RECOGNIZE_ENGINE = "mock"
+uvicorn app.main:app --host 127.0.0.1 --port 8765
 ```
 
 ## 运行测试
@@ -57,28 +65,56 @@ cd core
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 pytest
+# 可选：真实 OCR 集成（慢，需已装 Paddle 与模型）
+# $env:ENPU_TEST_REAL_OCR = "1"
+# $env:ENPU_RECOGNIZE_ENGINE = "paddleocr"
+# pytest -k real_ocr
 ```
 
-## 环境变量（可选）
+单元测试默认 `ENPU_RECOGNIZE_ENGINE=mock`，不依赖 Paddle 模型。
+
+## 环境变量
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `ENPU_HOST` | `127.0.0.1` | 绑定地址（脚本侧使用） |
-| `ENPU_PORT` / `ENPU_CORE_PORT` | `8765` | 端口 |
-| `ENPU_CORS_ORIGINS` | `*` | CORS，逗号分隔 |
-| `ENPU_RECOGNIZE_ENGINE` | `mock` | `mock`（#3 将接 `paddleocr`） |
-| `ENPU_MAX_UPLOAD_BYTES` | `20971520` | 最大上传 20MiB |
+| `ENPU_RECOGNIZE_ENGINE` | `paddleocr` | `paddleocr` 或 `mock` |
+| `ENPU_OCR_LANG` | `ch` | PaddleOCR 语言 |
+| `ENPU_OCR_USE_ANGLE_CLS` | `true` | 方向分类 |
+| `ENPU_OCR_USE_GPU` | `false` | GPU（需对应 paddle 包） |
+| `ENPU_OCR_MAX_SIDE` | `2000` | 预处理最长边缩放 |
+| `ENPU_OCR_DENOISE` | `true` | 双边滤波去噪 |
+| `ENPU_MAX_UPLOAD_BYTES` | `20971520` | 最大上传 |
+| `ENPU_CORS_ORIGINS` | `*` | CORS |
+
+## 流水线说明（#3）
+
+1. **decode** — OpenCV `imdecode`  
+2. **resize** — 长边超过 `ENPU_OCR_MAX_SIDE` 时缩小  
+3. **grayscale + denoise** — 灰度 + 可选 bilateral  
+4. **PaddleOCR** — 整图检测识别 → `texts` + `boxes`  
+5. **parse** — 从文本中提取数字 `1–7` 为 `notes[].pitch`（极简，非完整时值解析）
+
+> 识别精度不是 Phase 0 目标；先打通链路。
 
 ## 实现状态
 
 | 能力 | Issue | 状态 |
 |------|-------|------|
-| FastAPI 骨架 + mock recognize | [#2](https://github.com/loootte/EnPu/issues/2) | **已实现** |
-| OpenCV + PaddleOCR 流水线 | [#3](https://github.com/loootte/EnPu/issues/3) | 待实现 |
-| JSON Schema / 解析 / 导出 | #9–#11 | 后续阶段 |
+| FastAPI 骨架 + mock recognize | #2 | 已实现 |
+| OpenCV + PaddleOCR 最小流水线 | #3 | **本版本** |
+| JSON Schema / 完整解析 / music21 | #9–#11 | 后续 |
 
-## 依赖
+## Paddle 安装说明
 
-见 `requirements.txt`。当前 Phase 0 轻量依赖：FastAPI / Uvicorn / Pillow / Pydantic。
+`paddlepaddle` / `paddleocr` 体积较大，且与 Python 小版本、CPU/GPU 相关。
 
-OpenCV、PaddleOCR、music21 在后续 Issue 引入（体积与安装成本较高）。
+若 `pip install -r requirements.txt` 失败，可先装 API 依赖，再单独装 Paddle：
+
+```powershell
+pip install fastapi "uvicorn[standard]" python-multipart pydantic pydantic-settings Pillow numpy opencv-python-headless
+# 参见 https://www.paddlepaddle.org.cn/install/quick
+pip install paddlepaddle
+pip install "paddleocr>=2.7,<3"
+```
+
+首次调用 `/v1/recognize`（engine=paddleocr）会下载检测/识别模型，请预留磁盘与时间。
