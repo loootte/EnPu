@@ -19,7 +19,8 @@ def create_app() -> FastAPI:
         version=settings.app_version or __version__,
         description=(
             "EnPu recognition core — Chinese worship jianpu OMR service. "
-            "Phase 0: OpenCV preprocess + PaddleOCR (#3). "
+            "OpenCV + PaddleOCR (#3), Score v0.1 parse (#9/#10), "
+            "MusicXML/MIDI export via music21 (#11). "
             "Set ENPU_RECOGNIZE_ENGINE=mock for offline mode."
         ),
         docs_url="/docs",

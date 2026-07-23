@@ -31,9 +31,18 @@
 | 文件 | 说明 |
 |------|------|
 | `scores/example-minimal.json` | 单声部 + 歌词的最小 EnPu Score（Issue #9） |
+| `scores/example-minimal.musicxml` | 由上表 JSON 经 music21 导出（Issue #11，可 MuseScore 打开） |
+| `scores/example-minimal.mid` | 同上导出的 MIDI |
+
+```powershell
+# 从 JSON 再导出（需已 pip install music21）
+curl.exe -X POST "http://127.0.0.1:8765/v1/export?format=musicxml&download=true" `
+  -H "Content-Type: application/json" `
+  --data-binary "@samples/scores/example-minimal.json" `
+  -o out.musicxml
+```
 
 规范文档：[`docs/jianpu-schema.md`](../docs/jianpu-schema.md)。
-
 ## 默认验收路径
 
 ```powershell

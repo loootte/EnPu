@@ -6,7 +6,7 @@
 
 **仓库**：https://github.com/loootte/EnPu  
 **最后更新**：2026-07-23  
-**当前阶段**：Phase 1 — 识别核心 MVP（Schema v0.1 + OCR→Score 解析进行中）
+**当前阶段**：Phase 1 — 识别核心 MVP（Schema + 解析 + 导出 MVP 已通；评测集待做）
 
 ---
 
@@ -133,10 +133,10 @@
 |----|------|--------|------|
 | P1-1 | 简谱版式调研与标注规范（数字、时值、小节线、调号、拍号、歌词） | P0 | ✅ 见 `docs/jianpu-schema.md` |
 | P1-2 | 图像流水线增强：倾斜矫正、去噪、谱表区域检测 | P0 | 部分（PoC 预处理）；增强待做 |
-| P1-3 | 符号/数字序列解析：OCR → 音高+时值 → `Score` | P0 | ✅ **#10 MVP** |
+| P1-3 | 符号/数字序列解析：OCR → 音高+时值 → `Score` | P0 | ✅ **#10 MVP**（含小节线 CV 恢复） |
 | P1-4 | 歌词行与音符行对齐策略 | P1 | 🔄 MVP 简单 zip；精细对齐待做 |
 | P1-5 | EnPu 内部 JSON Schema 定稿（v0.1） | P0 | ✅ **#9** |
-| P1-6 | music21 导出 MusicXML / MIDI（MVP 子集） | P1 | 待做 **#11** |
+| P1-6 | music21 导出 MusicXML / MIDI（MVP 子集） | P1 | ✅ **#11 MVP** |
 | P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 | 待做（现有 3 张合成样例） |
 | P1-8 | 核心 API 版本化、错误码、任务超时与日志 | P1 | 部分（v1 API）；增强待做 |
 
@@ -144,7 +144,7 @@
 
 1. 内部 JSON 能描述：调号、拍号、至少一条旋律的音高序列与基础时值 → **✅ Score v0.1 + parse MVP**  
 2. 在评测集「清晰印刷」子集上，音高序列 top-line 正确率达到团队约定基线（建议先定 ≥60%，再迭代） → **待评测集**  
-3. 可导出可被 MuseScore 打开的 MusicXML（允许缺失装饰音/复杂反复） → **#11**  
+3. 可导出可被 MuseScore 打开的 MusicXML（允许缺失装饰音/复杂反复） → **✅ #11**（`POST /v1/export`）  
 4. API 文档完整，输入输出有 Schema → **进行中**（`docs/api.md` + OpenAPI）  
 
 ---
@@ -362,8 +362,8 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#8](https://github.com/loootte/EnPu/issues/8) | [poc]（可选）PyInstaller sidecar / 一键启动 | P0 | #3 | ✅ |
 | [#9](https://github.com/loootte/EnPu/issues/9) | [core] 简谱 JSON Schema v0.1 与标注规范 | P1 | Phase 0 | ✅ |
 | [#10](https://github.com/loootte/EnPu/issues/10) | [core] 音高/时值解析 MVP | P1 | #9 | ✅ |
-| [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 | ⬜ 下一步 |
-| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ⬜ |
+| [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 | ✅ |
+| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ⬜ 下一步 |
 | [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ |
 | [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ⬜ |
 
@@ -378,6 +378,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-23 | Milestone 1 = Windows 桌面 PoC，精度非目标 |
 | 2026-07-23 | Phase 0 / M1 完成（#1–#8） |
 | 2026-07-23 | Score Schema v0.1 定稿（#9）；OCR→Score 解析 MVP（#10）；下一步 #11 导出 |
+| 2026-07-23 | music21 导出 MusicXML/MIDI MVP（#11，`POST /v1/export`）；下一步 #12 UI 或评测集 |
 
 ### Phase 0 完成摘要
 
@@ -389,7 +390,9 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 
 - ✅ 内部 `Score` v0.1（Pydantic + JSON Schema + 标注规范）  
 - ✅ `/v1/recognize` 返回 `score` + `parse_mode`（失败回退 hints / ocr_only）  
-- ⬜ MusicXML/MIDI 导出、评测集与准确率基线  
+- ✅ 小节线 CV 恢复（OCR 丢 `|` 时注入）  
+- ✅ MusicXML / MIDI 导出（music21 适配层 + `/v1/export`）  
+- ⬜ 评测集与准确率基线；歌词精细对齐  
 
 ---
 

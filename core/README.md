@@ -15,7 +15,9 @@ core/
 │   ├── pipeline/
 │   │   ├── preprocess.py   # OpenCV
 │   │   ├── ocr.py          # PaddleOCR / mock
-│   │   ├── parse.py        # 数字音高初提取
+│   │   ├── parse.py        # OCR → Score
+│   │   ├── barlines.py     # 小节线 CV 恢复
+│   │   ├── export.py       # music21 → MusicXML / MIDI
 │   │   └── runner.py       # 端到端编排
 │   └── schemas/
 ├── tests/
@@ -45,6 +47,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
 | http://127.0.0.1:8765/health | 健康检查（含当前 engine） |
 | http://127.0.0.1:8765/docs | OpenAPI |
 | http://127.0.0.1:8765/v1/recognize | 上传图片识别 |
+| http://127.0.0.1:8765/v1/export | Score → MusicXML / MIDI |
 
 ### 试调样例
 
@@ -92,7 +95,8 @@ pytest
 2. **resize** — 长边超过 `ENPU_OCR_MAX_SIDE` 时缩小  
 3. **grayscale + denoise** — 灰度 + 可选 bilateral  
 4. **PaddleOCR** — 整图检测识别 → `texts` + `boxes`  
-5. **parse** — OCR → `Score` v0.1（音高/时值/小节；失败回退 hints / ocr_only）
+5. **parse** — OCR → `Score` v0.1（音高/时值/小节；失败回退 hints / ocr_only）  
+6. **export** — `POST /v1/export` 将 Score 转为 MusicXML / MIDI（music21，#11）
 
 > 识别精度不是 Phase 0 目标；先打通链路。
 
@@ -115,7 +119,7 @@ pytest
 | PyInstaller sidecar / 一键启停试验 | #8 | 已记录 |
 | Score Schema v0.1 | #9 | 已实现 |
 | OCR → Score 解析 MVP | #10 | **已实现** |
-| music21 导出 MusicXML/MIDI | #11 | 后续 |
+| music21 导出 MusicXML/MIDI | #11 | **已实现** |
 
 ## Paddle 安装说明
 

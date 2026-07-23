@@ -1,5 +1,6 @@
 """Pydantic request/response models."""
 
+from app.schemas.export import ExportResponse
 from app.schemas.recognize import (
     BoundingBox,
     HealthResponse,
@@ -26,6 +27,7 @@ __all__ = [
     "NoteHint",
     "RecognizeMeta",
     "RecognizeResponse",
+    "ExportResponse",
     "SCHEMA_VERSION",
     "Accidental",
     "DurationName",
