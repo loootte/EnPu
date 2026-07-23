@@ -90,7 +90,14 @@ npm run tauri -- build --bundles nsis
 产物：`desktop/src-tauri/target/release/bundle/nsis/*-setup.exe`  
 
 说明：[docs/release-windows.md](../docs/release-windows.md)  
-CI：`.github/workflows/release-windows.yml`（`workflow_dispatch` 或 tag `v*`）
+
+**CD（GitHub Actions）**：`.github/workflows/cd-windows.yml`  
+
+```text
+Actions → CD Windows → Run workflow
+# 或
+git tag v0.1.0 && git push origin v0.1.0
+```
 
 ---
 

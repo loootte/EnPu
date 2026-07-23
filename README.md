@@ -73,7 +73,9 @@ Push / PR 到 `main` 时 GitHub Actions 会：
 ```
 
 - 文档：[docs/release-windows.md](./docs/release-windows.md)  
-- CI：`.github/workflows/release-windows.yml`（手动或 tag `v*`）  
+- **CD**：GitHub Actions → **CD Windows**（`.github/workflows/cd-windows.yml`）  
+  - 手动 Run workflow，或 `git push origin v0.1.0`  
+  - 产物：NSIS setup + sidecar + SHA256，Artifacts 可下载；tag 推送会挂 Release  
 
 ---
 

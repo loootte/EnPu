@@ -100,25 +100,38 @@ desktop/src-tauri/target/release/EnPu.exe          # 便携主程序（同目录
 
 ---
 
-## 4. CI / 发布流水线
+## 4. CI / CD 流水线
 
 | Workflow | 触发 | 作用 |
 |----------|------|------|
 | `.github/workflows/ci.yml` | push/PR → main | Linux：core pytest + desktop vite build |
-| `.github/workflows/release-windows.yml` | `workflow_dispatch` 或 tag `v*` | Windows：sidecar + Tauri NSIS，上传 artifact |
+| **`.github/workflows/cd-windows.yml`** | **手动** 或 **tag `v*`** | **CD：Windows NSIS 安装包 + sidecar artifact**（可选 GitHub Release） |
 
-手动触发：
+### 手动 CD（推荐）
 
 ```text
-GitHub → Actions → Release Windows → Run workflow
+GitHub → Actions → CD Windows → Run workflow
 ```
 
-Tag 发布：
+| 输入 | 说明 |
+|------|------|
+| `create_release` | 勾选则额外创建/更新 GitHub Release（无 tag 时为 draft） |
+| `release_tag` | 可选；`create_release` 且无 git tag 时使用，如 `v0.1.0-rc1` |
+
+构建产物在 run 的 **Artifacts** 中下载（`EnPu-windows-<version>-<sha>`）：
+
+- `EnPu_*_x64-setup.exe` — NSIS 安装包  
+- `enpu-core.exe` — mock sidecar  
+- `SHA256SUMS.txt`  
+
+### Tag 发布（正式版）
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+会自动跑 **CD Windows**，并把安装包挂到该 tag 的 GitHub Release。
 
 ---
 
