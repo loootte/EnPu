@@ -12,7 +12,7 @@
 | 图片导入 / 拖拽 / 预览 | ✅ #5 |
 | 调用 `/v1/recognize` 并展示 OCR / notes / JSON | ✅ #5 |
 | 核心在线状态指示 | ✅ #5 |
-| 一键双进程联调脚本打磨 | #6 |
+| 一键联调 / 冒烟 / 验收文档 | ✅ #6 |
 
 ## 环境要求（Windows）
 
@@ -27,44 +27,40 @@ https://v2.tauri.app/start/prerequisites/
 
 ## 开发启动
 
-**终端 A — 识别核心**
+### 一键（仓库根目录，推荐）
 
 ```powershell
-# 仓库根目录
+.\scripts\start.ps1 -Engine mock
+.\scripts\smoke-poc.ps1
+# UI：桌面窗 或 http://localhost:1420
+.\scripts\stop.ps1
+```
+
+### 分进程
+
+```powershell
+# 终端 A — 识别核心
 .\scripts\dev-core.ps1
-# → http://127.0.0.1:8765
-```
 
-**终端 B — 桌面**
-
-```powershell
-cd desktop
-npm install
-npm run tauri dev
-# 或：.\scripts\dev-desktop.ps1
-```
-
-仅前端（浏览器预览 UI，仍可调本地 core）：
-
-```powershell
-npm run dev
-# http://localhost:1420
+# 终端 B — 桌面
+.\scripts\dev-desktop.ps1
+# 或：cd desktop && npm run dev  → http://localhost:1420
 ```
 
 ### 使用流程
 
 1. 确认 header 显示「核心在线」  
-2. 选择或拖入 `samples/001_poc_digits.png`（或任意 png/jpg）  
+2. 选择或拖入 `samples/001_poc_digits.png`  
 3. 点击 **开始识别**  
 4. 右侧查看 OCR 文本 / 音高提示 / JSON  
 
-若核心未启动，界面会提示连接失败。
+联调验收：[docs/poc-acceptance.md](../docs/poc-acceptance.md)
 
 ### 环境变量
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `VITE_ENPU_CORE_URL` | `http://127.0.0.1:8765` | 识别核心 Base URL |
+| `VITE_ENPU_CORE_URL` | `http://127.0.0.1:8765` | 识别核心 Base URL（见 `.env.example`） |
 
 ## 目录
 
