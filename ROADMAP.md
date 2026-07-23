@@ -348,23 +348,24 @@ Step 7  （时间允许）Windows 安装包或 sidecar
 
 ## 8. Issue 拆分索引（与 GitHub Issues 对应）
 
-创建 Issue 时优先 **Phase 0**，再按依赖展开后续阶段的骨架 Issue。
+Issues 列表：https://github.com/loootte/EnPu/issues
 
-| Issue 主题（建议标题） | 阶段 | 依赖 |
-|------------------------|------|------|
-| [docs] 初始化 monorepo 目录与开发 README | P0 | — |
-| [core] FastAPI 项目骨架与 /health、/v1/recognize | P0 | docs 脚手架 |
-| [core] OpenCV 预处理 + PaddleOCR 最小流水线 | P0 | FastAPI 骨架 |
-| [ui] Tauri 2 + React + TS + Tailwind 桌面壳 | P0 | docs 脚手架 |
-| [ui] 图片导入、预览与识别结果展示 | P0 | 桌面壳 |
-| [poc] 桌面端与本地核心联调闭环 | P0 | core 流水线 + UI |
-| [poc] 样例素材与 PoC 验收清单 | P0 | 联调 |
-| [core] 简谱 JSON Schema v0.1 与标注规范 | P1 | PoC |
-| [core] 音高/时值解析 MVP | P1 | Schema |
-| [core] music21 导出 MusicXML/MIDI | P1 | 解析 MVP |
-| [ui] 识别结果编辑与导出 | P2 | Schema + 识别 |
-| [cloud] Docker 化核心与桌面端本地/云端切换 | P3 | FastAPI 稳定 |
-| [enhancement] Windows 安装包与 sidecar 打包 | P4 | PoC/MVP |
+| # | 标题 | 阶段 | 依赖 |
+|---|------|------|------|
+| [#1](https://github.com/loootte/EnPu/issues/1) | [docs] 初始化 monorepo 目录与开发 README | P0 | — |
+| [#2](https://github.com/loootte/EnPu/issues/2) | [core] FastAPI 项目骨架与 /health、/v1/recognize | P0 | #1 |
+| [#3](https://github.com/loootte/EnPu/issues/3) | [core] OpenCV 预处理 + PaddleOCR 最小流水线 | P0 | #2 |
+| [#4](https://github.com/loootte/EnPu/issues/4) | [ui] Tauri 2 + React + TS + Tailwind 桌面壳 | P0 | #1 |
+| [#5](https://github.com/loootte/EnPu/issues/5) | [ui] 图片导入、预览与识别结果展示 | P0 | #4 |
+| [#6](https://github.com/loootte/EnPu/issues/6) | [poc] 桌面端与本地核心联调闭环 | P0 | #3 + #5 |
+| [#7](https://github.com/loootte/EnPu/issues/7) | [poc] 样例素材与 PoC 验收清单 | P0 | #6（素材可并行） |
+| [#8](https://github.com/loootte/EnPu/issues/8) | [poc]（可选）PyInstaller sidecar / 一键启动 | P0 | #3（非阻塞） |
+| [#9](https://github.com/loootte/EnPu/issues/9) | [core] 简谱 JSON Schema v0.1 与标注规范 | P1 | Phase 0 |
+| [#10](https://github.com/loootte/EnPu/issues/10) | [core] 音高/时值解析 MVP | P1 | #9 |
+| [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 |
+| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 |
+| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 |
+| [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 |
 
 ---
 
