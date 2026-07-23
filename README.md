@@ -87,17 +87,18 @@ cd EnPu
 
 ```bash
 chmod +x scripts/start.sh scripts/stop.sh
-./scripts/start.sh          # core + Vite UI
+./scripts/start.sh          # core + Vite + 桌面窗口
 ./scripts/stop.sh           # 全部停止
 ```
 
-| 服务 | 地址 |
-|------|------|
+| 服务 | 地址 / 说明 |
+|------|-------------|
 | Core | http://127.0.0.1:8765/health |
-| UI | http://localhost:1420 |
+| Web UI | http://localhost:1420 |
+| Desktop | 原生窗口 **EnPu · 恩谱**（`enpu-desktop`） |
 | API 文档 | http://127.0.0.1:8765/docs |
 
-更多选项见 [scripts/README.md](./scripts/README.md)（如 `ENPU_RECOGNIZE_ENGINE=mock`、`ENPU_UI=tauri`）。
+更多选项见 [scripts/README.md](./scripts/README.md)（如 `ENPU_UI=vite` 仅网页、`ENPU_DESKTOP_MODE=exe` 秒开已编译桌面）。
 
 ### 3. 分进程启动（PowerShell）
 

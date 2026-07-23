@@ -36,7 +36,6 @@ kill_pid() {
     return 0
   fi
   if ! kill -0 "${pid}" 2>/dev/null; then
-    # Windows Git Bash: kill -0 may not work for all; try tasklist
     if is_windows; then
       if ! tasklist //FI "PID eq ${pid}" 2>/dev/null | grep -q "${pid}"; then
         echo "[skip] ${label}=${pid} not running"
@@ -54,13 +53,11 @@ kill_pid() {
     sleep 0.3
     taskkill //PID "${pid}" //T //F >/dev/null 2>&1 || kill -KILL "${pid}" 2>/dev/null || true
   else
-    # process group if started with job control
     kill -TERM "${pid}" 2>/dev/null || true
     sleep 0.4
     if kill -0 "${pid}" 2>/dev/null; then
       kill -KILL "${pid}" 2>/dev/null || true
     fi
-    # children that might reparent
     pkill -P "${pid}" 2>/dev/null || true
   fi
 }
@@ -68,7 +65,6 @@ kill_pid() {
 pids_on_port() {
   local port="$1"
   if is_windows; then
-    # netstat: TCP  127.0.0.1:8765  ... LISTENING  1234
     netstat -ano 2>/dev/null \
       | tr -d '\r' \
       | grep -E "[:.]${port}[[:space:]].*LISTENING" \
@@ -107,40 +103,40 @@ echo "========================================"
 
 if [[ "${PORTS_ONLY}" -eq 0 && -f "${PID_FILE}" ]]; then
   echo "[pids] reading ${PID_FILE}"
-  # shellcheck disable=SC1090
-  set -a
-  # only KEY=value lines
   while IFS= read -r line || [[ -n "${line}" ]]; do
     [[ -z "${line}" || "${line}" =~ ^# ]] && continue
     key="${line%%=*}"
     val="${line#*=}"
     case "${key}" in
-      CORE_PID|VITE_PID|TAURI_PID)
+      CORE_PID|VITE_PID|TAURI_PID|DESKTOP_PID)
         kill_pid "${val}" "${key}"
         ;;
     esac
   done <"${PID_FILE}"
-  set +a
   rm -f "${PID_FILE}"
 else
   if [[ "${PORTS_ONLY}" -eq 1 ]]; then
     echo "[mode] --ports-only"
   else
-    echo "[pids] no pid file (will free ports only)"
+    echo "[pids] no pid file (will free ports + desktop)"
   fi
 fi
 
-# Always free default ports (covers orphans / child processes)
 kill_port "${CORE_PORT}"
 kill_port "${VITE_PORT}"
 
-# Extra: common Tauri process name (best-effort)
+# Desktop / tauri helpers
 if is_windows; then
   taskkill //IM enpu-desktop.exe //F >/dev/null 2>&1 || true
+  # leftover tauri launcher windows
+  taskkill //FI "WINDOWTITLE eq EnPu-Tauri*" //F >/dev/null 2>&1 || true
 else
-  pkill -f 'enpu-desktop|target/debug/enpu' 2>/dev/null || true
+  pkill -f 'enpu-desktop|target/debug/enpu|tauri dev' 2>/dev/null || true
 fi
 
+# Windows: kill start_tauri.bat children by log pattern is hard; port kill covers vite
+rm -f "${RUN_DIR}/start_tauri.bat" 2>/dev/null || true
+
 echo ""
-echo "Stopped (core :${CORE_PORT}, vite :${VITE_PORT})."
+echo "Stopped (core :${CORE_PORT}, vite :${VITE_PORT}, desktop)."
 echo "========================================"
