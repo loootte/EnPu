@@ -76,8 +76,6 @@ EnPu/
 
 ## 快速开始（开发态）
 
-> 下列命令为 **目标工作流**。`core` / `desktop` 的可运行实现分别在 [#2](https://github.com/loootte/EnPu/issues/2)、[#4](https://github.com/loootte/EnPu/issues/4) 落地；脚手架就绪后命令即可生效。
-
 ### 1. 克隆仓库
 
 ```powershell
@@ -85,43 +83,35 @@ git clone https://github.com/loootte/EnPu.git
 cd EnPu
 ```
 
-### 2. 启动识别核心（终端 A）
+### 2. 一键启动 / 终止（推荐，Git Bash）
 
-```powershell
-# 进入核心目录并创建虚拟环境
-cd core
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-
-# 启动 API（默认 http://127.0.0.1:8765）
-# 实现就绪后：
-# uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
-.\..\scripts\dev-core.ps1
+```bash
+chmod +x scripts/start.sh scripts/stop.sh
+./scripts/start.sh          # core + Vite UI
+./scripts/stop.sh           # 全部停止
 ```
 
-健康检查（服务起来后）：
+| 服务 | 地址 |
+|------|------|
+| Core | http://127.0.0.1:8765/health |
+| UI | http://localhost:1420 |
+| API 文档 | http://127.0.0.1:8765/docs |
+
+更多选项见 [scripts/README.md](./scripts/README.md)（如 `ENPU_RECOGNIZE_ENGINE=mock`、`ENPU_UI=tauri`）。
+
+### 3. 分进程启动（PowerShell）
 
 ```powershell
-curl http://127.0.0.1:8765/health
-# 期望: {"status":"ok"}
+# 终端 A — 识别核心
+.\scripts\dev-core.ps1
+
+# 终端 B — 桌面 Tauri
+.\scripts\dev-desktop.ps1
 ```
 
-OpenAPI 文档：<http://127.0.0.1:8765/docs>
+### 4. PoC 验收路径
 
-### 3. 启动桌面端（终端 B）
-
-```powershell
-cd desktop
-npm install
-# 实现就绪后：
-# npm run tauri dev
-.\..\scripts\dev-desktop.ps1
-```
-
-### 4. PoC 验收路径（目标）
-
-1. 打开桌面窗口  
+1. 启动服务后打开 UI（Vite 或 Tauri）  
 2. 从 `samples/` 导入一张简谱图  
 3. 点击识别 → 调用本地 `POST /v1/recognize`  
 4. 界面展示 OCR 文本或 JSON 结果  

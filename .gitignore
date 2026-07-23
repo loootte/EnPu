@@ -91,3 +91,7 @@ out/
 # --- Logs ---
 logs/
 *.stackdump
+
+# local process state for start/stop scripts
+scripts/.run/
+
