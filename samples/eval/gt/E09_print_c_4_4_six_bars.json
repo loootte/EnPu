@@ -1,0 +1,253 @@
+{
+  "schema_version": "0.1",
+  "title": "示意·六小节旋律",
+  "key": "C",
+  "time_signature": "4/4",
+  "tempo_bpm": 92,
+  "parts": [
+    {
+      "id": "P1",
+      "name": "melody",
+      "measures": [
+        {
+          "number": 1,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "notes": [
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "whole",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "created_by": "enpu-generate-eval-samples",
+    "comments": "Synthetic eval ground-truth (CC0). Not a published song.",
+    "source_image": "images/E09_print_c_4_4_six_bars.png",
+    "engine": null,
+    "extra": {
+      "eval": {
+        "id": "E09_print_c_4_4_six_bars",
+        "subset": "print_clear",
+        "license": "CC0-1.0",
+        "pitch_sequence": [
+          "1",
+          "1",
+          "2",
+          "3",
+          "5",
+          "5",
+          "3",
+          "6",
+          "5",
+          "3",
+          "2",
+          "1",
+          "5",
+          "3",
+          "2",
+          "1",
+          "2",
+          "1"
+        ],
+        "measure_count": 6,
+        "synthetic": true
+      }
+    }
+  },
+  "extra": {
+    "eval": {
+      "id": "E09_print_c_4_4_six_bars",
+      "subset": "print_clear",
+      "license": "CC0-1.0",
+      "pitch_sequence": [
+        "1",
+        "1",
+        "2",
+        "3",
+        "5",
+        "5",
+        "3",
+        "6",
+        "5",
+        "3",
+        "2",
+        "1",
+        "5",
+        "3",
+        "2",
+        "1",
+        "2",
+        "1"
+      ],
+      "measure_count": 6,
+      "synthetic": true
+    }
+  }
+}

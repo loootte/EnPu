@@ -87,6 +87,12 @@ credentials.json
 
 # --- Local-only sample dumps ---
 samples/private/
+# Optional: keep private real scores out of git while testing eval
+samples/eval/manual/*.png
+samples/eval/manual/*.jpg
+samples/eval/manual/*.jpeg
+samples/eval/manual/*.gt.json
+!samples/eval/manual/README.md
 *.tmp
 *.temp
 

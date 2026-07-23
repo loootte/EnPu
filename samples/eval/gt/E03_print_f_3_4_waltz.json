@@ -1,0 +1,143 @@
+{
+  "schema_version": "0.1",
+  "title": "示意·三拍子片段",
+  "key": "F",
+  "time_signature": "3/4",
+  "tempo_bpm": 90,
+  "parts": [
+    {
+      "id": "P1",
+      "name": "melody",
+      "measures": [
+        {
+          "number": 1,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "notes": [
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "half",
+              "dots": 1,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 1,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "created_by": "enpu-generate-eval-samples",
+    "comments": "Synthetic eval ground-truth (CC0). Not a published song.",
+    "source_image": "images/E03_print_f_3_4_waltz.png",
+    "engine": null,
+    "extra": {
+      "eval": {
+        "id": "E03_print_f_3_4_waltz",
+        "subset": "print_clear",
+        "license": "CC0-1.0",
+        "pitch_sequence": [
+          "1",
+          "3",
+          "5",
+          "5",
+          "6",
+          "5",
+          "3",
+          "1"
+        ],
+        "measure_count": 4,
+        "synthetic": true
+      }
+    }
+  },
+  "extra": {
+    "eval": {
+      "id": "E03_print_f_3_4_waltz",
+      "subset": "print_clear",
+      "license": "CC0-1.0",
+      "pitch_sequence": [
+        "1",
+        "3",
+        "5",
+        "5",
+        "6",
+        "5",
+        "3",
+        "1"
+      ],
+      "measure_count": 4,
+      "synthetic": true
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "schema_version": "0.1",
+  "title": "示意·二拍子进行",
+  "key": "C",
+  "time_signature": "2/4",
+  "tempo_bpm": 110,
+  "parts": [
+    {
+      "id": "P1",
+      "name": "melody",
+      "measures": [
+        {
+          "number": 1,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "notes": [
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "created_by": "enpu-generate-eval-samples",
+    "comments": "Synthetic eval ground-truth (CC0). Not a published song.",
+    "source_image": "images/E05_print_c_2_4_march.png",
+    "engine": null,
+    "extra": {
+      "eval": {
+        "id": "E05_print_c_2_4_march",
+        "subset": "print_clear",
+        "license": "CC0-1.0",
+        "pitch_sequence": [
+          "1",
+          "5",
+          "3",
+          "5",
+          "6",
+          "5",
+          "1",
+          "2",
+          "3",
+          "1"
+        ],
+        "measure_count": 6,
+        "synthetic": true
+      }
+    }
+  },
+  "extra": {
+    "eval": {
+      "id": "E05_print_c_2_4_march",
+      "subset": "print_clear",
+      "license": "CC0-1.0",
+      "pitch_sequence": [
+        "1",
+        "5",
+        "3",
+        "5",
+        "6",
+        "5",
+        "1",
+        "2",
+        "3",
+        "1"
+      ],
+      "measure_count": 6,
+      "synthetic": true
+    }
+  }
+}

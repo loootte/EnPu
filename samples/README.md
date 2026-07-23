@@ -69,6 +69,23 @@ samples/
 
 新增样例时请更新本表「来源 / 授权」列，并在 PR 中说明生成方式。
 
+## 评测集（Issue #29）
+
+路径：[`samples/eval/`](./eval/)
+
+| 子集 | 数量 | 说明 |
+|------|------|------|
+| 合成 E01–E15 | 15 | `print_clear` / `scan_like` / `cn_lyrics`，脚本生成 · CC0 |
+| 手动 M01–M05 | 5 | 由使用者放入正在用的曲谱（见 `eval/manual/README.md`） |
+
+```powershell
+python scripts/generate-eval-samples.py
+python scripts/eval-accuracy.py --manifest-only
+python scripts/eval-accuracy.py --gt-stats
+```
+
+基线文档：[`docs/eval-baseline.md`](../docs/eval-baseline.md)。
+
 ## 已知限制
 
 - 合成字体与真实印刷简谱版式差异大，**OCR 精度不代表产品指标**
