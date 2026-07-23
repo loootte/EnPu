@@ -6,6 +6,11 @@ import logging
 import time
 
 from app.config import Settings
+from app.pipeline.barlines import (
+    detect_barline_xs,
+    inject_barlines_into_items,
+    pitch_line_y_range,
+)
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
 from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
@@ -55,8 +60,18 @@ def run_recognize(
         logger.exception("OCR engine error")
         raise PipelineError(str(exc), status_code=500) from exc
 
+    # Graphic barlines are often invisible to OCR as the '|' glyph.
+    # Detect tall vertical strokes in the pitch-line band and inject '|'.
+    y_band = pitch_line_y_range(list(ocr.items))
+    bar_xs = detect_barline_xs(pre.ocr_bgr, y_range=y_band)
+    ocr_items = inject_barlines_into_items(list(ocr.items), bar_xs)
+    if bar_xs:
+        logger.info(
+            "detected %s barline candidate(s) in band %s", len(bar_xs), y_band
+        )
+
     parsed = parse_ocr_to_score(
-        ocr.items,
+        ocr_items,
         filename=filename,
         engine=ocr.engine,
     )

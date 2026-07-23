@@ -95,3 +95,39 @@ def test_reading_order_uses_boxes() -> None:
     assert result.score is not None
     first = [n.pitch for n in result.score.melody_part().measures[0].notes]  # type: ignore[union-attr]
     assert first[:3] == ["1", "2", "3"]
+
+
+def test_ocr_bar_confusion_I_recovered() -> None:
+    """OCR often turns | into I/l between digits."""
+    items = [
+        OcrItem(text="Time: 4/4", score=1.0, box=None),
+        OcrItem(text="1 2 3 I 5 5 6 I 1 7 6 5", score=0.9, box=None),
+    ]
+    result = parse_ocr_to_score(items)
+    assert result.mode == "score"
+    assert result.score is not None
+    mel = result.score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) >= 3
+    assert [n.pitch for n in mel.measures[0].notes] == ["1", "2", "3"]
+    assert [n.pitch for n in mel.measures[1].notes] == ["5", "5", "6"]
+
+
+def test_no_barline_infer_measures_by_meter() -> None:
+    """When OCR drops all bars and glues digits, split by 4/4 quarters."""
+    items = [
+        OcrItem(text="拍号：4/4", score=1.0, box=None),
+        OcrItem(text="12315561176513--", score=0.9, box=None),
+    ]
+    result = parse_ocr_to_score(items)
+    assert result.mode == "score"
+    assert result.score is not None
+    mel = result.score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) >= 3
+    assert any(
+        "barline" in w or "time signature" in w or "inferred" in w
+        for w in result.warnings
+    )
+    # first bar should start with 1,2,3...
+    assert mel.measures[0].notes[0].pitch == "1"

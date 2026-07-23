@@ -127,10 +127,10 @@ def write_003() -> Path | None:
 
     font = ImageFont.truetype(str(font_path), 28)
     font_sm = ImageFont.truetype(str(font_path), 22)
-    font_lg = ImageFont.truetype(str(font_path), 36)
-    im = Image.new("RGB", (900, 380), (255, 255, 255))
+    font_num = ImageFont.truetype(str(font_path), 42)
+    im = Image.new("RGB", (1000, 400), (255, 255, 255))
     d = ImageDraw.Draw(im)
-    d.rectangle([15, 15, 885, 365], outline=(20, 20, 20), width=2)
+    d.rectangle([15, 15, 985, 385], outline=(20, 20, 20), width=2)
     d.text((40, 30), "恩谱样例 003 · 中文歌词（合成）", fill=(0, 0, 0), font=font)
     d.text(
         (40, 80),
@@ -138,16 +138,33 @@ def write_003() -> Path | None:
         fill=(40, 40, 40),
         font=font_sm,
     )
+
+    # Draw jianpu with *graphic* barlines (OCR often drops the '|' glyph).
+    # Groups: [1 2 3] | [5 5 6] | [1 7 6 5] | [3 - - -]
+    groups: list[list[str]] = [
+        ["1", "2", "3"],
+        ["5", "5", "6"],
+        ["1", "7", "6", "5"],
+        ["3", "-", "-", "-"],
+    ]
+    y_top, y_bot = 140, 200
+    x = 50
+    gap = 48
+    bar_gap = 28
+    for gi, group in enumerate(groups):
+        for tok in group:
+            d.text((x, 150), tok, fill=(0, 0, 0), font=font_num)
+            x += gap
+        if gi < len(groups) - 1:
+            # thick vertical barline
+            bx = x + bar_gap // 2 - gap // 4
+            d.line([(bx, y_top), (bx, y_bot)], fill=(0, 0, 0), width=4)
+            x += bar_gap
+
+    d.text((40, 240), "主 恩 典  够 我 用    心 中 满 有 平 安", fill=(0, 0, 0), font=font)
     d.text(
-        (40, 150),
-        "1  2  3  |  5  5  6  |  1  7  6  5  |  3  -  -  -",
-        fill=(0, 0, 0),
-        font=font_lg,
-    )
-    d.text((40, 220), "主 恩 典  够 我 用    心 中 满 有 平 安", fill=(0, 0, 0), font=font)
-    d.text(
-        (40, 300),
-        "来源：仓库程序绘制 · 授权：CC0（可自由用于测试）",
+        (40, 320),
+        "来源：仓库程序绘制 · 授权：CC0（可自由用于测试）· 小节线为矢量竖线",
         fill=(80, 80, 80),
         font=font_sm,
     )

@@ -2,6 +2,11 @@
 
 Maps OCR text lines into Score v0.1 (pitch + basic duration + measures).
 On failure, falls back to note hints or OCR-text-only without raising.
+
+Bar-line handling:
+- Accept ``|``, fullwidth/unicode vertical bars, and common OCR confusions
+  (``I`` / ``l`` / ``丨`` between pitch tokens).
+- If no bar-lines survive OCR, split the note stream by time-signature beats.
 """
 
 from __future__ import annotations
@@ -21,9 +26,11 @@ from app.schemas.score import (
     ScoreMeta,
 )
 
-# Jianpu pitch digits 1-7 (fullwidth digits normalized first).
 _DIGIT_RE = re.compile(r"[1-7]")
-_FULLWIDTH = str.maketrans("１２３４５６７０．－｜", "12345670.-|")
+_FULLWIDTH = str.maketrans(
+    "１２３４５６７０．－｜丨│",
+    "12345670.-|||",
+)
 
 _KEY_RE = re.compile(
     r"(?:key|调)\s*[:：]?\s*([A-Ga-g][b#]?)|"
@@ -38,8 +45,19 @@ _TEMPO_RE = re.compile(
     r"(?:tempo|bpm|速度)\s*[:：]?\s*([1-9][0-9]{1,2})",
     re.IGNORECASE,
 )
-# Tokens inside a jianpu stream: pitch, rest-ish 0, bar, dash (sustain), dots
+
+# Pitch / rest / bar / sustain / dots. Bar includes OCR confusions I/l when tokenized
+# carefully in _tokenizeize / _normalize_bars.
 _TOKEN_RE = re.compile(r"[1-7]|0|\||-+|\.+")
+
+_BEATS: dict[DurationName, float] = {
+    DurationName.whole: 4.0,
+    DurationName.half: 2.0,
+    DurationName.quarter: 1.0,
+    DurationName.eighth: 0.5,
+    DurationName.sixteenth: 0.25,
+    DurationName.thirty_second: 0.125,
+}
 
 ParseMode = Literal["score", "hints", "ocr_only"]
 
@@ -55,7 +73,7 @@ class ParseResult:
 
 
 def extract_note_hints(items: list[OcrItem]) -> list[NoteHint]:
-    """Pull simple pitch digits out of OCR strings (legacy lightweight path)."""
+    """Pull simple pitch digits out of OCR strings."""
     notes: list[NoteHint] = []
     for item in items:
         text = _normalize(item.text)
@@ -93,7 +111,10 @@ def parse_ocr_to_score(
         )
 
     ordered = _reading_order(items)
-    texts = [_normalize(i.text) for i in ordered if i.text and i.text.strip()]
+    # Join same-row OCR boxes with explicit bar tokens — graphic barlines often
+    # cause PaddleOCR to emit separate boxes without a '|' character.
+    texts = _lines_from_items(ordered, warnings)
+    texts = [_normalize_bars(t) for t in texts]
 
     key = _detect_key(texts) or "C"
     time_sig = _detect_time(texts) or "4/4"
@@ -122,10 +143,22 @@ def parse_ocr_to_score(
         )
 
     try:
+        had_bar = any("|" in line for line in jianpu_lines)
         measures = _parse_jianpu_lines(jianpu_lines, warnings)
         if not measures:
             raise ValueError("no measures parsed")
-        # Optional lyric attachment from CJK-heavy lines
+
+        # OCR often drops barlines and glues digits; re-slice by meter if needed.
+        if not had_bar or (
+            len(measures) == 1 and len(measures[0].notes) > _beats_per_measure(time_sig)
+        ):
+            flat = [n for m in measures for n in m.notes]
+            measures = _split_notes_by_meter(flat, time_sig, warnings)
+            if not had_bar:
+                warnings.append(
+                    "no barline tokens in OCR; measures inferred from time signature"
+                )
+
         lyric_lines = [t for t in texts if _looks_like_lyric_line(t)]
         if lyric_lines:
             _attach_lyrics(measures, lyric_lines[0], warnings)
@@ -141,12 +174,11 @@ def parse_ocr_to_score(
                 source_image=filename,
                 engine=engine,
                 created_by="enpu-parse-mvp-#10",
-                comments="MVP parse from OCR; durations are heuristic.",
+                comments="MVP parse from OCR; durations/barlines are heuristic.",
             ),
         )
-        # Validate via pydantic already on construction
         return ParseResult(score=score, notes=hints, mode="score", warnings=warnings)
-    except Exception as exc:  # noqa: BLE001 — fall back, never break API
+    except Exception as exc:  # noqa: BLE001
         warnings.append(f"score parse failed: {exc}")
         if hints:
             return ParseResult(
@@ -167,9 +199,20 @@ def _normalize(text: str) -> str:
     return text.translate(_FULLWIDTH).strip()
 
 
-def _reading_order(items: list[OcrItem]) -> list[OcrItem]:
-    """Sort by top-to-bottom, then left-to-right when boxes exist."""
+def _normalize_bars(text: str) -> str:
+    """Recover barlines lost or confused by OCR.
 
+    - Map unicode bars already handled in fullwidth table.
+    - ``I`` / ``l`` between pitch tokens → ``|`` (common OCR confusion).
+    - Do **not** treat ``/`` as a bar (breaks ``4/4`` time signatures).
+    """
+    # vertical-ish glyphs often misread as I/l (not slash — that is meter)
+    text = re.sub(r"(?<=[0-7])\s*[Il丨│]\s*(?=[0-7\-])", " | ", text)
+    text = re.sub(r"\|{2,}", "|", text)
+    return text
+
+
+def _reading_order(items: list[OcrItem]) -> list[OcrItem]:
     def key(it: OcrItem) -> tuple[float, float]:
         if it.box is None:
             return (0.0, 0.0)
@@ -178,13 +221,66 @@ def _reading_order(items: list[OcrItem]) -> list[OcrItem]:
     return sorted(items, key=key)
 
 
+def _lines_from_items(items: list[OcrItem], warnings: list[str]) -> list[str]:
+    """Build text lines; insert ``|`` between same-row boxes (implicit bars)."""
+    with_box = [i for i in items if i.box is not None and i.text.strip()]
+    without = [i for i in items if i.box is None and i.text.strip()]
+
+    lines: list[str] = []
+    if without:
+        lines.extend(_normalize(i.text) for i in without)
+
+    if not with_box:
+        return lines
+
+    # Cluster by vertical center proximity
+    rows: list[list[OcrItem]] = []
+    for it in sorted(with_box, key=lambda x: (x.box.y1 + x.box.y2) / 2):  # type: ignore[union-attr]
+        cy = (it.box.y1 + it.box.y2) / 2  # type: ignore[union-attr]
+        placed = False
+        for row in rows:
+            rcy = sum((r.box.y1 + r.box.y2) / 2 for r in row) / len(row)  # type: ignore[union-attr]
+            # same line if centers within ~ half of average box height
+            heights = [(r.box.y2 - r.box.y1) for r in row]  # type: ignore[union-attr]
+            thr = max(18.0, 0.6 * (sum(heights) / len(heights)))
+            if abs(cy - rcy) <= thr:
+                row.append(it)
+                placed = True
+                break
+        if not placed:
+            rows.append([it])
+
+    for row in rows:
+        row_sorted = sorted(row, key=lambda x: x.box.x1)  # type: ignore[union-attr]
+        # If multiple jianpu-like fragments on one row, treat gaps as barlines
+        parts = [_normalize(r.text) for r in row_sorted]
+        jianpu_parts = [p for p in parts if _looks_like_jianpu_line(p) or _DIGIT_RE.search(p)]
+        if len(jianpu_parts) >= 2 and all(
+            _DIGIT_RE.search(p) and not re.search(r"[\u4e00-\u9fff]{3,}", p)
+            for p in jianpu_parts
+        ):
+            joined = " | ".join(jianpu_parts)
+            warnings.append(
+                f"inserted {len(jianpu_parts) - 1} barline(s) from horizontal OCR boxes"
+            )
+            lines.append(joined)
+            # also keep non-jianpu fragments from this row
+            for p in parts:
+                if p not in jianpu_parts:
+                    lines.append(p)
+        else:
+            # single box or mixed content — keep left-to-right join with spaces
+            lines.append(" ".join(parts))
+
+    return lines
+
+
 def _detect_key(texts: list[str]) -> str | None:
     for t in texts:
         m = _KEY_RE.search(t)
         if m:
             raw = m.group(1) or m.group(2)
             if raw:
-                # Normalize Bb-style
                 return raw[0].upper() + raw[1:].lower()
     return None
 
@@ -215,16 +311,27 @@ def _guess_title(texts: list[str]) -> str:
 
 
 def _looks_like_jianpu_line(text: str) -> bool:
-    """Heuristic: enough pitch digits, not a pure metadata/lyric line."""
     if len(text) < 1:
         return False
+    # Metadata / titles — never treat as pitch stream
+    if re.search(
+        r"(key|time|tempo|bpm|拍号|调\s*[:：]|速度|title|样例|sample|授权|来源)",
+        text,
+        re.I,
+    ):
+        # unless it also has a clear multi-pitch run with bars
+        if not (re.search(r"[1-7].*[1-7].*[1-7]", text) and "|" in text):
+            return False
     digits = _DIGIT_RE.findall(text)
     if len(digits) < 2:
         return False
-    # Reject pure key/time metadata even if contains digits like 4/4
+    # Reject pure time signature lines like "4/4"
+    if re.fullmatch(r"\s*[1-9][0-9]*\s*/\s*[1-9][0-9]*\s*", text):
+        return False
     if re.search(r"\d+\s*/\s*\d+", text) and len(digits) <= 2 and "|" not in text:
-        # e.g. "4/4" alone
-        if not re.search(r"[1-7]\s+[1-7]", text):
+        if not re.search(r"[1-7]\s*[1-7]", text) and not re.search(
+            r"[1-7]{2,}", text
+        ):
             return False
     cjk = len(re.findall(r"[\u4e00-\u9fff]", text))
     if cjk >= 4 and len(digits) < cjk:
@@ -251,7 +358,8 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
             current_notes = []
 
     for line in lines:
-        tokens = _TOKEN_RE.findall(line.replace("—", "-").replace("–", "-"))
+        line = _normalize_bars(line)
+        tokens = _tokenize_jianpu(line)
         if not tokens:
             continue
         i = 0
@@ -262,11 +370,9 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
                 i += 1
                 continue
             if tok in {".", "-"} or tok.startswith("-") or tok.startswith("."):
-                # orphan sustain/dot — ignore or attach later
                 i += 1
                 continue
             if tok == "0":
-                # rest
                 dur, dots, consumed = _duration_from_following(tokens, i + 1)
                 current_notes.append(
                     NoteEvent(
@@ -292,10 +398,6 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
                 i += 1 + consumed
                 continue
             i += 1
-        # end of visual line: soft bar if we have notes and line had no |
-        if "|" not in line and current_notes:
-            # keep accumulating across lines unless empty
-            pass
 
     flush()
     if not measures:
@@ -303,17 +405,25 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
     return measures
 
 
+def _tokenize_jianpu(line: str) -> list[str]:
+    """Tokenize a jianpu line; support glued digit runs ``123|55``."""
+    line = line.replace("—", "-").replace("–", "-")
+    # Ensure bars are standalone
+    line = re.sub(r"\|", " | ", line)
+    tokens = _TOKEN_RE.findall(line)
+    if tokens:
+        return tokens
+    # Fallback: char-wise for pure glued strings
+    out: list[str] = []
+    for ch in line:
+        if ch in "12345670|.-":
+            out.append(ch)
+    return out
+
+
 def _duration_from_following(
     tokens: list[str], start: int
 ) -> tuple[DurationName, int, int]:
-    """Interpret following ``-`` sustain and ``.`` dots.
-
-    MVP mapping:
-    - no dash → quarter
-    - one ``-`` → half
-    - two+ ``-`` → whole
-    - ``.`` after pitch/dash → one augmentation dot
-    """
     dashes = 0
     dots = 0
     j = start
@@ -329,7 +439,6 @@ def _duration_from_following(
             continue
         break
     dots = min(dots, 2)
-    # Jianpu: "5" quarter; "5 -" half; "5 - -" dotted half; "5 - - -" whole
     if dashes >= 3:
         dur = DurationName.whole
     elif dashes == 2:
@@ -342,10 +451,76 @@ def _duration_from_following(
     return dur, dots, j - start
 
 
+def _note_beats(note: NoteEvent) -> float:
+    base = _BEATS.get(note.duration, 1.0)
+    if note.dots == 1:
+        return base * 1.5
+    if note.dots >= 2:
+        return base * 1.75
+    return base
+
+
+def _beats_per_measure(time_sig: str) -> float:
+    """MVP: treat numerator as quarter-note beats (OK for 2/4,3/4,4/4)."""
+    try:
+        num, den = time_sig.split("/")
+        num_i, den_i = int(num), int(den)
+        # Convert to quarter-note units: e.g. 6/8 → 3.0 quarters
+        return num_i * (4.0 / den_i)
+    except Exception:
+        return 4.0
+
+
+def _split_notes_by_meter(
+    notes: list[NoteEvent],
+    time_sig: str,
+    warnings: list[str],
+) -> list[Measure]:
+    """Pack a flat note stream into measures using duration beats."""
+    if not notes:
+        return []
+    capacity = _beats_per_measure(time_sig)
+    if capacity <= 0:
+        capacity = 4.0
+
+    measures: list[Measure] = []
+    buf: list[NoteEvent] = []
+    acc = 0.0
+    num = 1
+    eps = 1e-6
+
+    for note in notes:
+        b = _note_beats(note)
+        # If single note longer than a bar, put it alone
+        if b > capacity + eps and not buf:
+            measures.append(Measure(number=num, notes=[note]))
+            num += 1
+            continue
+        if acc + b > capacity + eps and buf:
+            measures.append(Measure(number=num, notes=list(buf)))
+            num += 1
+            buf = []
+            acc = 0.0
+        buf.append(note)
+        acc += b
+        if acc >= capacity - eps:
+            measures.append(Measure(number=num, notes=list(buf)))
+            num += 1
+            buf = []
+            acc = 0.0
+
+    if buf:
+        measures.append(Measure(number=num, notes=list(buf)))
+        warnings.append(
+            f"last measure may be incomplete ({acc:.2f}/{capacity:.2f} beats)"
+        )
+
+    return measures
+
+
 def _attach_lyrics(
     measures: list[Measure], lyric_line: str, warnings: list[str]
 ) -> None:
-    # Split CJK chars and latin syllables roughly
     syllables = re.findall(r"[\u4e00-\u9fff]|[A-Za-z]+", lyric_line)
     if not syllables:
         return
@@ -374,30 +549,15 @@ def _score_from_flat_pitches(
     engine: str | None,
     warnings: list[str],
 ) -> Score:
-    """Pack flat pitch list into 4/4-ish measures of quarters."""
-    try:
-        beats = int(time_sig.split("/")[0])
-    except Exception:
-        beats = 4
-    beats = max(1, min(beats, 8))
-
-    measures: list[Measure] = []
-    buf: list[NoteEvent] = []
-    num = 1
-    for p in pitches:
-        buf.append(
-            NoteEvent(
-                pitch=p,
-                duration=DurationName.quarter,
-                extra={"source": "hint_fallback"},
-            )
+    notes = [
+        NoteEvent(
+            pitch=p,
+            duration=DurationName.quarter,
+            extra={"source": "hint_fallback"},
         )
-        if len(buf) >= beats:
-            measures.append(Measure(number=num, notes=list(buf)))
-            num += 1
-            buf = []
-    if buf:
-        measures.append(Measure(number=num, notes=list(buf)))
+        for p in pitches
+    ]
+    measures = _split_notes_by_meter(notes, time_sig, warnings)
     if not measures:
         warnings.append("flat pitch list empty after filter")
     return Score(
