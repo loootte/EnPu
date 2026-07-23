@@ -38,13 +38,18 @@
     "externalBin": [
       "binaries/enpu-core"
     ],
+    "resources": [
+      "resources/install-paddle-ocr.ps1",
+      "resources/enpu-core-src"
+    ],
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerHooks": "./windows/hooks.nsh"
       }
     },
-    "longDescription": "EnPu (恩谱) — Chinese worship jianpu OMR desktop. Bundles a local recognition core sidecar (mock engine by default).",
+    "longDescription": "EnPu (恩谱) — Chinese worship jianpu OMR desktop. Bundles a local mock recognition sidecar; post-install can set up PaddleOCR.",
     "shortDescription": "EnPu jianpu OMR",
     "category": "Productivity"
   },

@@ -72,6 +72,8 @@ desktop/dist-ssr/
 desktop/src-tauri/target/
 desktop/src-tauri/binaries/enpu-core*
 !desktop/src-tauri/binaries/README.md
+# Generated for NSIS (prepare-core-app-resources.ps1)
+desktop/src-tauri/resources/enpu-core-src/
 **/*.rs.bk
 
 # --- Env & secrets ---

@@ -113,8 +113,9 @@ if (-not $SkipSidecarBuild) {
   Write-Host "`n[1/3] Skip sidecar build (reuse existing)" -ForegroundColor Yellow
 }
 
-Write-Host "`n[2/3] Prepare Tauri externalBin..." -ForegroundColor Cyan
+Write-Host "`n[2/3] Prepare Tauri externalBin + core app resources..." -ForegroundColor Cyan
 & (Join-Path $PSScriptRoot "prepare-sidecar.ps1") -SkipBuild
+& (Join-Path $PSScriptRoot "prepare-core-app-resources.ps1")
 
 # 3) Frontend deps + Tauri release bundle
 Write-Host "`n[3/3] Tauri bundle (targets=$Targets)..." -ForegroundColor Cyan

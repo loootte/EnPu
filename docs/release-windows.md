@@ -127,6 +127,8 @@ git push origin v0.1.0
 1. **默认 mock OCR**：安装包体积约「UI + ~100MB sidecar」，**不含** PaddleOCR 模型。真实拍照识别请用开发态：  
    `.\scripts\start.ps1 -Engine paddleocr`  
 2. **无控制台 sidecar 日志**：`enpu-core.exe` 为 windowed 构建时日志写入同目录 `enpu-core.log`（避免 uvicorn `isatty` 崩溃）。  
+3. **关闭桌面时询问是否结束 enpu-core**（进程树 `taskkill /T`，避免 PyInstaller 残留）。  
+4. **安装后 PaddleOCR**：NSIS `NSIS_HOOK_POSTINSTALL` 运行 `resources/install-paddle-ocr.ps1`，在 `%LOCALAPPDATA%\EnPu\venv` 安装 Paddle；成功后生成 `start-enpu-core-paddle.cmd`，桌面优先用真实 OCR。需本机已装 Python 3.10+。  
 2. **首次 Paddle**：若自行改 sidecar 打入 paddle，体积与路径问题见 [poc-sidecar.md](./poc-sidecar.md)。  
 3. **杀软误报**：PyInstaller onefile 偶发误报；未使用 UPX。  
 4. **签名**：当前未做 Authenticode 代码签名；企业分发需自行签名。  
