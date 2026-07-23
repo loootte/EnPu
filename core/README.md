@@ -96,12 +96,23 @@ pytest
 
 > 识别精度不是 Phase 0 目标；先打通链路。
 
+## Sidecar 打包（可选，Issue #8）
+
+```powershell
+# 仓库根目录
+.\scripts\build-core-sidecar.ps1
+.\core\dist\enpu-core.exe --engine mock --port 8765
+```
+
+试验记录：`docs/poc-sidecar.md`。
+
 ## 实现状态
 
 | 能力 | Issue | 状态 |
 |------|-------|------|
 | FastAPI 骨架 + mock recognize | #2 | 已实现 |
-| OpenCV + PaddleOCR 最小流水线 | #3 | **本版本** |
+| OpenCV + PaddleOCR 最小流水线 | #3 | 已实现 |
+| PyInstaller sidecar / 一键启停试验 | #8 | **已记录** |
 | JSON Schema / 完整解析 / music21 | #9–#11 | 后续 |
 
 ## Paddle 安装说明
