@@ -1,0 +1,16 @@
+# Deprecated alias — use **CD Windows** (cd-windows.yml) instead.
+# Kept so old bookmarks / docs still resolve; triggers are limited to manual only.
+name: Release Windows (legacy)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  redirect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point to CD Windows
+        run: |
+          echo "::notice::Use workflow 'CD Windows' (.github/workflows/cd-windows.yml) to build the NSIS installer."
+          echo "Actions → CD Windows → Run workflow"
+          echo "Or: git tag v0.1.0 && git push origin v0.1.0"

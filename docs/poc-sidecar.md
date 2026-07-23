@@ -113,12 +113,14 @@ curl http://127.0.0.1:8765/health
 
 ---
 
-## 6. 后续建议（Phase 4）
+## 6. 后续（Phase 4 / #14 — 已落地 MVP）
 
-1. Tauri `sidecar` / `externalBin` 配置挂载 `enpu-core`  
-2. 按需下载 OCR 模型（安装后首次识别）而非打进 exe  
-3. onedir 模式便于增量更新 DLL  
-4. CI 构建 Windows sidecar artifact 上传 Release  
+正式打包说明见 **[release-windows.md](./release-windows.md)**：
+
+1. ✅ Tauri `externalBin` 挂载 `enpu-core` + 应用生命周期 start/stop  
+2. ⬜ 按需下载 OCR 模型（安装后首次识别）而非打进 exe  
+3. ⬜ onedir 模式便于增量更新 DLL  
+4. ✅ CI：`release-windows.yml` 构建 NSIS + sidecar artifact / Release  
 
 ---
 
