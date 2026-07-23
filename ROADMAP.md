@@ -6,7 +6,7 @@
 
 **仓库**：https://github.com/loootte/EnPu  
 **最后更新**：2026-07-24  
-**当前阶段**：Phase 4 打包流水线 MVP（#14）；Phase 2 UI 已通；评测集 / 云端（#13）待做
+**当前阶段**：功能主线 #1–#14 已通；下一步 **#29 准确率基准线** / **#13 云端**
 
 ---
 
@@ -63,7 +63,7 @@
 | 阶段 | 名称 | 目标时长（估算） | 优先级 | 状态 |
 |------|------|------------------|--------|------|
 | **Phase 0** | **桌面端 PoC** | **2–3 周** | **P0** | **✅ 完成（M1）** |
-| Phase 1 | 识别核心 MVP | 4–6 周 | P0 | 🔄 核心路径完成；评测集待做 |
+| Phase 1 | 识别核心 MVP | 4–6 周 | P0 | 🔄 Schema/解析/导出完成；**#29 评测基线**待做 |
 | Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | ✅ **#12 MVP** |
 | Phase 3 | 云端双模式与部署 | 2–3 周 | P1 | 待开始（#13） |
 | Phase 4 | 精度、体验与发布 | 4–6 周 | P2 | 🔄 **#14 打包流水线 MVP** |
@@ -137,13 +137,13 @@
 | P1-4 | 歌词行与音符行对齐策略 | P1 | 🔄 MVP 简单 zip；精细对齐待做 |
 | P1-5 | EnPu 内部 JSON Schema 定稿（v0.1） | P0 | ✅ **#9** |
 | P1-6 | music21 导出 MusicXML / MIDI（MVP 子集） | P1 | ✅ **#11 MVP** |
-| P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 | 待做（现有 3 张合成样例） |
+| P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 | ⬜ **#29**（下一步） |
 | P1-8 | 核心 API 版本化、错误码、任务超时与日志 | P1 | 部分（v1 API）；增强待做 |
 
 ### 1.3 验收标准
 
 1. 内部 JSON 能描述：调号、拍号、至少一条旋律的音高序列与基础时值 → **✅ Score v0.1 + parse MVP**  
-2. 在评测集「清晰印刷」子集上，音高序列 top-line 正确率达到团队约定基线（建议先定 ≥60%，再迭代） → **待评测集**  
+2. 在评测集「清晰印刷」子集上，音高序列 top-line 正确率达到团队约定基线（建议先定 ≥60%，再迭代） → **⬜ #29**  
 3. 可导出可被 MuseScore 打开的 MusicXML（允许缺失装饰音/复杂反复） → **✅ #11**（`POST /v1/export`）  
 4. API 文档完整，输入输出有 Schema → **进行中**（`docs/api.md` + OpenAPI）  
 
@@ -364,8 +364,9 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#10](https://github.com/loootte/EnPu/issues/10) | [core] 音高/时值解析 MVP | P1 | #9 | ✅ |
 | [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 | ✅ |
 | [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ✅ |
-| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ 下一步 |
+| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ |
 | [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ✅ |
+| [#29](https://github.com/loootte/EnPu/issues/29) | [core] 建立识别准确率基准线与评测集（P1-7） | P1 | #9 + #10 | ⬜ **下一步** |
 
 ---
 
@@ -380,7 +381,8 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-23 | Score Schema v0.1 定稿（#9）；OCR→Score 解析 MVP（#10）；下一步 #11 导出 |
 | 2026-07-23 | music21 导出 MusicXML/MIDI MVP（#11，`POST /v1/export`）；下一步 #12 UI 或评测集 |
 | 2026-07-24 | 桌面编辑/试听/导出 MVP（#12）；GitHub Actions CI（core pytest + desktop build） |
-| 2026-07-24 | Windows sidecar + Tauri NSIS 打包流水线（#14）；Release workflow；默认 mock 引擎 |
+| 2026-07-24 | Windows sidecar + Tauri NSIS 打包 / 关闭确认 / Paddle 安装脚本 / CD Windows（#14） |
+| 2026-07-24 | 创建 **#29** 识别准确率基准线与评测集（P1-7）；精度迭代与云端 #13 并行可选 |
 
 ### Phase 0 完成摘要
 
@@ -394,7 +396,8 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 - ✅ `/v1/recognize` 返回 `score` + `parse_mode`（失败回退 hints / ocr_only）  
 - ✅ 小节线 CV 恢复（OCR 丢 `|` 时注入）  
 - ✅ MusicXML / MIDI 导出（music21 适配层 + `/v1/export`）  
-- ⬜ 评测集与准确率基线；歌词精细对齐  
+- ⬜ **#29** 评测集 ≥20 张 + 准确率脚本 + `docs/eval-baseline.md` 基线数字  
+- ⬜ 歌词精细对齐  
 
 ### Phase 2 进展摘要
 
@@ -406,12 +409,21 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 
 ### Phase 4 进展摘要
 
-- ✅ PyInstaller sidecar → Tauri `externalBin`；应用启停自动拉起/结束 core  
+- ✅ PyInstaller sidecar → Tauri `externalBin`；关闭时询问是否结束 core  
 - ✅ `scripts/build-release.ps1` / `prepare-sidecar.ps1` 可复现构建  
-- ✅ `.github/workflows/release-windows.yml`（artifact + tag Release）  
+- ✅ **CD Windows**（`.github/workflows/cd-windows.yml`）：NSIS artifact / tag Release  
+- ✅ 安装后 PaddleOCR 脚本（`install-paddle-ocr.ps1` → `%LOCALAPPDATA%\EnPu`）  
 - ✅ 文档：`docs/release-windows.md`  
-- ⬜ 正式 v0.1.0 签名安装包；内置 Paddle OCR（按需下载）；精度基线  
+- ⬜ 正式 v0.1.0 代码签名；模型按需下载体验打磨  
+
+### 建议下一迭代
+
+| 优先级 | Issue | 说明 |
+|--------|-------|------|
+| P0 | **[#29](https://github.com/loootte/EnPu/issues/29)** | 评测集 + 准确率基准线（量化精度） |
+| P1 | [#13](https://github.com/loootte/EnPu/issues/13) | Docker / 本地·云端切换 |
+| P2 | — | 歌词对齐、拍照增强、签名安装包 |
 
 ---
 
-*本文档随迭代更新；Phase 1 完成后应固化准确率基线与导出覆盖范围。*
+*本文档随迭代更新；#29 完成后应固化准确率基线与导出覆盖范围。*
