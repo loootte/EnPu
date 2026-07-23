@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# local dev helpers (not for commit)
+tauri.dev.override.json
+vite-dev.log
+vite-dev.err.log
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
