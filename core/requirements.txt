@@ -1,0 +1,12 @@
+# Phase 0 dependencies will be pinned in issue #2.
+# Placeholder list (not installed by scaffold alone):
+# fastapi>=0.110
+# uvicorn[standard]>=0.27
+# python-multipart>=0.0.9
+# opencv-python-headless>=4.8
+# numpy>=1.24
+# paddlepaddle
+# paddleocr
+# music21
+# pydantic>=2.0
+# httpx  # tests
