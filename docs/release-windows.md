@@ -49,12 +49,23 @@ enpu-core.exe  (PyInstaller sidecar)
 步骤等价于：
 
 ```powershell
+# 确保 Rust 在 PATH（新开终端后若找不到 cargo 请执行）
+$env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
+
 .\scripts\build-core-sidecar.ps1          # → core/dist/enpu-core.exe
 .\scripts\prepare-sidecar.ps1 -SkipBuild  # → src-tauri/binaries/enpu-core-x86_64-pc-windows-msvc.exe
 cd desktop
 $env:VITE_ENPU_CORE_URL = "http://127.0.0.1:8765"
 npm ci
+# 注意：`--` 必须有，否则 npm 可能吃掉 --bundles，导致不生成 target/release
 npm run tauri -- build --bundles nsis
+```
+
+产物应出现：
+
+```text
+desktop/src-tauri/target/release/enpu-desktop.exe
+desktop/src-tauri/target/release/bundle/nsis/EnPu_*_x64-setup.exe
 ```
 
 ### 产物位置
