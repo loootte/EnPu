@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/loootte/EnPu/schemas/enpu-score-v0.1.json",
+  "title": "EnPu Score v0.1",
+  "description": "Internal jianpu score document — source of truth for edit/export.",
+  "type": "object",
+  "required": ["schema_version", "parts"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "0.1",
+      "description": "Document schema version."
+    },
+    "title": { "type": "string", "default": "" },
+    "key": {
+      "type": "string",
+      "description": "Tonal center, e.g. C, G, F, Bb.",
+      "default": "C"
+    },
+    "time_signature": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*/[1-9][0-9]*$",
+      "default": "4/4"
+    },
+    "tempo_bpm": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0
+    },
+    "parts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Part" }
+    },
+    "meta": { "$ref": "#/$defs/ScoreMeta" },
+    "extra": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "DurationName": {
+      "type": "string",
+      "enum": [
+        "whole",
+        "half",
+        "quarter",
+        "eighth",
+        "sixteenth",
+        "thirty_second"
+      ]
+    },
+    "Accidental": {
+      "type": "string",
+      "enum": ["sharp", "flat", "natural"]
+    },
+    "TieType": {
+      "type": "string",
+      "enum": ["start", "stop", "continue"]
+    },
+    "NoteEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pitch": {
+          "type": ["string", "null"],
+          "enum": ["1", "2", "3", "4", "5", "6", "7", null]
+        },
+        "accidental": {
+          "anyOf": [{ "$ref": "#/$defs/Accidental" }, { "type": "null" }]
+        },
+        "octave": { "type": "integer", "minimum": -3, "maximum": 3, "default": 0 },
+        "duration": { "$ref": "#/$defs/DurationName", "default": "quarter" },
+        "dots": { "type": "integer", "minimum": 0, "maximum": 2, "default": 0 },
+        "is_rest": { "type": "boolean", "default": false },
+        "lyric": { "type": ["string", "null"] },
+        "tie": {
+          "anyOf": [{ "$ref": "#/$defs/TieType" }, { "type": "null" }]
+        },
+        "extra": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "Measure": {
+      "type": "object",
+      "required": ["number"],
+      "additionalProperties": false,
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NoteEvent" }
+        },
+        "extra": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "Part": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "default": "P1" },
+        "name": { "type": "string", "default": "melody" },
+        "measures": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Measure" }
+        },
+        "extra": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "ScoreMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_image": { "type": ["string", "null"] },
+        "engine": { "type": ["string", "null"] },
+        "created_by": { "type": ["string", "null"] },
+        "comments": { "type": ["string", "null"] },
+        "extra": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}

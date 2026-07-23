@@ -54,8 +54,9 @@ EnPu 将 **识别核心** 与 **桌面 UI** 解耦：
 
 ## 5. 数据真相源
 
-- **内部**：EnPu JSON（Schema 见 [jianpu-schema.md](./jianpu-schema.md)，Phase 1 定稿）  
-- **导出**：MusicXML / MIDI 由 core 从 JSON 生成，不反向作为主存储  
+- **内部**：EnPu JSON **Score v0.1**（[jianpu-schema.md](./jianpu-schema.md)，Pydantic `app.schemas.score.Score`）  
+- **导出**：MusicXML / MIDI 由 core 从 Score 生成，不反向作为主存储  
+- **OCR 层**：`RecognizeResponse` 为原始识别；解析后应落到 `Score`（#10）  
 
 ## 6. 非目标（Phase 0）
 
