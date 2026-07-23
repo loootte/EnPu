@@ -2,9 +2,6 @@
 <#
 .SYNOPSIS
   Start EnPu recognition core (FastAPI) for local development.
-
-.DESCRIPTION
-  Scaffold script for Phase 0. Full behavior after issue #2 implements app.main:app.
 #>
 
 $ErrorActionPreference = "Stop"
@@ -23,34 +20,23 @@ if (-not (Test-Path $CoreDir)) {
 }
 
 $VenvPython = Join-Path $CoreDir ".venv\Scripts\python.exe"
-$MainPy = Join-Path $CoreDir "app\main.py"
+$VenvPip = Join-Path $CoreDir ".venv\Scripts\pip.exe"
 
 if (-not (Test-Path $VenvPython)) {
-    Write-Host ""
-    Write-Host "Virtualenv not found. Create it first:" -ForegroundColor Yellow
-    Write-Host "  cd core"
-    Write-Host "  python -m venv .venv"
-    Write-Host "  .\.venv\Scripts\Activate.ps1"
-    Write-Host "  pip install -r requirements.txt"
-    Write-Host ""
-    Write-Host "Then re-run: .\scripts\dev-core.ps1"
-    exit 1
+    Write-Host "Creating virtualenv at core/.venv ..." -ForegroundColor Yellow
+    python -m venv (Join-Path $CoreDir ".venv")
+    if (-not (Test-Path $VenvPython)) {
+        Write-Error "Failed to create venv. Is Python on PATH?"
+    }
 }
 
-# Detect scaffold placeholder (raises SystemExit on import/run until #2)
-$probe = & $VenvPython -c "import pathlib; p=pathlib.Path(r'$MainPy'); print(p.read_text(encoding='utf-8')[:80])" 2>$null
-if ($probe -match "Scaffold|issue #2|SystemExit") {
-    Write-Host ""
-    Write-Host "core/app/main.py is still a scaffold." -ForegroundColor Yellow
-    Write-Host "Implement FastAPI in issue #2, then this script will start uvicorn."
-    Write-Host ""
-    Write-Host "Target command:"
-    Write-Host "  cd core"
-    Write-Host "  .\.venv\Scripts\Activate.ps1"
-    Write-Host "  uvicorn app.main:app --reload --host $HostAddr --port $Port"
-    exit 2
+$Req = Join-Path $CoreDir "requirements.txt"
+Write-Host "Ensuring dependencies from requirements.txt ..."
+& $VenvPip install -q -r $Req
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "pip install failed."
 }
 
 Set-Location $CoreDir
-Write-Host "Starting uvicorn..." -ForegroundColor Green
+Write-Host "Starting uvicorn (reload)..." -ForegroundColor Green
 & $VenvPython -m uvicorn app.main:app --reload --host $HostAddr --port $Port
