@@ -5,8 +5,8 @@
 > 目标格式：MusicXML / MIDI / 自定义 JSON。
 
 **仓库**：https://github.com/loootte/EnPu  
-**最后更新**：2026-07-23  
-**当前阶段**：Phase 1 — 识别核心 MVP（Schema + 解析 + 导出 MVP 已通；评测集待做）
+**最后更新**：2026-07-24  
+**当前阶段**：Phase 2 — 编辑 / 试听 / 导出 UI MVP（#12）；Phase 1 核心导出已通，评测集待做
 
 ---
 
@@ -63,8 +63,8 @@
 | 阶段 | 名称 | 目标时长（估算） | 优先级 | 状态 |
 |------|------|------------------|--------|------|
 | **Phase 0** | **桌面端 PoC** | **2–3 周** | **P0** | **✅ 完成（M1）** |
-| Phase 1 | 识别核心 MVP | 4–6 周 | P0 | 🔄 进行中 |
-| Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | 待开始 |
+| Phase 1 | 识别核心 MVP | 4–6 周 | P0 | 🔄 核心路径完成；评测集待做 |
+| Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | 🔄 **#12 MVP 进行中** |
 | Phase 3 | 云端双模式与部署 | 2–3 周 | P1 | 待开始 |
 | Phase 4 | 精度、体验与发布 | 4–6 周 | P2 | 待开始 |
 
@@ -161,19 +161,19 @@
 
 ### 2.2 主要任务
 
-| ID | 任务 | 优先级 |
-|----|------|--------|
-| P2-1 | 简谱结果编辑 UI（音符、拍号、调号、歌词） | P0 |
-| P2-2 | 本地 MIDI/合成器试听（WebAudio 或轻量引擎） | P1 |
-| P2-3 | 导出 MusicXML / MIDI / JSON 文件 | P0 |
-| P2-4 | 工程文件保存/打开（EnPu Project） | P1 |
-| P2-5 | 批处理多页（同一首歌多页拼接，MVP） | P2 |
+| ID | 任务 | 优先级 | 状态 |
+|----|------|--------|------|
+| P2-1 | 简谱结果编辑 UI（音符、拍号、调号、歌词） | P0 | ✅ **#12 MVP** |
+| P2-2 | 本地 MIDI/合成器试听（WebAudio 或轻量引擎） | P1 | ✅ WebAudio 试听 |
+| P2-3 | 导出 MusicXML / MIDI / JSON 文件 | P0 | ✅ UI + `/v1/export` |
+| P2-4 | 工程文件保存/打开（EnPu Project） | P1 | ✅ `.enpu.json` MVP |
+| P2-5 | 批处理多页（同一首歌多页拼接，MVP） | P2 | 待做 |
 
 ### 2.3 验收标准
 
-1. 用户可修改错误音高/歌词并保存  
-2. 一键导出三种格式中至少 MusicXML + JSON  
-3. 可播放主旋律试听（节奏允许近似）  
+1. 用户可修改错误音高/歌词并保存 → **✅ 编辑 + 保存工程**  
+2. 一键导出三种格式中至少 MusicXML + JSON → **✅ JSON / MusicXML / MIDI**  
+3. 可播放主旋律试听（节奏允许近似） → **✅ WebAudio 试听**  
 
 ---
 
@@ -363,8 +363,8 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#9](https://github.com/loootte/EnPu/issues/9) | [core] 简谱 JSON Schema v0.1 与标注规范 | P1 | Phase 0 | ✅ |
 | [#10](https://github.com/loootte/EnPu/issues/10) | [core] 音高/时值解析 MVP | P1 | #9 | ✅ |
 | [#11](https://github.com/loootte/EnPu/issues/11) | [core] music21 导出 MusicXML/MIDI | P1 | #10 | ✅ |
-| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ⬜ 下一步 |
-| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ |
+| [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ✅ |
+| [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ 下一步 |
 | [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ⬜ |
 
 ---
@@ -379,6 +379,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-23 | Phase 0 / M1 完成（#1–#8） |
 | 2026-07-23 | Score Schema v0.1 定稿（#9）；OCR→Score 解析 MVP（#10）；下一步 #11 导出 |
 | 2026-07-23 | music21 导出 MusicXML/MIDI MVP（#11，`POST /v1/export`）；下一步 #12 UI 或评测集 |
+| 2026-07-24 | 桌面编辑/试听/导出 MVP（#12）；GitHub Actions CI（core pytest + desktop build） |
 
 ### Phase 0 完成摘要
 
@@ -393,6 +394,14 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 - ✅ 小节线 CV 恢复（OCR 丢 `|` 时注入）  
 - ✅ MusicXML / MIDI 导出（music21 适配层 + `/v1/export`）  
 - ⬜ 评测集与准确率基线；歌词精细对齐  
+
+### Phase 2 进展摘要
+
+- ✅ Score 编辑 UI（标题/调号/拍号/速度/音高/歌词/时值）  
+- ✅ WebAudio 主旋律试听（时值近似）  
+- ✅ 导出 JSON / MusicXML / MIDI；保存/打开 `.enpu.json` 工程  
+- ✅ CI：`.github/workflows/ci.yml`（mock 核心测试 + 前端 build）  
+- ⬜ 多页批处理；更强合成器 / 编辑器体验  
 
 ---
 

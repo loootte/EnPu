@@ -1,15 +1,28 @@
 import { useState } from "react";
-import type { RecognizeResponse } from "../lib/types";
+import type { RecognizeResponse, Score } from "../lib/types";
+import { ScoreEditor } from "./ScoreEditor";
 
-type Tab = "texts" | "notes" | "score" | "json";
+type Tab = "edit" | "texts" | "notes" | "json";
 
 interface ResultPanelProps {
   result: RecognizeResponse | null;
   loading: boolean;
+  /** Working score (editable). When null and result has score, parent should seed it. */
+  score: Score | null;
+  onScoreChange: (score: Score) => void;
+  coreOnline?: boolean;
+  onMessage?: (kind: "info" | "error", message: string) => void;
 }
 
-export function ResultPanel({ result, loading }: ResultPanelProps) {
-  const [tab, setTab] = useState<Tab>("texts");
+export function ResultPanel({
+  result,
+  loading,
+  score,
+  onScoreChange,
+  coreOnline = true,
+  onMessage,
+}: ResultPanelProps) {
+  const [tab, setTab] = useState<Tab>("edit");
 
   if (loading) {
     return (
@@ -22,22 +35,23 @@ export function ResultPanel({ result, loading }: ResultPanelProps) {
     );
   }
 
-  if (!result) {
+  if (!result && !score) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
-        识别结果将显示在这里
+      <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
+        <p>识别结果将显示在这里</p>
+        <p className="text-xs text-slate-600">
+          也可打开 .enpu.json / Score JSON 工程
+        </p>
       </div>
     );
   }
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: "edit", label: "编辑 / 试听 / 导出" },
     { id: "texts", label: "OCR 文本" },
     { id: "notes", label: "音高提示" },
-    { id: "score", label: "Score" },
     { id: "json", label: "JSON" },
   ];
-
-  const melody = result.score?.parts?.[0];
 
   return (
     <div className="flex min-h-64 flex-col rounded-xl border border-white/10 bg-slate-950/50">
@@ -58,22 +72,59 @@ export function ResultPanel({ result, loading }: ResultPanelProps) {
           </button>
         ))}
         <div className="ml-auto flex flex-wrap gap-2 text-[11px] text-slate-500">
-          <span>engine: {result.engine}</span>
-          {result.meta.parse_mode ? (
-            <span className="text-sky-300">parse: {result.meta.parse_mode}</span>
-          ) : null}
-          {result.meta.mock ? <span className="text-amber-400">mock</span> : null}
-          <span>{result.meta.elapsed_ms} ms</span>
-          <span>
-            {result.meta.width}×{result.meta.height}
-          </span>
+          {result ? (
+            <>
+              <span>engine: {result.engine}</span>
+              {result.meta.parse_mode ? (
+                <span className="text-sky-300">
+                  parse: {result.meta.parse_mode}
+                </span>
+              ) : null}
+              {result.meta.mock ? (
+                <span className="text-amber-400">mock</span>
+              ) : null}
+              <span>{result.meta.elapsed_ms} ms</span>
+            </>
+          ) : (
+            <span className="text-slate-400">仅工程编辑</span>
+          )}
         </div>
       </div>
 
-      <div className="max-h-[420px] flex-1 overflow-auto p-3">
+      <div className="max-h-[520px] flex-1 overflow-auto p-3">
+        {tab === "edit" && (
+          <>
+            {score ? (
+              <ScoreEditor
+                score={score}
+                onChange={onScoreChange}
+                sourceImage={result?.meta.filename}
+                coreOnline={coreOnline}
+                onMessage={onMessage}
+              />
+            ) : (
+              <p className="text-sm text-slate-500">
+                （未生成 Score
+                {result?.meta.parse_mode
+                  ? ` · mode=${result.meta.parse_mode}`
+                  : ""}
+                。可打开工程或重新识别。）
+              </p>
+            )}
+            {result?.meta.parse_warnings &&
+            result.meta.parse_warnings.length > 0 ? (
+              <ul className="mt-3 list-disc pl-4 text-xs text-amber-300/90">
+                {result.meta.parse_warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            ) : null}
+          </>
+        )}
+
         {tab === "texts" && (
           <ul className="space-y-1.5">
-            {result.texts.length === 0 ? (
+            {!result || result.texts.length === 0 ? (
               <li className="text-sm text-slate-500">（无文本）</li>
             ) : (
               result.texts.map((t, i) => (
@@ -90,7 +141,7 @@ export function ResultPanel({ result, loading }: ResultPanelProps) {
 
         {tab === "notes" && (
           <ul className="flex flex-wrap gap-2">
-            {result.notes.length === 0 ? (
+            {!result || result.notes.length === 0 ? (
               <li className="text-sm text-slate-500">（未提取到数字音高）</li>
             ) : (
               result.notes.map((n, i) => (
@@ -106,61 +157,15 @@ export function ResultPanel({ result, loading }: ResultPanelProps) {
           </ul>
         )}
 
-        {tab === "score" && (
-          <div className="space-y-3 text-sm text-slate-200">
-            {!result.score ? (
-              <p className="text-slate-500">
-                （未生成 Score
-                {result.meta.parse_mode
-                  ? ` · mode=${result.meta.parse_mode}`
-                  : ""}
-                ）
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-                  <span>key: {result.score.key ?? "—"}</span>
-                  <span>time: {result.score.time_signature ?? "—"}</span>
-                  <span>tempo: {result.score.tempo_bpm ?? "—"}</span>
-                  <span>title: {result.score.title || "—"}</span>
-                </div>
-                {melody?.measures?.map((m) => (
-                  <div key={m.number} className="rounded-lg bg-white/5 p-2">
-                    <div className="mb-1 text-xs text-slate-400">
-                      小节 {m.number}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 font-mono">
-                      {m.notes.map((n, i) => (
-                        <span
-                          key={`${m.number}-${i}`}
-                          className="rounded border border-white/10 px-1.5 py-0.5 text-xs"
-                          title={n.duration}
-                        >
-                          {n.is_rest ? "0" : n.pitch}
-                          {n.lyric ? (
-                            <span className="ml-1 text-slate-400">{n.lyric}</span>
-                          ) : null}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {result.meta.parse_warnings &&
-                result.meta.parse_warnings.length > 0 ? (
-                  <ul className="list-disc pl-4 text-xs text-amber-300/90">
-                    {result.meta.parse_warnings.map((w) => (
-                      <li key={w}>{w}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </>
-            )}
-          </div>
-        )}
-
         {tab === "json" && (
           <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-slate-200">
-            {JSON.stringify(result, null, 2)}
+            {JSON.stringify(
+              score
+                ? { score, recognize: result }
+                : result,
+              null,
+              2,
+            )}
           </pre>
         )}
       </div>

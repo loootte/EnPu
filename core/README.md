@@ -76,6 +76,13 @@ pytest
 
 单元测试默认 `ENPU_RECOGNIZE_ENGINE=mock`，不依赖 Paddle 模型。
 
+**CI（无 Paddle）**：
+
+```bash
+pip install -r requirements-ci.txt
+ENPU_RECOGNIZE_ENGINE=mock pytest -q
+```
+
 ## 环境变量
 
 | 变量 | 默认 | 说明 |

@@ -13,6 +13,9 @@
 | 调用 `/v1/recognize` 并展示 OCR / notes / JSON | ✅ #5 |
 | 核心在线状态指示 | ✅ #5 |
 | 一键联调 / 冒烟 / 验收文档 | ✅ #6 |
+| Score 编辑（音高/歌词/调号/拍号/速度） | ✅ #12 |
+| WebAudio 主旋律试听 | ✅ #12 |
+| 导出 JSON / MusicXML / MIDI；`.enpu.json` 工程 | ✅ #12 |
 
 ## 环境要求（Windows）
 
@@ -50,9 +53,12 @@ https://v2.tauri.app/start/prerequisites/
 ### 使用流程
 
 1. 确认 header 显示「核心在线」  
-2. 选择或拖入 `samples/001_poc_digits.png`  
+2. 选择或拖入 `samples/001_poc_digits.png`（或 003）  
 3. 点击 **开始识别**  
-4. 右侧查看 OCR 文本 / 音高提示 / JSON  
+4. 右侧 **编辑 / 试听 / 导出**：改音高/歌词 → 试听 → 导出 MusicXML / MIDI / JSON  
+5. **保存工程** 得到 `.enpu.json`，可用 **打开工程** 再编辑  
+
+也可 **新建谱** 不经识别直接手填。
 
 联调验收：[docs/poc-acceptance.md](../docs/poc-acceptance.md)
 
@@ -72,9 +78,12 @@ desktop/src/
 │   ├── ImagePicker.tsx
 │   ├── ImagePreview.tsx
 │   ├── ResultPanel.tsx
+│   ├── ScoreEditor.tsx   # #12 编辑/试听/导出
 │   └── StatusBanner.tsx
 └── lib/
-    ├── api.ts      # health + recognize
+    ├── api.ts         # health + recognize + export
+    ├── playback.ts    # WebAudio 试听
+    ├── scoreUtils.ts
     └── types.ts
 ```
 
@@ -85,6 +94,9 @@ desktop/src/
 
 **识别一直失败 / 核心离线**  
 先启动 core；检查防火墙是否拦截 localhost:8765。
+
+**导出 MusicXML/MIDI 失败**  
+需要 core 在线且已安装 `music21`（`pip install -r requirements.txt`）。
 
 **首次 PaddleOCR 很慢**  
 core 首次下载模型，属正常。

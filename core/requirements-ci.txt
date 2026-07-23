@@ -1,0 +1,15 @@
+# Lightweight deps for CI (no PaddleOCR — unit tests use ENPU_RECOGNIZE_ENGINE=mock).
+# Full local OCR still needs: pip install -r requirements.txt
+
+fastapi>=0.110,<1
+uvicorn[standard]>=0.27,<1
+python-multipart>=0.0.9
+pydantic>=2.0,<3
+pydantic-settings>=2.0,<3
+Pillow>=10.0,<12
+numpy>=1.24,<3
+opencv-python-headless>=4.8,<5
+setuptools>=65
+music21>=9.1,<10
+httpx>=0.27,<1
+pytest>=8.0,<9
