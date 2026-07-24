@@ -1,0 +1,173 @@
+{
+  "schema_version": "0.1",
+  "title": "示意·奇异恩典骨架",
+  "key": "C",
+  "time_signature": "4/4",
+  "tempo_bpm": 80,
+  "parts": [
+    {
+      "id": "P1",
+      "name": "melody",
+      "measures": [
+        {
+          "number": 1,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "主"
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "爱"
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "永"
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "不"
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "notes": [
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "变"
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "恩"
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "典"
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "够"
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "我"
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": "用"
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "whole",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "created_by": "enpu-generate-eval-samples",
+    "comments": "Synthetic eval ground-truth (CC0). Not a published song.",
+    "source_image": "images/E01_print_c_4_4_grace_demo.png",
+    "engine": null,
+    "extra": {
+      "eval": {
+        "id": "E01_print_c_4_4_grace_demo",
+        "subset": "print_clear",
+        "license": "CC0-1.0",
+        "pitch_sequence": [
+          "1",
+          "2",
+          "3",
+          "5",
+          "5",
+          "6",
+          "5",
+          "3",
+          "2",
+          "1",
+          "1"
+        ],
+        "measure_count": 4,
+        "synthetic": true
+      }
+    }
+  },
+  "extra": {
+    "eval": {
+      "id": "E01_print_c_4_4_grace_demo",
+      "subset": "print_clear",
+      "license": "CC0-1.0",
+      "pitch_sequence": [
+        "1",
+        "2",
+        "3",
+        "5",
+        "5",
+        "6",
+        "5",
+        "3",
+        "2",
+        "1",
+        "1"
+      ],
+      "measure_count": 4,
+      "synthetic": true
+    }
+  }
+}

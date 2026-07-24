@@ -137,7 +137,7 @@
 | P1-4 | 歌词行与音符行对齐策略 | P1 | 🔄 MVP 简单 zip；精细对齐待做 |
 | P1-5 | EnPu 内部 JSON Schema 定稿（v0.1） | P0 | ✅ **#9** |
 | P1-6 | music21 导出 MusicXML / MIDI（MVP 子集） | P1 | ✅ **#11 MVP** |
-| P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 | ⬜ **#29**（下一步） |
+| P1-7 | 评测集：≥20 张样例 + 简单准确率指标脚本 | P1 | 🔄 **#29**（合成 15 + 导入脚本/本地手动 5；OCR 跑分待补） |
 | P1-8 | 核心 API 版本化、错误码、任务超时与日志 | P1 | 部分（v1 API）；增强待做 |
 
 ### 1.3 验收标准
@@ -366,7 +366,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#12](https://github.com/loootte/EnPu/issues/12) | [ui] 识别结果编辑、试听与导出 | P2 | #9 + #11 | ✅ |
 | [#13](https://github.com/loootte/EnPu/issues/13) | [cloud] Docker 与本地/云端切换 | P3 | core 稳定 | ⬜ |
 | [#14](https://github.com/loootte/EnPu/issues/14) | [enhancement] Windows 安装包与 sidecar 打包 | P4 | Phase 0–2 | ✅ |
-| [#29](https://github.com/loootte/EnPu/issues/29) | [core] 建立识别准确率基准线与评测集（P1-7） | P1 | #9 + #10 | ⬜ **下一步** |
+| [#29](https://github.com/loootte/EnPu/issues/29) | [core] 建立识别准确率基准线与评测集（P1-7） | P1 | #9 + #10 | 🔄 合成 15 已就绪 |
 
 ---
 
@@ -396,7 +396,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 - ✅ `/v1/recognize` 返回 `score` + `parse_mode`（失败回退 hints / ocr_only）  
 - ✅ 小节线 CV 恢复（OCR 丢 `|` 时注入）  
 - ✅ MusicXML / MIDI 导出（music21 适配层 + `/v1/export`）  
-- ⬜ **#29** 评测集 ≥20 张 + 准确率脚本 + `docs/eval-baseline.md` 基线数字  
+- 🔄 **#29** 评测集：合成 15 张 + GT + manifest；手动 5 待补；OCR 跑分与基线数字待测  
 - ⬜ 歌词精细对齐  
 
 ### Phase 2 进展摘要
