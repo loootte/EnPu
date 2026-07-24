@@ -76,6 +76,22 @@ python scripts/eval-accuracy.py --gt-stats
 core\.venv\Scripts\python.exe scripts/eval-accuracy.py --run --engine paddleocr
 ```
 
+### CI 门槛（#38）
+
+GitHub Actions **CI** 增加 job `Eval print_clear F1 ≥ 60%`：
+
+```bash
+python scripts/eval-accuracy.py \
+  --run --engine paddleocr --subset print_clear \
+  --min-f1 0.60 --min-f1-subset print_clear \
+  --out samples/eval/reports/ci-print-clear.json
+```
+
+- 依赖：`core/requirements-eval.txt`（含 PaddleOCR）  
+- 仅合成 `print_clear`（E01–E10），不跑手动谱（版权/体积）  
+- 加权 Pitch F1 **&lt; 60%** 或任意识别错误 → job **失败**  
+- 报告 Artifact：`eval-print-clear-report`  
+
 ---
 
 ## 4. 当前基线数字（PaddleOCR）

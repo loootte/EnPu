@@ -180,7 +180,7 @@
 | P4-B | 小节线检测与切分加固 | P0 | ⬜ **#35** |
 | P4-C | 扩充真实敬拜谱评测集（≥15） | P0 | ⬜ **#36** |
 | P4-D | 高密度谱与时值线检测 | P1 | ⬜ **#37** |
-| P4-E | print_clear F1 门槛进 CI | P1 | ⬜ **#38** |
+| P4-E | print_clear F1 门槛进 CI | P1 | 🔄 **#38**（`ci.yml` eval-print-clear job） |
 | P4-1 | 拍照场景增强 | P1 | 待做 |
 | P4-2 | 反复/倚音/连音等结构扩展 | P2 | 待做 |
 | P4-3 | Sidecar + Tauri 打包流水线 | P0 | ✅ **#14** + CD Windows |
@@ -252,7 +252,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#35](https://github.com/loootte/EnPu/issues/35) | 小节线检测与切分加固 | P4 | ⬜ |
 | [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集 | P4 | ⬜ |
 | [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | ⬜ |
-| [#38](https://github.com/loootte/EnPu/issues/38) | print_clear F1 CI 门槛 | P1 | ⬜ |
+| [#38](https://github.com/loootte/EnPu/issues/38) | print_clear F1 CI 门槛 | P1 | 🔄 `ci.yml` 已加 gate |
 
 ---
 

@@ -256,6 +256,8 @@ def cmd_run(
     subset: str | None,
     limit: int | None,
     out_path: Path | None,
+    min_f1: float | None = None,
+    min_f1_subset: str = "print_clear",
 ) -> int:
     man = load_manifest()
     entries = [e for e in man.get("entries") or [] if e.get("status") == "ready"]
@@ -411,21 +413,49 @@ def cmd_run(
             "mean_abs_bar_error": mean_bars,
         }
 
+    target = min_f1 if min_f1 is not None else 0.60
     summary = {
         "engine": engine,
         "overall": print_group("ALL", rows),
         "by_subset": {s: print_group(s, g) for s, g in sorted(by_subset.items())},
         "rows": rows,
         "baseline_target": {
-            "print_clear_pitch_f1": 0.60,
-            "note": "ROADMAP suggests ≥60% pitch accuracy on print_clear",
+            "subset": min_f1_subset,
+            "min_pitch_f1_weighted": target,
+            "note": "ROADMAP / CI gate: print_clear weighted Pitch F1 ≥ threshold",
         },
     }
-    pc = summary["by_subset"].get("print_clear") or {}
-    if pc:
-        f1 = pc.get("pitch_f1_weighted") or pc.get("pitch_f1_avg") or 0
-        mark = "PASS" if f1 >= 0.60 else "BELOW TARGET"
-        print(f"\nprint_clear weighted pitch F1 = {f1:.2%}  → {mark} (target ≥60%)")
+
+    gate_group = summary["by_subset"].get(min_f1_subset) or (
+        summary["overall"] if min_f1_subset in {"ALL", "all", "*"} else {}
+    )
+    if min_f1_subset in {"ALL", "all", "*"}:
+        gate_group = summary["overall"]
+
+    f1 = 0.0
+    if gate_group:
+        f1 = float(
+            gate_group.get("pitch_f1_weighted")
+            or gate_group.get("pitch_f1_avg")
+            or 0.0
+        )
+        mark = "PASS" if f1 + 1e-9 >= target else "BELOW TARGET"
+        print(
+            f"\n[{min_f1_subset}] weighted pitch F1 = {f1:.2%}  → {mark} "
+            f"(target ≥{target:.0%})"
+        )
+    else:
+        print(f"\nWARN: subset {min_f1_subset!r} missing from results; gate fails")
+        mark = "BELOW TARGET"
+
+    n_err = len(rows) - len(ok_rows)
+    summary["gate"] = {
+        "subset": min_f1_subset,
+        "min_f1": target,
+        "actual_f1": f1,
+        "passed": mark == "PASS" and n_err == 0,
+        "errors": n_err,
+    }
 
     if out_path:
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -435,6 +465,15 @@ def cmd_run(
         )
         print(f"wrote report: {out_path}")
 
+    if n_err > 0:
+        print(f"FAIL: {n_err} recognition error(s)")
+        return 1
+    if min_f1 is not None and mark != "PASS":
+        print(
+            f"FAIL: CI gate — {min_f1_subset} weighted F1 {f1:.2%} "
+            f"< min {target:.2%}"
+        )
+        return 1
     return 0
 
 
@@ -456,6 +495,20 @@ def main() -> None:
         default=None,
         help="JSON report path (default samples/eval/reports/latest.json for --run)",
     )
+    p.add_argument(
+        "--min-f1",
+        type=float,
+        default=None,
+        help=(
+            "If set, exit 1 when gate subset weighted pitch F1 is below this "
+            "(e.g. 0.60 for CI). Also fails on any recognition errors."
+        ),
+    )
+    p.add_argument(
+        "--min-f1-subset",
+        default="print_clear",
+        help="Subset used for --min-f1 gate (default: print_clear; use ALL for overall)",
+    )
     args = p.parse_args()
     if args.gt_stats:
         raise SystemExit(cmd_gt_stats())
@@ -464,7 +517,14 @@ def main() -> None:
         if out is None:
             out = EVAL / "reports" / f"baseline-{args.engine}.json"
         raise SystemExit(
-            cmd_run(args.engine, args.subset, args.limit, out)
+            cmd_run(
+                args.engine,
+                args.subset,
+                args.limit,
+                out,
+                min_f1=args.min_f1,
+                min_f1_subset=args.min_f1_subset,
+            )
         )
     raise SystemExit(cmd_manifest_only())
 
