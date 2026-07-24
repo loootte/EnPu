@@ -8,6 +8,7 @@ from app.pipeline.barlines import (
     detect_barline_xs,
     inject_barlines_into_items,
     pitch_line_y_range,
+    pitch_y_bands_from_items,
 )
 from app.pipeline.ocr import OcrItem
 from app.pipeline.parse import parse_ocr_to_score
@@ -77,3 +78,34 @@ def test_end_to_end_parse_with_injected_bars() -> None:
     assert mel is not None
     assert len(mel.measures) >= 3
     assert [n.pitch for n in mel.measures[0].notes if n.pitch] == ["1", "2", "3"]
+
+
+def test_pitch_y_bands_two_staff_rows() -> None:
+    items = [
+        OcrItem(
+            text="123|556",
+            score=0.99,
+            box=BoundingBox(x1=40, y1=100, x2=400, y2=140),
+        ),
+        OcrItem(
+            text="321|111",
+            score=0.99,
+            box=BoundingBox(x1=40, y1=200, x2=400, y2=240),
+        ),
+    ]
+    bands = pitch_y_bands_from_items(items)
+    assert len(bands) >= 2
+    assert bands[0][1] < bands[1][0] or bands[0][0] < bands[1][0]
+
+
+def test_detect_bars_multi_band() -> None:
+    img = np.full((300, 500, 3), 255, dtype=np.uint8)
+    # bars in two horizontal staff strips
+    for y0, y1 in ((80, 120), (200, 240)):
+        for x in (120, 250, 380):
+            img[y0:y1, x : x + 3] = 0
+    xs = detect_barline_xs(
+        img,
+        y_ranges=[(75.0, 125.0), (195.0, 245.0)],
+    )
+    assert len(xs) >= 3

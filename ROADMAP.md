@@ -177,7 +177,7 @@
 | ID | 任务 | 优先级 | 状态 |
 |----|------|--------|------|
 | P4-A | 版面/谱行分类，过滤非谱行数字 | P0 | 🔄 **#34**（layout 门控已合入分支） |
-| P4-B | 小节线检测与切分加固 | P0 | ⬜ **#35** |
+| P4-B | 小节线检测与切分加固 | P0 | 🔄 **#35**（多行 flush + 过满小节重切 + 多带 bar CV） |
 | P4-C | 扩充真实敬拜谱评测集（≥15） | P0 | ⬜ **#36** |
 | P4-D | 高密度谱与时值线检测 | P1 | ⬜ **#37** |
 | P4-E | print_clear F1 门槛进 CI | P1 | 🔄 **#38**（`ci.yml` eval-print-clear job） |
@@ -249,7 +249,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#29](https://github.com/loootte/EnPu/issues/29) | 准确率基准线与评测集 | P1 | ✅ 基线已测 |
 | [#33](https://github.com/loootte/EnPu/issues/33) | 基于基线更新产品与技术路线 | docs | ✅ 本文档 |
 | [#34](https://github.com/loootte/EnPu/issues/34) | 版面/谱行分类，过滤非谱行数字 | P4 | ⬜ **下一步** |
-| [#35](https://github.com/loootte/EnPu/issues/35) | 小节线检测与切分加固 | P4 | ⬜ |
+| [#35](https://github.com/loootte/EnPu/issues/35) | 小节线检测与切分加固 | P4 | 🔄 多行不并小节 + bar CV |
 | [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集 | P4 | ⬜ |
 | [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | ⬜ |
 | [#38](https://github.com/loootte/EnPu/issues/38) | print_clear F1 CI 门槛 | P1 | 🔄 `ci.yml` 已加 gate |
