@@ -1,0 +1,1930 @@
+{
+  "Title": "卡农 Canon in D",
+  "KeySignature": "1=D",
+  "Tempo": "4/4",
+  "Bpm": 72,
+  "Composer": "Johann Pachelbel",
+  "Measures": [
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/C#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "Bm",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "F#m/A",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "D/F#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G/E",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/D",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/C#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [
+        {
+          "Type": 1,
+          "NoteIndex": 3,
+          "BeatPosition": 3.0,
+          "Parameters": {}
+        }
+      ],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "Bm",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "F#m/A",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "D/F#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [
+        {
+          "Type": 4,
+          "NoteIndex": 0,
+          "BeatPosition": 0.0,
+          "Parameters": {}
+        }
+      ],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G/E",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/D",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/C#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "Bm",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "F#m/A",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "D/F#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G/E",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/D",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/C#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "Bm",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "F#m/A",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "D/F#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [
+        {
+          "Type": 2,
+          "NoteIndex": 0,
+          "BeatPosition": 0.0,
+          "Parameters": {}
+        },
+        {
+          "Type": 2,
+          "NoteIndex": 1,
+          "BeatPosition": 2.0,
+          "Parameters": {}
+        }
+      ],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G/E",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/D",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/C#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "Bm",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "F#m/A",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "D/F#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G/E",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/D",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/C#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "Bm",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "F#m/A",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "D/F#",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "G/E",
+          "BeatPosition": 0.0
+        },
+        {
+          "Text": "",
+          "BeatPosition": 1.0
+        },
+        {
+          "Text": "A/D",
+          "BeatPosition": 2.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1,
+          "Octave": 1,
+          "Underlines": 0,
+          "Dashes": 3,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [
+        {
+          "Text": "D",
+          "BeatPosition": 0.0
+        }
+      ],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": ""
+    }
+  ],
+  "Ties": []
+}

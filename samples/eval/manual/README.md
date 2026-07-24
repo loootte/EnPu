@@ -24,12 +24,23 @@ python scripts/eval-accuracy.py --manifest-only
 python scripts/eval-accuracy.py --gt-stats
 ```
 
-生成内容（**默认 gitignore，勿公开 push 未授权谱面**）：
+生成内容：
 
 - `M0N_manual.png` — PDF 首页渲染（多页另有 `_p2.png`…）
 - `M0N_manual.gt.json` — 由 `.jianpu` 转为 EnPu Score v0.1
 - `M0N_manual.source.jianpu` — 源文件副本
 - `../manifest.local.json` — 含 20 条 ready 的本地索引
+
+### 已入库（可公开推送）
+
+| ID | 曲目 | 说明 |
+|----|------|------|
+| **M01** | Fur Elise | 公有领域古典；PNG（2 页）+ GT + `.jianpu` |
+| **M02** | 卡农 Canon in D | 公有领域古典；PNG + GT + `.jianpu` |
+
+### 默认不入库（gitignore）
+
+M03–M05（预备雨露甘霖、坐在宝座上圣洁羔羊 等）含现代敬拜作品，**勿 push** 未授权扫描/PDF 导出。仅本机 `manifest.local.json` 评测。
 
 ## 手动放置约定
 
