@@ -78,6 +78,33 @@
 | `meta.preprocess_steps` | OpenCV 预处理步骤 |
 | `meta.mock` | 是否 mock 引擎 |
 
+---
+
+## POST `/v1/recognize/crop`（#49）
+
+对**完整原图**中的矩形 ROI 做局部识别，可选把结果合并进当前 Score；**选区外小节保留**（不覆盖人工修改）。仅支持轴对齐矩形。
+
+**Content-Type**：`multipart/form-data`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `file` | file | 是 | 完整简谱图 png / jpg |
+| `x1` `y1` `x2` `y2` | float | 是 | 裁剪框（原图像素坐标） |
+| `base_score` | string | 否 | 当前 Score 的 JSON 字符串，用于局部合并 |
+| `measure_from` `measure_to` | int | 否 | 1-based 小节范围（含），覆盖按 Y 比例自动估计 |
+
+**响应** `200`：在 `/v1/recognize` 字段基础上增加：
+
+| 字段 | 说明 |
+|------|------|
+| `crop` | 归一化后的裁剪框 |
+| `score` | **仅选区**解析出的 Score（可能为 null） |
+| `boxes` | 检测框（已映射回全图像素坐标） |
+| `merged_score` | 若提供 `base_score`，则为合并后的完整 Score |
+| `merge` | 合并元数据：`replaced_measure_from/to`、`inserted_measure_count`、`preserved_outside` |
+
+`merge.preserved_outside=true` 表示选区外小节来自 `base_score` 深拷贝。插入的小节 `extra.from_crop=true`，便于 UI 高亮。
+
 **错误**
 
 | HTTP | 说明 |

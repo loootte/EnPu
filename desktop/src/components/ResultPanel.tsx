@@ -12,6 +12,8 @@ interface ResultPanelProps {
   onScoreChange: (score: Score) => void;
   coreOnline?: boolean;
   onMessage?: (kind: "info" | "error", message: string) => void;
+  /** Dual-view measure highlight from crop selection (#49). */
+  highlightMeasures?: number[] | null;
 }
 
 export function ResultPanel({
@@ -21,6 +23,7 @@ export function ResultPanel({
   onScoreChange,
   coreOnline = true,
   onMessage,
+  highlightMeasures = null,
 }: ResultPanelProps) {
   const [tab, setTab] = useState<Tab>("edit");
 
@@ -101,6 +104,7 @@ export function ResultPanel({
                 sourceImage={result?.meta.filename}
                 coreOnline={coreOnline}
                 onMessage={onMessage}
+                highlightMeasures={highlightMeasures}
               />
             ) : (
               <p className="text-sm text-slate-500">

@@ -91,6 +91,29 @@ export interface RecognizeResponse {
   meta: RecognizeMeta;
 }
 
+/** Full-image pixel crop ROI (#49). */
+export interface CropRect {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface CropMergeInfo {
+  replaced_measure_from?: number | null;
+  replaced_measure_to?: number | null;
+  inserted_measure_count: number;
+  crop: CropRect;
+  preserved_outside: boolean;
+}
+
+/** POST /v1/recognize/crop response (#49). */
+export interface CropRecognizeResponse extends RecognizeResponse {
+  crop: CropRect;
+  merged_score?: Score | null;
+  merge?: CropMergeInfo | null;
+}
+
 export interface HealthResponse {
   status: string;
   version?: string | null;
