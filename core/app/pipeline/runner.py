@@ -11,6 +11,7 @@ from app.pipeline.barlines import (
     inject_barlines_into_items,
     pitch_line_y_range,
 )
+from app.pipeline.layout import classify_items, estimate_pitch_y_band, pitch_items
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
 from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
@@ -60,10 +61,13 @@ def run_recognize(
         logger.exception("OCR engine error")
         raise PipelineError(str(exc), status_code=500) from exc
 
+    # Prefer layout-based pitch band (#34); fall back to digit-density heuristic.
+    classified = classify_items(list(ocr.items))
+    staff = pitch_items(classified)
+    y_band = estimate_pitch_y_band(staff) or pitch_line_y_range(list(ocr.items))
     # Graphic barlines are often invisible to OCR as the '|' glyph.
-    # Detect tall vertical strokes in the pitch-line band and inject '|'.
-    y_band = pitch_line_y_range(list(ocr.items))
     bar_xs = detect_barline_xs(pre.ocr_bgr, y_range=y_band)
+    # inject_barlines only mutates digit-heavy lines; safe on full item list
     ocr_items = inject_barlines_into_items(list(ocr.items), bar_xs)
     if bar_xs:
         logger.info(
