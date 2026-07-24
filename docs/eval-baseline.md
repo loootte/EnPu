@@ -1,7 +1,8 @@
 # 识别准确率基准线（Issue [#29](https://github.com/loootte/EnPu/issues/29)）
 
-> 状态：**评测集构建中**（合成 15 / 手动 5 待补）  
-> 目标：可复现的 pitch / 小节划分基线，支撑 Phase 1 验收。
+> 状态：**v0.1 基线已测**（2026-07-24 · PaddleOCR）  
+> 产品/技术路线演进见 Issue [#33](https://github.com/loootte/EnPu/issues/33) 与 [`ROADMAP.md`](../ROADMAP.md)。  
+> 下一步精度任务：[#34](https://github.com/loootte/EnPu/issues/34) 非谱行过滤 · [#35](https://github.com/loootte/EnPu/issues/35) 小节划分 · [#36](https://github.com/loootte/EnPu/issues/36) 真实集扩充。
 
 ---
 
@@ -69,7 +70,11 @@ python scripts/eval-accuracy.py --manifest-only
 python scripts/eval-accuracy.py --gt-stats
 ```
 
-> 完整「OCR 识别 vs GT」对比将在 M01–M05 补齐后扩展同一脚本。
+完整跑分：
+
+```powershell
+core\.venv\Scripts\python.exe scripts/eval-accuracy.py --run --engine paddleocr
+```
 
 ---
 
