@@ -21,14 +21,27 @@ samples/eval/
 | `print_clear` | 10 | 清晰印刷风格合成（E01–E10） |
 | `scan_like` | 3 | 轻微噪声/旋转（E11–E13） |
 | `cn_lyrics` | 2 | 中文标题/歌词行（E14–E15） |
-| `manual_real` | 5 | **待你放入**正在用的曲谱（M01–M05） |
+| `manual_real` | 5 | 从 Documents 的 `.jianpu`+`.pdf` 导入（见下） |
 
-生成合成集：
+生成合成集 + 导入手动 5 张：
 
 ```powershell
 cd D:\workspace\EnPu
 python scripts/generate-eval-samples.py
+pip install pymupdf   # PDF → PNG
+python scripts/import-manual-scores.py --docs-dir "$env:USERPROFILE\Documents"
+python scripts/eval-accuracy.py --manifest-only   # 使用 manifest.local.json
 ```
+
+手动映射（M01–M05）：
+
+| ID | 曲目 |
+|----|------|
+| M01 | Fur Elise |
+| M02 | 卡农 Canon in D |
+| M03 | 预备雨露甘霖 |
+| M04 | 坐在宝座上圣洁羔羊 A调 |
+| M05 | 坐在宝座上圣洁羔羊 C调 |
 
 ---
 

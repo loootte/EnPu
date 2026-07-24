@@ -5,7 +5,8 @@
   "counts": {
     "synthetic_ready": 15,
     "manual_slots": 5,
-    "target_total": 20
+    "target_total": 20,
+    "note": "After import-manual-scores.py, see manifest.local.json for full ready state"
   },
   "subsets": {
     "print_clear": 10,
@@ -389,8 +390,9 @@
       "measure_count": null,
       "pitch_sequence": null,
       "synthetic": false,
-      "license": "user-provided-see-manual-README",
-      "status": "pending_user"
+      "license": "user-provided-local-only",
+      "status": "pending_user",
+      "note": "Local only: python scripts/import-manual-scores.py --docs-dir %USERPROFILE%/Documents"
     },
     {
       "id": "M02_manual",
@@ -402,8 +404,9 @@
       "measure_count": null,
       "pitch_sequence": null,
       "synthetic": false,
-      "license": "user-provided-see-manual-README",
-      "status": "pending_user"
+      "license": "user-provided-local-only",
+      "status": "pending_user",
+      "note": "Local only: python scripts/import-manual-scores.py --docs-dir %USERPROFILE%/Documents"
     },
     {
       "id": "M03_manual",
@@ -415,8 +418,9 @@
       "measure_count": null,
       "pitch_sequence": null,
       "synthetic": false,
-      "license": "user-provided-see-manual-README",
-      "status": "pending_user"
+      "license": "user-provided-local-only",
+      "status": "pending_user",
+      "note": "Local only: python scripts/import-manual-scores.py --docs-dir %USERPROFILE%/Documents"
     },
     {
       "id": "M04_manual",
@@ -428,8 +432,9 @@
       "measure_count": null,
       "pitch_sequence": null,
       "synthetic": false,
-      "license": "user-provided-see-manual-README",
-      "status": "pending_user"
+      "license": "user-provided-local-only",
+      "status": "pending_user",
+      "note": "Local only: python scripts/import-manual-scores.py --docs-dir %USERPROFILE%/Documents"
     },
     {
       "id": "M05_manual",
@@ -441,8 +446,9 @@
       "measure_count": null,
       "pitch_sequence": null,
       "synthetic": false,
-      "license": "user-provided-see-manual-README",
-      "status": "pending_user"
+      "license": "user-provided-local-only",
+      "status": "pending_user",
+      "note": "Local only: python scripts/import-manual-scores.py --docs-dir %USERPROFILE%/Documents"
     }
   ]
 }

@@ -19,12 +19,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = ROOT / "samples" / "eval"
 MANIFEST = EVAL / "manifest.json"
+MANIFEST_LOCAL = EVAL / "manifest.local.json"
 
 
 def load_manifest() -> dict:
-    if not MANIFEST.is_file():
+    # Prefer local full import (includes private M01–M05) when present
+    path = MANIFEST_LOCAL if MANIFEST_LOCAL.is_file() else MANIFEST
+    if not path.is_file():
         raise SystemExit(f"manifest missing: {MANIFEST} (run generate-eval-samples.py)")
-    return json.loads(MANIFEST.read_text(encoding="utf-8"))
+    print(f"using {path.name}")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def validate_score_dict(data: dict, path: Path) -> list[str]:

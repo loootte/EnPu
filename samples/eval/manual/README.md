@@ -2,7 +2,36 @@
 
 此目录留给**你正在使用的真实曲谱**（Issue #29 目标 20 张：合成 15 + 手动 5）。
 
-## 放置约定
+## 一键导入（推荐）
+
+从 `%USERPROFILE%\Documents` 读取同名 `.jianpu` + `.pdf`：
+
+| ID | 数字化 (.jianpu) | 待识别 (PDF→PNG) |
+|----|------------------|------------------|
+| M01 | Fur Elise.jianpu | Fur Elise.pdf |
+| M02 | 卡农 Canon in D.jianpu | 卡农 Canon in D.pdf |
+| M03 | 预备雨露甘霖.jianpu | 预备雨露甘霖.pdf |
+| M04 | 坐在宝座上圣洁羔羊 A调.jianpu | 同名 PDF |
+| M05 | 坐在宝座上圣洁羔羊 C调.jianpu | 同名 PDF |
+
+```powershell
+# 需: pip install pymupdf
+cd D:\workspace\EnPu
+python scripts/import-manual-scores.py --docs-dir "$env:USERPROFILE\Documents"
+
+# 校验（自动优先用 manifest.local.json）
+python scripts/eval-accuracy.py --manifest-only
+python scripts/eval-accuracy.py --gt-stats
+```
+
+生成内容（**默认 gitignore，勿公开 push 未授权谱面**）：
+
+- `M0N_manual.png` — PDF 首页渲染（多页另有 `_p2.png`…）
+- `M0N_manual.gt.json` — 由 `.jianpu` 转为 EnPu Score v0.1
+- `M0N_manual.source.jianpu` — 源文件副本
+- `../manifest.local.json` — 含 20 条 ready 的本地索引
+
+## 手动放置约定
 
 对每个样例 `N`（1–5）：
 
@@ -10,8 +39,6 @@
 |------|------|
 | `M0N_manual.png`（或 `.jpg`） | 曲谱图片 |
 | `M0N_manual.gt.json` | Ground-truth EnPu Score v0.1 |
-
-建议同时在 `../manifest.json` 中把对应条目的 `status` 从 `pending_user` 改为 `ready`，并填入 `key` / `time_signature` / `pitch_sequence` / `measure_count`。
 
 ## Ground-truth 最小要求
 
