@@ -124,6 +124,14 @@ core\.venv\Scripts\python.exe scripts/eval-accuracy.py --run --engine paddleocr
 
 **print_clear weighted pitch F1 = 69.4% → PASS（目标 ≥60%）**
 
+### 2026-07-24 after #34 layout filter（print_clear only）
+
+| 子集 | weighted Pitch F1 | Pitch F1 avg | 备注 |
+|------|-------------------|--------------|------|
+| print_clear | **73.1%** | 68.8% | 过滤标题/GT 标注数字后，Precision 改善；部分样本 OCR 本身漏读谱行，Recall 更「诚实」 |
+
+相对基线 69.4%：**+3.7 pp**（weighted F1 不回退，满足 #34 验收）。
+
 ### 手动 5 张明细
 
 | ID | 曲目 | GT 音高数 | Pred | F1 | Recall | \|Δbars\| |

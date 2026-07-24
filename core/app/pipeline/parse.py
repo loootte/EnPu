@@ -15,6 +15,13 @@ import re
 from dataclasses import dataclass, field
 from typing import Literal
 
+from app.pipeline.layout import (
+    classify_items,
+    lyric_items,
+    meta_items,
+    pitch_items,
+    summarize_classification,
+)
 from app.pipeline.ocr import OcrItem
 from app.schemas.recognize import NoteHint
 from app.schemas.score import (
@@ -72,10 +79,22 @@ class ParseResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def extract_note_hints(items: list[OcrItem]) -> list[NoteHint]:
-    """Pull simple pitch digits out of OCR strings."""
+def extract_note_hints(
+    items: list[OcrItem],
+    *,
+    pitch_only: bool = False,
+) -> list[NoteHint]:
+    """Pull simple pitch digits out of OCR strings.
+
+    When ``pitch_only`` is True, layout classification drops title/footer/lyric
+    digits (issue #34).
+    """
+    use_items = items
+    if pitch_only and items:
+        classified = classify_items(items)
+        use_items = pitch_items(classified)
     notes: list[NoteHint] = []
-    for item in items:
+    for item in use_items:
         text = _normalize(item.text)
         for ch in _DIGIT_RE.findall(text):
             notes.append(
@@ -100,7 +119,6 @@ def parse_ocr_to_score(
     Never raises for parse ambiguity — returns mode=ocr_only or hints instead.
     """
     warnings: list[str] = []
-    hints = extract_note_hints(items)
 
     if not items:
         return ParseResult(
@@ -110,17 +128,49 @@ def parse_ocr_to_score(
             warnings=["empty OCR; no score produced"],
         )
 
-    ordered = _reading_order(items)
-    # Join same-row OCR boxes with explicit bar tokens — graphic barlines often
-    # cause PaddleOCR to emit separate boxes without a '|' character.
-    texts = _lines_from_items(ordered, warnings)
-    texts = [_normalize_bars(t) for t in texts]
+    # --- Layout gate (#34): classify regions, only staff lines → pitch stream
+    classified = classify_items(items)
+    staff_items = pitch_items(classified)
+    meta_its = meta_items(classified)
+    lyric_its = lyric_items(classified)
+    warnings.append(f"layout: {summarize_classification(classified)}")
+    dropped = len(items) - len(staff_items)
+    if dropped > 0:
+        warnings.append(
+            f"layout filter: using {len(staff_items)}/{len(items)} OCR boxes for pitch "
+            f"(dropped {dropped} non-staff region(s))"
+        )
 
-    key = _detect_key(texts) or "C"
-    time_sig = _detect_time(texts) or "4/4"
-    tempo = _detect_tempo(texts)
+    hints = extract_note_hints(staff_items if staff_items else items)
 
-    jianpu_lines = [t for t in texts if _looks_like_jianpu_line(t)]
+    ordered_staff = _reading_order(staff_items if staff_items else items)
+    ordered_meta = _reading_order(meta_its if meta_its else items)
+    ordered_all = _reading_order(items)
+
+    # Pitch lines only from staff boxes
+    pitch_texts = _lines_from_items(ordered_staff, warnings)
+    pitch_texts = [_normalize_bars(t) for t in pitch_texts]
+
+    # Key / time / tempo from meta + all (meta lines often lack boxes grouping)
+    meta_texts = _lines_from_items(ordered_meta, warnings)
+    all_texts = _lines_from_items(ordered_all, warnings)
+    meta_texts = [_normalize(t) for t in meta_texts]
+    all_texts_n = [_normalize(t) for t in all_texts]
+
+    key = _detect_key(meta_texts + all_texts_n) or "C"
+    time_sig = _detect_time(meta_texts + all_texts_n) or "4/4"
+    tempo = _detect_tempo(meta_texts + all_texts_n)
+
+    jianpu_lines = [t for t in pitch_texts if _looks_like_jianpu_line(t)]
+    # If layout over-filtered, fall back to all texts with jianpu heuristic only
+    if not jianpu_lines:
+        fallback_lines = [_normalize_bars(t) for t in all_texts_n]
+        jianpu_lines = [t for t in fallback_lines if _looks_like_jianpu_line(t)]
+        if jianpu_lines:
+            warnings.append(
+                "layout: no pitch-region jianpu line; fell back to text heuristic"
+            )
+
     if not jianpu_lines:
         warnings.append("no jianpu-like pitch line detected; using digit hints only")
         if hints:
@@ -129,7 +179,7 @@ def parse_ocr_to_score(
                 key=key,
                 time_sig=time_sig,
                 tempo=tempo,
-                title=title or _guess_title(texts),
+                title=title or _guess_title(all_texts_n),
                 filename=filename,
                 engine=engine,
                 warnings=warnings,
@@ -159,13 +209,19 @@ def parse_ocr_to_score(
                     "no barline tokens in OCR; measures inferred from time signature"
                 )
 
-        lyric_lines = [t for t in texts if _looks_like_lyric_line(t)]
+        lyric_lines = [
+            _normalize(t)
+            for t in _lines_from_items(_reading_order(lyric_its), warnings)
+            if _looks_like_lyric_line(_normalize(t))
+        ]
+        if not lyric_lines:
+            lyric_lines = [t for t in all_texts_n if _looks_like_lyric_line(t)]
         if lyric_lines:
             _attach_lyrics(measures, lyric_lines[0], warnings)
 
         score = Score(
             schema_version="0.1",
-            title=title or _guess_title(texts) or "",
+            title=title or _guess_title(all_texts_n) or "",
             key=key,
             time_signature=time_sig,
             tempo_bpm=tempo,
@@ -173,8 +229,10 @@ def parse_ocr_to_score(
             meta=ScoreMeta(
                 source_image=filename,
                 engine=engine,
-                created_by="enpu-parse-mvp-#10",
-                comments="MVP parse from OCR; durations/barlines are heuristic.",
+                created_by="enpu-parse-#10+#34",
+                comments=(
+                    "OCR parse with layout filter (#34); durations/barlines heuristic."
+                ),
             ),
         )
         return ParseResult(score=score, notes=hints, mode="score", warnings=warnings)
@@ -313,9 +371,10 @@ def _guess_title(texts: list[str]) -> str:
 def _looks_like_jianpu_line(text: str) -> bool:
     if len(text) < 1:
         return False
-    # Metadata / titles — never treat as pitch stream
+    # Metadata / titles / eval annotations — never treat as pitch stream
     if re.search(
-        r"(key|time|tempo|bpm|拍号|调\s*[:：]|速度|title|样例|sample|授权|来源)",
+        r"(key|time|tempo|bpm|拍号|调\s*[:：]|速度|title|样例|sample|授权|来源|"
+        r"音高序列|pitch\s*sequence|\bgt\b|子集|enpu\s*eval)",
         text,
         re.I,
     ):
