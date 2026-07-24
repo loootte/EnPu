@@ -62,9 +62,10 @@ EnPu/
 Push / PR 到 `main` 时 GitHub Actions 会：
 
 1. **core**：安装 `core/requirements-ci.txt`（无 Paddle）并以 mock 引擎跑 `pytest`  
-2. **desktop**：`npm ci` + `npm run build`（tsc + Vite）
+2. **desktop**：`npm ci` + `npm run build`（tsc + Vite）  
+3. **eval-print-clear**：PaddleOCR 跑合成 `print_clear` 子集，加权 Pitch F1 **≥ 60%** 才通过（#38）
 
-工作流：`.github/workflows/ci.yml`
+工作流：`.github/workflows/ci.yml`  
 
 **Windows 安装包（#14）**：
 
