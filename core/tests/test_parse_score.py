@@ -131,3 +131,43 @@ def test_no_barline_infer_measures_by_meter() -> None:
     )
     # first bar should start with 1,2,3...
     assert mel.measures[0].notes[0].pitch == "1"
+def test_multiline_does_not_merge_last_and_first_measure() -> None:
+    """#35: staff-line break must flush — 001_poc_digits style two systems."""
+    items = [
+        OcrItem(text="Key: C  Time: 3/4  Tempo: 80", score=1.0, box=None),
+        OcrItem(
+            text="1  2  3  |  5  -  -  |  6  5  3  |  2  -  -",
+            score=0.95,
+            box=BoundingBox(x1=40, y1=180, x2=700, y2=220),
+        ),
+        OcrItem(
+            text="1  2  3  |  5  -  -  |  3  2  1  |  1  -  -",
+            score=0.95,
+            box=BoundingBox(x1=40, y1=240, x2=700, y2=280),
+        ),
+    ]
+    result = parse_ocr_to_score(items, filename="001_poc_digits.png")
+    assert result.mode == "score"
+    assert result.score is not None
+    mel = result.score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) >= 7
+    pitches_by_m = [[n.pitch for n in m.notes if n.pitch] for m in mel.measures]
+    # Critical: no single measure like ["2","1","2","3"] (line1 end + line2 start)
+    assert not any(p == ["2", "1", "2", "3"] for p in pitches_by_m)
+    assert any(p[:3] == ["1", "2", "3"] for p in pitches_by_m)
+    assert any("staff-line break" in w or "multi-line" in w for w in result.warnings)
+
+
+def test_rebalance_overfull_measure_by_meter() -> None:
+    """Missing mid-line bars → overfull measure split by 4/4."""
+    items = [
+        OcrItem(text="Time: 4/4", score=1.0, box=None),
+        OcrItem(text="1 2 3 5 6 5 3 2", score=0.95, box=None),
+    ]
+    result = parse_ocr_to_score(items)
+    assert result.score is not None
+    mel = result.score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) >= 2
+    assert [n.pitch for n in mel.measures[0].notes if n.pitch] == ["1", "2", "3", "5"]

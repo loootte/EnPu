@@ -10,6 +10,7 @@ from app.pipeline.barlines import (
     detect_barline_xs,
     inject_barlines_into_items,
     pitch_line_y_range,
+    pitch_y_bands_from_items,
 )
 from app.pipeline.layout import classify_items, estimate_pitch_y_band, pitch_items
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
@@ -61,17 +62,29 @@ def run_recognize(
         logger.exception("OCR engine error")
         raise PipelineError(str(exc), status_code=500) from exc
 
-    # Prefer layout-based pitch band (#34); fall back to digit-density heuristic.
+    # Prefer layout-based multi-row pitch bands (#34/#35).
     classified = classify_items(list(ocr.items))
     staff = pitch_items(classified)
-    y_band = estimate_pitch_y_band(staff) or pitch_line_y_range(list(ocr.items))
+    y_bands = pitch_y_bands_from_items(staff if staff else list(ocr.items))
+    y_band = None
+    if y_bands:
+        y_band = (min(b[0] for b in y_bands), max(b[1] for b in y_bands))
+    else:
+        y_band = estimate_pitch_y_band(staff) or pitch_line_y_range(list(ocr.items))
+        if y_band:
+            y_bands = [y_band]
     # Graphic barlines are often invisible to OCR as the '|' glyph.
-    bar_xs = detect_barline_xs(pre.ocr_bgr, y_range=y_band)
-    # inject_barlines only mutates digit-heavy lines; safe on full item list
+    bar_xs = detect_barline_xs(
+        pre.ocr_bgr,
+        y_range=y_band,
+        y_ranges=y_bands or None,
+    )
     ocr_items = inject_barlines_into_items(list(ocr.items), bar_xs)
     if bar_xs:
         logger.info(
-            "detected %s barline candidate(s) in band %s", len(bar_xs), y_band
+            "detected %s barline candidate(s) in %s band(s)",
+            len(bar_xs),
+            len(y_bands or []),
         )
 
     parsed = parse_ocr_to_score(
