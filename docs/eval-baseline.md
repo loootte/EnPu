@@ -73,11 +73,52 @@ python scripts/eval-accuracy.py --gt-stats
 
 ---
 
-## 4. 当前基线数字
+## 4. 当前基线数字（PaddleOCR）
 
-| 引擎 | 子集 | Pitch acc | Measure err | 日期 | 备注 |
-|------|------|-----------|-------------|------|------|
-| — | — | *TBD* | *TBD* | — | 待首次全量跑分 |
+复现：
+
+```powershell
+cd D:\workspace\EnPu
+# 需已 import 手动样例 → samples/eval/manifest.local.json
+core\.venv\Scripts\python.exe scripts/eval-accuracy.py --run --engine paddleocr
+# 报告: samples/eval/reports/baseline-paddleocr.json
+```
+
+**指标说明**
+
+- **Pitch F1**：GT 与预测音高序列的 token LCS，再算 precision/recall/F1  
+- **weighted F1**：按 GT 音高总数加权汇总  
+- **key/time**：识别 Score 的调号/拍号字符串全等  
+- **\|Δbars\|**：预测小节数与 GT 小节数绝对差  
+
+### 2026-07-24 全量 20 张（engine=paddleocr）
+
+| 子集 | n | Pitch F1 (avg) | Pitch F1 (weighted) | Pitch Recall (avg) | Key | Time | mean \|Δbars\| |
+|------|---|----------------|---------------------|--------------------|-----|------|----------------|
+| **ALL** | 20 | 71.7% | **74.2%** | 94.2% | 100% | 100% | 7.6 |
+| print_clear | 10 | 69.8% | **69.4%** | 100% | 100% | 100% | 1.9 |
+| scan_like | 3 | 65.8% | 65.9% | 100% | 100% | 100% | 2.0 |
+| cn_lyrics | 2 | 63.1% | 63.0% | 100% | 100% | 100% | 1.0 |
+| manual_real | 5 | 82.4% | **75.7%** | 77.0% | 100% | 100% | 25.0 |
+
+**print_clear weighted pitch F1 = 69.4% → PASS（目标 ≥60%）**
+
+### 手动 5 张明细
+
+| ID | 曲目 | GT 音高数 | Pred | F1 | Recall | \|Δbars\| |
+|----|------|-----------|------|-----|--------|-----------|
+| M01 | Fur Elise | 616 | 359 | 63.4% | 50.2% | 29 |
+| M02 | 卡农 Canon in D | 175 | 144 | 89.0% | 81.1% | 1 |
+| M03 | 预备雨露甘霖 | 138 | 130 | 91.0% | 88.4% | 35 |
+| M04 | 坐在宝座上圣洁羔羊 A | 106 | 103 | 85.2% | 84.0% | 32 |
+| M05 | 坐在宝座上圣洁羔羊 C | 106 | 100 | 83.5% | 81.1% | 28 |
+
+### 观察
+
+1. **合成 print_clear**：Recall 很高（数字几乎都扫到），但 Pred 音高偏多 → Precision 拉低 F1（OCR 把标题/歌词里的数字或重复行算进音高流）。  
+2. **真实曲谱**：卡农/诗歌 F1 约 83–91%；Fur Elise 最长、最密（十六分音），Recall 仅 ~50%。  
+3. **小节数**：合成谱平均差 ~2 小节；真实谱差较大（反复/多行/OCR 丢 `|`）。调号与拍号在本批 **全部命中**（与 GT / 元数据提示有关，解读时注意）。  
+4. 报告 JSON：`samples/eval/reports/baseline-paddleocr.json`（本地生成，可不入库）。  
 
 ---
 
