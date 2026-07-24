@@ -55,7 +55,7 @@ EnPu/
 └── README.md
 ```
 
-当前阶段：**Phase 2 — 编辑 / 试听 / 导出**（核心识别 + Score 导出已通；UI 可修正与试听）。详见 [ROADMAP.md](./ROADMAP.md)。
+当前阶段：**Phase 1 基线已测**（print_clear Pitch F1 ≥60%）；下一阶段 **结构精度**（非谱行过滤 / 小节划分）与 **v0.1.0**。详见 [ROADMAP.md](./ROADMAP.md) · [eval-baseline.md](./docs/eval-baseline.md)。
 
 ### CI / 发布
 
