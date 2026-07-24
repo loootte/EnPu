@@ -1,0 +1,6141 @@
+{
+  "Title": "Fur Elise",
+  "KeySignature": "1=G",
+  "Tempo": "中速",
+  "Bpm": 120,
+  "Composer": "",
+  "Measures": [
+    {
+      "MelodyNotes": [
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7.5,
+          "Accidental": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.5,
+          "Accidental": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.5,
+          "Accidental": 2,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 7.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.5,
+          "Accidental": 2,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 1.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.5,
+          "Accidental": 1,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 6.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 5.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": true
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 3.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 2,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    },
+    {
+      "MelodyNotes": [
+        {
+          "Type": 0,
+          "Pitch": 4.0,
+          "Accidental": 0,
+          "Octave": -1,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 0,
+          "Pitch": 2.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 1,
+          "Dashes": 0,
+          "Dotted": false
+        },
+        {
+          "Type": 1,
+          "Pitch": 0.0,
+          "Accidental": 0,
+          "Octave": 0,
+          "Underlines": 0,
+          "Dashes": 1,
+          "Dotted": false
+        }
+      ],
+      "ChordMarkers": [],
+      "LyricSyllables": [],
+      "Ornaments": [],
+      "LyricText": " "
+    }
+  ],
+  "Ties": []
+}

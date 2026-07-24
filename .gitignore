@@ -96,6 +96,15 @@ samples/eval/manual/*.source.jianpu
 samples/eval/manual/*_p*.png
 samples/eval/manifest.local.json
 !samples/eval/manual/README.md
+# Published public-domain / classical eval sheets (issue #29)
+!samples/eval/manual/M01_manual.png
+!samples/eval/manual/M01_manual_p1.png
+!samples/eval/manual/M01_manual_p2.png
+!samples/eval/manual/M01_manual.gt.json
+!samples/eval/manual/M01_manual.source.jianpu
+!samples/eval/manual/M02_manual.png
+!samples/eval/manual/M02_manual.gt.json
+!samples/eval/manual/M02_manual.source.jianpu
 *.tmp
 *.temp
 

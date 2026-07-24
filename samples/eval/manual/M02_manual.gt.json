@@ -1,0 +1,1919 @@
+{
+  "schema_version": "0.1",
+  "title": "卡农 Canon in D",
+  "key": "D",
+  "time_signature": "4/4",
+  "tempo_bpm": 72.0,
+  "parts": [
+    {
+      "id": "P1",
+      "name": "melody",
+      "measures": [
+        {
+          "number": 1,
+          "notes": [
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 7,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "notes": [
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 9,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 10,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 11,
+          "notes": [
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 12,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 13,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": -1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": -1,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 14,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "quarter",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 15,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 16,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "half",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 17,
+          "notes": [
+            {
+              "pitch": "5",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 18,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 19,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 20,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 21,
+          "notes": [
+            {
+              "pitch": "5",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 22,
+          "notes": [
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 23,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "3",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "4",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "5",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 24,
+          "notes": [
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "eighth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "2",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "6",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            },
+            {
+              "pitch": "7",
+              "octave": 0,
+              "duration": "sixteenth",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        },
+        {
+          "number": 25,
+          "notes": [
+            {
+              "pitch": "1",
+              "octave": 1,
+              "duration": "whole",
+              "dots": 0,
+              "is_rest": false,
+              "lyric": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "created_by": "enpu-import-manual-scores",
+    "comments": "GT from user .jianpu digital score; image from matching PDF page render.",
+    "source_image": "manual/M02_manual.png",
+    "engine": null,
+    "extra": {
+      "eval": {
+        "id": "M02_manual",
+        "subset": "manual_real",
+        "synthetic": false,
+        "license": "user-local-not-for-redistribution",
+        "pitch_sequence": [
+          "5",
+          "4",
+          "3",
+          "2",
+          "1",
+          "7",
+          "1",
+          "2",
+          "1",
+          "3",
+          "5",
+          "4",
+          "3",
+          "1",
+          "3",
+          "2",
+          "1",
+          "6",
+          "5",
+          "1",
+          "4",
+          "6",
+          "5",
+          "4",
+          "1",
+          "7",
+          "1",
+          "3",
+          "5",
+          "7",
+          "1",
+          "3",
+          "5",
+          "6",
+          "4",
+          "3",
+          "2",
+          "4",
+          "3",
+          "2",
+          "1",
+          "7",
+          "6",
+          "5",
+          "4",
+          "1",
+          "1",
+          "7",
+          "1",
+          "7",
+          "1",
+          "3",
+          "5",
+          "7",
+          "1",
+          "3",
+          "5",
+          "6",
+          "6",
+          "5",
+          "6",
+          "7",
+          "5",
+          "3",
+          "4",
+          "5",
+          "3",
+          "4",
+          "5",
+          "5",
+          "6",
+          "7",
+          "1",
+          "2",
+          "3",
+          "4",
+          "3",
+          "1",
+          "2",
+          "3",
+          "3",
+          "4",
+          "5",
+          "6",
+          "5",
+          "4",
+          "5",
+          "3",
+          "4",
+          "5",
+          "6",
+          "1",
+          "7",
+          "6",
+          "5",
+          "4",
+          "5",
+          "4",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "1",
+          "6",
+          "1",
+          "7",
+          "1",
+          "7",
+          "6",
+          "7",
+          "5",
+          "6",
+          "7",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "3",
+          "4",
+          "5",
+          "3",
+          "4",
+          "5",
+          "5",
+          "6",
+          "7",
+          "1",
+          "2",
+          "3",
+          "4",
+          "3",
+          "1",
+          "2",
+          "3",
+          "3",
+          "4",
+          "5",
+          "6",
+          "5",
+          "4",
+          "5",
+          "1",
+          "7",
+          "1",
+          "6",
+          "1",
+          "7",
+          "6",
+          "5",
+          "4",
+          "5",
+          "4",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "1",
+          "6",
+          "1",
+          "7",
+          "1",
+          "7",
+          "6",
+          "7",
+          "1",
+          "2",
+          "1",
+          "7",
+          "1",
+          "6",
+          "7",
+          "1"
+        ],
+        "measure_count": 25,
+        "source_jianpu": true
+      }
+    }
+  },
+  "extra": {
+    "eval": {
+      "id": "M02_manual",
+      "subset": "manual_real",
+      "synthetic": false,
+      "license": "user-local-not-for-redistribution",
+      "pitch_sequence": [
+        "5",
+        "4",
+        "3",
+        "2",
+        "1",
+        "7",
+        "1",
+        "2",
+        "1",
+        "3",
+        "5",
+        "4",
+        "3",
+        "1",
+        "3",
+        "2",
+        "1",
+        "6",
+        "5",
+        "1",
+        "4",
+        "6",
+        "5",
+        "4",
+        "1",
+        "7",
+        "1",
+        "3",
+        "5",
+        "7",
+        "1",
+        "3",
+        "5",
+        "6",
+        "4",
+        "3",
+        "2",
+        "4",
+        "3",
+        "2",
+        "1",
+        "7",
+        "6",
+        "5",
+        "4",
+        "1",
+        "1",
+        "7",
+        "1",
+        "7",
+        "1",
+        "3",
+        "5",
+        "7",
+        "1",
+        "3",
+        "5",
+        "6",
+        "6",
+        "5",
+        "6",
+        "7",
+        "5",
+        "3",
+        "4",
+        "5",
+        "3",
+        "4",
+        "5",
+        "5",
+        "6",
+        "7",
+        "1",
+        "2",
+        "3",
+        "4",
+        "3",
+        "1",
+        "2",
+        "3",
+        "3",
+        "4",
+        "5",
+        "6",
+        "5",
+        "4",
+        "5",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "7",
+        "6",
+        "5",
+        "4",
+        "5",
+        "4",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "1",
+        "6",
+        "1",
+        "7",
+        "1",
+        "7",
+        "6",
+        "7",
+        "5",
+        "6",
+        "7",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "3",
+        "4",
+        "5",
+        "3",
+        "4",
+        "5",
+        "5",
+        "6",
+        "7",
+        "1",
+        "2",
+        "3",
+        "4",
+        "3",
+        "1",
+        "2",
+        "3",
+        "3",
+        "4",
+        "5",
+        "6",
+        "5",
+        "4",
+        "5",
+        "1",
+        "7",
+        "1",
+        "6",
+        "1",
+        "7",
+        "6",
+        "5",
+        "4",
+        "5",
+        "4",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "1",
+        "6",
+        "1",
+        "7",
+        "1",
+        "7",
+        "6",
+        "7",
+        "1",
+        "2",
+        "1",
+        "7",
+        "1",
+        "6",
+        "7",
+        "1"
+      ],
+      "measure_count": 25
+    }
+  }
+}
