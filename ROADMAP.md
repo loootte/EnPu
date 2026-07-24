@@ -6,7 +6,7 @@
 
 **仓库**：https://github.com/loootte/EnPu  
 **最后更新**：2026-07-25  
-**当前阶段**：Phase 1 主路径 + 准确率基线已通（#29）；下一阶段 **结构精度**（#34–#38）与 **v0.1.0**；产品/体验演进清单见 **#43**；云端 #13 可并行  
+**当前阶段**：#34/#35/#38 ✅；精度收尾 **#36** 真实评测集 + **#37** 高密度；产品体验 **#43** 已拆 **#45–#52**；目标 **v0.1.0**；云端 #13 可并行  
 
 ---
 
@@ -62,7 +62,7 @@
 
 **核心判断（#33 / 基线结论）**：**短板不在 OCR 引擎，而在版面理解与后处理**（非谱行数字、小节划分、高密度时值）。
 
-**产品/体验原则（#43）**：对照 PhotoScore / Audiveris / PlayScore 等成熟 OMR，P0 以「精度配套 + 校对效率」为主，尽量少动 core 算法或只做轻量输出扩展；**不阻塞 v0.1.0**。精度技术主线仍为 **#34 / #35**；双视图、问题导航等产品项与之并行。
+**产品/体验原则（#43）**：对照 PhotoScore / Audiveris / PlayScore 等成熟 OMR，P0 以「精度配套 + 校对效率」为主，尽量少动 core 算法或只做轻量输出扩展；**不阻塞 v0.1.0**。精度技术主线 **#34 / #35 已完成**；双视图/问题导航等产品项见 **#45–#52**，与 **#36** 评测集并行。
 
 ---
 
@@ -74,7 +74,7 @@
 | Phase 1 | 识别核心 MVP | 4–6 周 | P0 | ✅ 主路径完成；基线 ✅ #29 |
 | Phase 2 | 编辑、播放与导出 | 3–4 周 | P1 | ✅ **#12 MVP**；体验扩展 ⬜ #43 |
 | Phase 3 | 云端双模式与部署 | 2–3 周 | P1 | 待开始（#13） |
-| Phase 4 | 精度、体验与发布 | 4–6 周 | P0 | 🔄 打包 ✅ #14；**精度攻坚中** #34–#38；校对体验 ⬜ #43 |
+| Phase 4 | 精度、体验与发布 | 4–6 周 | P0 | 🔄 打包 ✅ #14；#34/#35/#38 ✅；评测 **#36**；体验 **#45–#52** |
 
 > 时间估算按 **1 名全栈 + 兼职算法** 节奏；可按人力压缩或拉长。
 
@@ -163,13 +163,13 @@
 | P2-2 | WebAudio 试听 | P0 | ✅ MVP（#12） |
 | P2-3 | 导出 MusicXML / MIDI / JSON | P0 | ✅ |
 | P2-4 | `.enpu.json` 工程 | P0 | ✅ MVP（#12） |
-| P2-5 | PDF 多页批量导入与分页拆分 | **P1** | ⬜ 待开发（v0.1 最小范围见下） |
-| P2-6 | 乐谱结构化批量修正面板（批量删非音符数字、改时值、移调、对齐歌词） | P1（v0.2） | ⬜ 待开发 |
-| P2-7 | 分层播放控制（分声部静音/独奏、调速、循环、节拍器/预备拍） | P1（v0.2） | ⬜ 待开发 |
-| P2-8 | 工程文件多版本快照（识别稿 / 校对稿、一键回滚） | P1（v0.2） | ⬜ 待开发 |
-| P2-9 | 画布矩形框选交互工具（前端 React Canvas：选区拖拽、选区清除、局部重识别快捷键） | **P1** | ⬜ 待开发 |
-| P2-10 | Core FastAPI 新增局部裁剪识别接口 `/v1/recognize/crop`（乐谱 JSON 局部合并，不覆盖选区外人工修改数据） | **P1** | ⬜ 待开发 |
-| P2-11 | 双视图原稿联动选区标记（框选区域在原图与简谱编辑面板同步高亮，搭配低置信音符导航面板） | **P1** | ⬜ 待开发 |
+| P2-5 | PDF 多页批量导入与分页拆分 | **P1** | ⬜ **#48**（v0.1 最小范围见下） |
+| P2-6 | 乐谱结构化批量修正面板（批量删非音符数字、改时值、移调、对齐歌词） | P1（v0.2） | ⬜ **#50** |
+| P2-7 | 分层播放控制（分声部静音/独奏、调速、循环、节拍器/预备拍） | P1（v0.2） | ⬜ **#51** |
+| P2-8 | 工程文件多版本快照（识别稿 / 校对稿、一键回滚） | P1（v0.2） | ⬜ **#52** |
+| P2-9 | 画布矩形框选交互工具（前端 React Canvas：选区拖拽、选区清除、局部重识别快捷键） | **P1** | ⬜ **#49** |
+| P2-10 | Core FastAPI 新增局部裁剪识别接口 `/v1/recognize/crop`（乐谱 JSON 局部合并，不覆盖选区外人工修改数据） | **P1** | ⬜ **#49** |
+| P2-11 | 双视图原稿联动选区标记（框选区域在原图与简谱编辑面板同步高亮，搭配低置信音符导航面板） | **P1** | ⬜ **#49** |
 
 ### P2-5 多页批处理范围（#43）
 
@@ -234,14 +234,14 @@
 
 | ID | 任务 | 优先级 | 状态 |
 |----|------|--------|------|
-| P4-A | 版面/谱行分类，过滤非谱行数字 | P0 | 🔄 **#34**（layout 门控已合入分支） |
-| P4-B | 小节线检测与切分加固 | P0 | 🔄 **#35**（多行 flush + 过满小节重切 + 多带 bar CV） |
-| P4-C | 扩充真实敬拜谱评测集（≥15） | P0 | ⬜ **#36** |
+| P4-A | 版面/谱行分类，过滤非谱行数字 | P0 | ✅ **#34**（layout 门控） |
+| P4-B | 小节线检测与切分加固 | P0 | ✅ **#35**（多行 flush + 过满小节重切 + 多带 bar CV） |
+| P4-C | 扩充真实敬拜谱评测集（≥15） | P0 | ⬜ **#36** · **下一步** |
 | P4-D | 高密度谱与时值线检测 | P1 | ⬜ **#37** |
-| P4-E | print_clear F1 门槛进 CI | P1 | 🔄 **#38**（`ci.yml` eval-print-clear job） |
-| P4-F | 原稿对照双视图校对（左右分栏、悬浮同步定位、放大联动、原图/叠图切换） | **P0**（v0.1 体验加分） | ⬜ 待开发（#43） |
-| P4-G | 识别错误智能标记 + 问题导航面板（低置信/错位小节/数字污染；按类型筛选跳转） | **P0**（v0.1 体验加分） | ⬜ 待开发（#43；配套 #34 置信度/问题标签输出） |
-| P4-H | 图像预处理工具箱（倾斜/畸变/去噪/二值化/框选去杂边；复用 OpenCV） | P1 | ⬜ 待开发（#43；挂 P1-2 / P4-1） |
+| P4-E | print_clear F1 门槛进 CI | P1 | ✅ **#38**（`ci.yml` eval-print-clear job） |
+| P4-F | 原稿对照双视图校对（左右分栏、悬浮同步定位、放大联动、原图/叠图切换） | **P0**（v0.1 体验加分） | ⬜ **#45** |
+| P4-G | 识别错误智能标记 + 问题导航面板（低置信/错位小节/数字污染；按类型筛选跳转） | **P0**（v0.1 体验加分） | ⬜ **#46**（配套 #34 置信度/问题标签输出） |
+| P4-H | 图像预处理工具箱（倾斜/畸变/去噪/二值化/框选去杂边；复用 OpenCV） | P1 | ⬜ **#47**（挂 P1-2 / P4-1） |
 | P4-I | 多声部简谱分离（主旋律/伴奏分轨导出与播放） | P2 | ⬜ 待开发（#35 结构稳定后） |
 | P4-J | 简谱 ↔ 五线谱双向导出（music21 支撑，差异化） | P2 | ⬜ 待开发 |
 | P4-1 | 拍照场景增强 | P1 | 待做（与 P4-H 协同） |
@@ -275,12 +275,12 @@
 ### 4.4 技术优先级（实现顺序建议）
 
 ```text
-P0  #34 非谱行过滤  ──►  #35 小节划分  ──►  #36 真实评测集
-P0  校对体验：双视图 P4-F 与/或 问题导航 P4-G（可与算法并行）
-P1  #37 高密度时值     #38 CI 门槛
-P1  框选精调 P2-9–11 / PDF 多页 MVP P2-5 / 预处理工具箱 P4-H
+P0  #34 ✅ 非谱行过滤  ──►  #35 ✅ 小节划分  ──►  #36 真实评测集（下一步）
+P0  校对体验：#45 双视图 与/或 #46 问题导航（可与 #36 并行）
+P1  #37 高密度时值     #38 ✅ CI 门槛
+P1  #49 框选精调 / #48 PDF 多页 MVP / #47 预处理工具箱
 P1  v0.1.0 tag（安装包 + 基线可引用）
-P2  批量编辑/分层播放/工程快照（v0.2）
+P2  #50 批量编辑 / #51 分层播放 / #52 工程快照（v0.2）
 P2  多声部 / 简谱↔五线谱 / CLI / 云端与手机预处理 / Phase 3
 ```
 
@@ -314,9 +314,9 @@ P2  多声部 / 简谱↔五线谱 / CLI / 云端与手机预处理 / Phase 3
 |--------|------------|------|
 | **M1 — Desktop PoC** | Windows 可运行；导入图 → 本地识别 → UI 展示 | ✅ |
 | **M2 — OMR MVP** | 结构化 JSON + MusicXML + 准确率基线 | ✅ |
-| **M2.5 — 结构可用** | 非谱行过滤 + 小节划分改善 + 真实评测 | 🔄 #34–#36 |
+| **M2.5 — 结构可用** | 非谱行过滤 + 小节划分改善 + 真实评测 | 🔄 #34✅ #35✅ #36⬜ |
 | M3 — 可用闭环 | 编辑 + 试听 + 导出 | ✅ MVP |
-| M3.5 — 校对效率 | 双视图 / 问题导航 / 框选精调（#43） | ⬜ |
+| M3.5 — 校对效率 | 双视图 / 问题导航 / 框选精调 | ⬜ #45 / #46 / #49 |
 | M4 — 双模式 | 本地/云端切换 | ⬜ #13 |
 | **M5 — v0.1 发布** | 安装包 + 文档 + 基线 + Release | 🔄 |
 
@@ -324,36 +324,64 @@ P2  多声部 / 简谱↔五线谱 / CLI / 云端与手机预处理 / Phase 3
 
 ## 7. Issue 拆分索引
 
-Issues 列表：https://github.com/loootte/EnPu/issues
+Issues 列表：https://github.com/loootte/EnPu/issues  
+（状态同步：2026-07-25；OPEN 以 GitHub 为准）
+
+### 7.0 当前 OPEN
+
+| # | 标题 | 阶段 | 优先级 | 状态 |
+|---|------|------|--------|------|
+| [#13](https://github.com/loootte/EnPu/issues/13) | Docker 与本地/云端切换 | P3 | P1 | ⬜ 不阻塞 v0.1.0 |
+| [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集（≥15） | P4 | **P0** | ⬜ **下一步（精度）** |
+| [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | P1 | ⬜ |
+| [#43](https://github.com/loootte/EnPu/issues/43) | 产品/体验演进清单入 Roadmap | docs | P0 | 🔄 [PR #44](https://github.com/loootte/EnPu/pull/44) |
+| [#45](https://github.com/loootte/EnPu/issues/45) | 原稿对照双视图校对（P4-F） | P4 | **P0** | ⬜ v0.1 体验加分 |
+| [#46](https://github.com/loootte/EnPu/issues/46) | 错误标记与问题导航（P4-G） | P4 | **P0** | ⬜ v0.1 体验加分 |
+| [#47](https://github.com/loootte/EnPu/issues/47) | 图像预处理工具箱（P4-H） | P4 | P1 | ⬜ |
+| [#48](https://github.com/loootte/EnPu/issues/48) | PDF 多页导入 MVP（P2-5） | P2 | P1 | ⬜ v0.1 最小 |
+| [#49](https://github.com/loootte/EnPu/issues/49) | 框选重识别与结果合并（P2-9–11） | P2 | P1 | ⬜ v0.1 / v0.2 |
+| [#50](https://github.com/loootte/EnPu/issues/50) | 批量修正面板（P2-6） | P2 | P1 | ⬜ v0.2 |
+| [#51](https://github.com/loootte/EnPu/issues/51) | 分层播放控制（P2-7） | P2 | P1 | ⬜ v0.2 |
+| [#52](https://github.com/loootte/EnPu/issues/52) | 工程多版本快照（P2-8） | P2 | P1 | ⬜ v0.2 |
+
+### 7.1 全量索引（含已关闭）
 
 | # | 标题 | 阶段 | 状态 |
 |---|------|------|------|
 | [#1](https://github.com/loootte/EnPu/issues/1)–[#8](https://github.com/loootte/EnPu/issues/8) | Phase 0 PoC | P0 | ✅ |
 | [#9](https://github.com/loootte/EnPu/issues/9)–[#11](https://github.com/loootte/EnPu/issues/11) | Schema / 解析 / 导出 | P1 | ✅ |
 | [#12](https://github.com/loootte/EnPu/issues/12) | 编辑试听导出 UI | P2 | ✅ |
-| [#13](https://github.com/loootte/EnPu/issues/13) | Docker 与本地/云端切换 | P3 | ⬜ |
+| [#13](https://github.com/loootte/EnPu/issues/13) | Docker 与本地/云端切换 | P3 | ⬜ OPEN |
 | [#14](https://github.com/loootte/EnPu/issues/14) | Windows 安装包与 sidecar | P4 | ✅ |
-| [#29](https://github.com/loootte/EnPu/issues/29) | 准确率基准线与评测集 | P1 | ✅ 基线已测 |
-| [#33](https://github.com/loootte/EnPu/issues/33) | 基于基线更新产品与技术路线 | docs | ✅ 本文档（精度向） |
-| [#34](https://github.com/loootte/EnPu/issues/34) | 版面/谱行分类，过滤非谱行数字 | P4 | ⬜ **下一步** |
-| [#35](https://github.com/loootte/EnPu/issues/35) | 小节线检测与切分加固 | P4 | 🔄 多行不并小节 + bar CV |
-| [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集 | P4 | ⬜ |
-| [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | ⬜ |
-| [#38](https://github.com/loootte/EnPu/issues/38) | print_clear F1 CI 门槛 | P1 | 🔄 `ci.yml` 已加 gate |
-| [#43](https://github.com/loootte/EnPu/issues/43) | 竞品能力与基线短板 → 产品/体验演进清单（写入 Roadmap） | docs / P2 / P4 | 🔄 本文档落实中 |
+| [#29](https://github.com/loootte/EnPu/issues/29) | 准确率基准线与评测集 | P1 | ✅ |
+| [#33](https://github.com/loootte/EnPu/issues/33) | 基于基线更新产品与技术路线 | docs | ✅ |
+| [#34](https://github.com/loootte/EnPu/issues/34) | 版面/谱行分类，过滤非谱行数字 | P4 | ✅ |
+| [#35](https://github.com/loootte/EnPu/issues/35) | 小节线检测与切分加固 | P4 | ✅ |
+| [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集 | P4 | ⬜ OPEN |
+| [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | ⬜ OPEN |
+| [#38](https://github.com/loootte/EnPu/issues/38) | print_clear F1 CI 门槛 | P1 | ✅ |
+| [#43](https://github.com/loootte/EnPu/issues/43) | 产品/体验演进清单（写入 Roadmap） | docs | 🔄 [PR #44](https://github.com/loootte/EnPu/pull/44) |
+| [#45](https://github.com/loootte/EnPu/issues/45) | 双视图校对 P4-F | P4 | ⬜ OPEN |
+| [#46](https://github.com/loootte/EnPu/issues/46) | 错误标记与问题导航 P4-G | P4 | ⬜ OPEN |
+| [#47](https://github.com/loootte/EnPu/issues/47) | 图像预处理工具箱 P4-H | P4 | ⬜ OPEN |
+| [#48](https://github.com/loootte/EnPu/issues/48) | PDF 多页 MVP P2-5 | P2 | ⬜ OPEN |
+| [#49](https://github.com/loootte/EnPu/issues/49) | 框选重识别与合并 P2-9–11 | P2 | ⬜ OPEN |
+| [#50](https://github.com/loootte/EnPu/issues/50) | 批量修正面板 P2-6 | P2 | ⬜ OPEN · v0.2 |
+| [#51](https://github.com/loootte/EnPu/issues/51) | 分层播放 P2-7 | P2 | ⬜ OPEN · v0.2 |
+| [#52](https://github.com/loootte/EnPu/issues/52) | 工程多版本快照 P2-8 | P2 | ⬜ OPEN · v0.2 |
 
-### 7.1 #43 建议拆分子 Issue（待开）
+### 7.2 #43 子 Issue 映射（已开）
 
-| 建议标题 | 对应任务 | 优先级 | 目标版本 |
-|----------|----------|--------|----------|
-| 双视图校对 | P4-F | P0 | v0.1.0 体验加分 |
-| 错误标记与问题导航 | P4-G（含 #34 置信度/标签输出扩展） | P0 | v0.1.0 体验加分 |
-| 图像预处理工具箱 | P4-H / P1-2 扩展 | P1 | v0.1 后 / v0.2 |
-| PDF 多页导入 MVP | P2-5（切页 + 逐页队列） | P1 | v0.1 最小 |
-| 框选区域重新识别与结果合并 | P2-9 / P2-10 / P2-11 | P1 | v0.1.0 / v0.2 |
-| 批量操作面板 | P2-6 | P1 | v0.2 |
-| 分层播放控制 | P2-7 | P1 | v0.2 |
-| 工程多版本快照 | P2-8 | P1 | v0.2 |
+| Issue | 对应任务 | 优先级 | 目标版本 |
+|-------|----------|--------|----------|
+| [#45](https://github.com/loootte/EnPu/issues/45) | P4-F 双视图校对 | P0 | v0.1.0 体验加分 |
+| [#46](https://github.com/loootte/EnPu/issues/46) | P4-G 错误标记与问题导航 | P0 | v0.1.0 体验加分 |
+| [#47](https://github.com/loootte/EnPu/issues/47) | P4-H 预处理工具箱 | P1 | v0.1 后 / v0.2 |
+| [#48](https://github.com/loootte/EnPu/issues/48) | P2-5 PDF 多页 MVP | P1 | v0.1 最小 |
+| [#49](https://github.com/loootte/EnPu/issues/49) | P2-9 / P2-10 / P2-11 框选精调 | P1 | v0.1.0 / v0.2 |
+| [#50](https://github.com/loootte/EnPu/issues/50) | P2-6 批量操作面板 | P1 | v0.2 |
+| [#51](https://github.com/loootte/EnPu/issues/51) | P2-7 分层播放 | P1 | v0.2 |
+| [#52](https://github.com/loootte/EnPu/issues/52) | P2-8 工程快照 | P1 | v0.2 |
 
 ---
 
@@ -366,7 +394,8 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-24 | Schema/解析/导出/UI/打包（#9–#14、#12） |
 | 2026-07-24 | **#29** 基线：print_clear F1 69.4% PASS；真实敬拜谱 ~80%+ |
 | 2026-07-24 | **#33** 转向结构精度：#34 过滤 → #35 小节 → #36 真实集；v0.1.0 不阻塞于云端 |
-| 2026-07-25 | **#43** 产品/体验清单入 Roadmap：双视图、问题导航、预处理、PDF 多页、框选精调、批量编辑/分层播放/工程快照；P2 中长期 CLI/多声部/五线谱/手机预处理；#34/#35 仍为精度 P0 主线 |
+| 2026-07-25 | **#43** 产品/体验清单入 Roadmap；子 Issue **#45–#52** 已开；**#34/#35/#38** 已关闭 |
+| 2026-07-25 | Issue 索引同步：OPEN = #13/#36/#37/#43/#45–#52；精度下一步 **#36** |
 
 ### Phase 摘要
 
@@ -374,21 +403,22 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 
 **Phase 1 收尾**：评测与基线完成（#29）。  
 
-**产品体验（#43）**：校对工具链 + 编辑增强已编号入 Phase 2/4；不阻塞精度主线。  
+**精度**：#34/#35/#38 ✅；收尾 **#36** 真实评测集 + **#37** 高密度。  
+
+**产品体验（#43 → #45–#52）**：校对工具链 + 编辑增强已拆 Issue。  
 
 **下一迭代（建议）**
 
 | 优先级 | Issue | 说明 |
 |--------|-------|------|
-| P0 | **[#34](https://github.com/loootte/EnPu/issues/34)** | 非谱行数字过滤 |
-| P0 | [#35](https://github.com/loootte/EnPu/issues/35) | 小节划分 |
-| P0 | [#36](https://github.com/loootte/EnPu/issues/36) | 真实敬拜评测集 |
-| P0 | **[#43](https://github.com/loootte/EnPu/issues/43)** → 双视图 P4-F 与/或 问题导航 P4-G | v0.1.0 校对体验加分；可与算法并行 |
-| P1 | [#37](https://github.com/loootte/EnPu/issues/37) / [#38](https://github.com/loootte/EnPu/issues/38) | 密度时值 / CI 门槛 |
-| P1 | 框选精调（P2-9–P2-11） | 矩形选区轻量校对（复用 OpenCV / Canvas / JSON）；上线节点 **v0.1.0** |
-| P1 | PDF 多页 MVP（P2-5） | 导入切页 + 逐页识别队列 |
+| P0 | **[#36](https://github.com/loootte/EnPu/issues/36)** | 真实敬拜评测集（≥15）· **精度下一步** |
+| P0 | **[#45](https://github.com/loootte/EnPu/issues/45)** / **[#46](https://github.com/loootte/EnPu/issues/46)** | 双视图 / 问题导航 · v0.1.0 体验加分 |
+| P1 | [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线 |
+| P1 | [#49](https://github.com/loootte/EnPu/issues/49) | 框选精调（P2-9–11）；上线节点 **v0.1.0** |
+| P1 | [#48](https://github.com/loootte/EnPu/issues/48) | PDF 多页 MVP（切页 + 逐页队列） |
+| P1 | [#47](https://github.com/loootte/EnPu/issues/47) | 预处理工具箱 |
 | P1 | v0.1.0 | 安装包 + 基线报告 tag |
-| P2 | v0.2 编辑增强 | P2-6 批量操作 / P2-7 分层播放 / P2-8 工程快照 |
+| P2 | [#50](https://github.com/loootte/EnPu/issues/50) / [#51](https://github.com/loootte/EnPu/issues/51) / [#52](https://github.com/loootte/EnPu/issues/52) | 批量操作 / 分层播放 / 工程快照 · v0.2 |
 | P2 | [#13](https://github.com/loootte/EnPu/issues/13) | 云端；CLI / 手机预处理见 Phase 3 |
 
 ---
@@ -397,14 +427,15 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 
 | 产品项 | 依赖/配套的技术项 |
 |--------|-------------------|
-| 双视图校对 P4-F | 无强依赖，可先行 |
-| 错误标记与导航 P4-G | **#34** 版面过滤 + core 输出置信度/问题标签 |
-| 预处理工具箱 P4-H | P1-2 / 拍照鲁棒性，OpenCV 增强 |
-| PDF 多页 P2-5 | 切页与任务队列 |
-| 批量删除非音符 P2-6 | 产品侧消费 **#34** 结果 |
-| 框选识别精调 P2-9–11 | 局部 ROI 识别接口 + Score 合并；受益于 #34/#35 |
-| 多声部 / 复杂结构 P4-I | **#35** 小节与版面结构 |
+| 双视图校对 P4-F **#45** | 无强依赖，可先行 |
+| 错误标记与导航 P4-G **#46** | **#34** ✅ + core 输出置信度/问题标签 |
+| 预处理工具箱 P4-H **#47** | P1-2 / 拍照鲁棒性，OpenCV 增强 |
+| PDF 多页 P2-5 **#48** | 切页与任务队列 |
+| 批量删除非音符 P2-6 **#50** | 产品侧消费 **#34** 结果 |
+| 框选识别精调 P2-9–11 **#49** | 局部 ROI 识别接口 + Score 合并；受益于 #34/#35 ✅ |
+| 分层播放 P2-7 **#51** / 工程快照 P2-8 **#52** | 前端为主；v0.2 |
+| 多声部 / 复杂结构 P4-I | **#35** ✅ 小节与版面结构 |
 
 ---
 
-*本文档随 #33 按 eval-baseline 更新；精度任务以 #34–#38 为执行单元；产品/体验演进以 #43 为清单来源。*
+*本文档随 #33 按 eval-baseline 更新；精度 #34–#38 中 #34/#35/#38 已完成、#36/#37 仍 OPEN；产品/体验以 #43 为清单来源，执行单元 #45–#52。*
