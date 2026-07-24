@@ -208,6 +208,15 @@ def parse_ocr_to_score(
                 warnings.append(
                     "no barline tokens in OCR; measures inferred from time signature"
                 )
+        else:
+            # Soft rebalance: overfull measures (missing '|') split by meter (#35)
+            measures, rebalanced = _rebalance_overfull_measures(
+                measures, time_sig, warnings
+            )
+            if rebalanced:
+                warnings.append(
+                    "rebalanced overfull measure(s) using time signature (#35)"
+                )
 
         lyric_lines = [
             _normalize(t)
@@ -229,9 +238,10 @@ def parse_ocr_to_score(
             meta=ScoreMeta(
                 source_image=filename,
                 engine=engine,
-                created_by="enpu-parse-#10+#34",
+                created_by="enpu-parse-#10+#34+#35",
                 comments=(
-                    "OCR parse with layout filter (#34); durations/barlines heuristic."
+                    "OCR parse with layout filter + multi-line/bar rebalance "
+                    "(#34/#35); durations heuristic."
                 ),
             ),
         )
@@ -405,9 +415,16 @@ def _looks_like_lyric_line(text: str) -> bool:
 
 
 def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
+    """Parse one or more jianpu systems.
+
+    Issue #35: flush at **end of each staff line** so the last measure of line N
+    never absorbs the first notes of line N+1 when the trailing ``|`` is omitted
+    (common in engraving and OCR of ``001_poc_digits.png``).
+    """
     measures: list[Measure] = []
     measure_num = 1
     current_notes: list[NoteEvent] = []
+    line_breaks = 0
 
     def flush() -> None:
         nonlocal measure_num, current_notes
@@ -429,6 +446,8 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
                 i += 1
                 continue
             if tok in {".", "-"} or tok.startswith("-") or tok.startswith("."):
+                # Standalone duration marks already consumed via _duration_from_following
+                # when attached; if orphaned after a bar, skip.
                 i += 1
                 continue
             if tok == "0":
@@ -457,11 +476,60 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
                 i += 1 + consumed
                 continue
             i += 1
+        # System / staff-line break — close open measure before next row
+        if current_notes:
+            flush()
+            line_breaks += 1
 
     flush()
+    if line_breaks and len(lines) > 1:
+        warnings.append(
+            f"flushed measure at {line_breaks} staff-line break(s) (#35 multi-line)"
+        )
     if not measures:
         warnings.append("jianpu tokens found but no notes emitted")
     return measures
+
+
+def _measure_beats(measure: Measure) -> float:
+    return sum(_note_beats(n) for n in measure.notes)
+
+
+def _rebalance_overfull_measures(
+    measures: list[Measure],
+    time_sig: str,
+    warnings: list[str],
+) -> tuple[list[Measure], bool]:
+    """Split measures whose beat total exceeds the time signature capacity.
+
+    Does not merge underfull measures (keeps multi-line flushes intact).
+    """
+    capacity = _beats_per_measure(time_sig)
+    if capacity <= 0:
+        return measures, False
+    eps = 0.35  # allow slight overfill from dotted heuristics
+    out: list[Measure] = []
+    changed = False
+    for meas in measures:
+        beats = _measure_beats(meas)
+        if beats <= capacity + eps or len(meas.notes) <= 1:
+            out.append(meas)
+            continue
+        # Pack notes of this measure into sub-measures by meter
+        sub = _split_notes_by_meter(list(meas.notes), time_sig, warnings)
+        if len(sub) <= 1:
+            out.append(meas)
+            continue
+        changed = True
+        out.extend(sub)
+    if not changed:
+        return measures, False
+    # Renumber
+    renum = [
+        Measure(number=i, notes=m.notes, extra=m.extra)
+        for i, m in enumerate(out, start=1)
+    ]
+    return renum, True
 
 
 def _tokenize_jianpu(line: str) -> list[str]:
