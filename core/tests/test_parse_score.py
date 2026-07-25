@@ -97,6 +97,80 @@ def test_reading_order_uses_boxes() -> None:
     assert first[:3] == ["1", "2", "3"]
 
 
+def test_horizontal_boxes_bar_only_on_large_gaps() -> None:
+    """Same-row digit boxes: small gaps = same measure; large gap = bar (M04)."""
+    # Three tight notes, large gap, then five notes — expect 2 measures not 8 bars
+    items = [
+        OcrItem(text="Time: 4/4", score=1.0, box=None),
+        OcrItem(
+            text="3",
+            score=1.0,
+            box=BoundingBox(x1=40, y1=100, x2=55, y2=120),
+        ),
+        OcrItem(
+            text="5",
+            score=1.0,
+            box=BoundingBox(x1=60, y1=100, x2=75, y2=120),
+        ),
+        OcrItem(
+            text="5",
+            score=1.0,
+            box=BoundingBox(x1=80, y1=100, x2=95, y2=120),
+        ),
+        OcrItem(
+            text="3",
+            score=1.0,
+            box=BoundingBox(x1=100, y1=100, x2=115, y2=120),
+        ),
+        # large gap (~40px) before next measure
+        OcrItem(
+            text="1",
+            score=1.0,
+            box=BoundingBox(x1=160, y1=100, x2=175, y2=120),
+        ),
+        OcrItem(
+            text="7",
+            score=1.0,
+            box=BoundingBox(x1=180, y1=100, x2=195, y2=120),
+        ),
+        OcrItem(
+            text="1",
+            score=1.0,
+            box=BoundingBox(x1=200, y1=100, x2=215, y2=120),
+        ),
+        OcrItem(
+            text="4",
+            score=1.0,
+            box=BoundingBox(x1=220, y1=100, x2=235, y2=120),
+        ),
+        OcrItem(
+            text="6",
+            score=1.0,
+            box=BoundingBox(x1=240, y1=100, x2=255, y2=120),
+        ),
+    ]
+    result = parse_ocr_to_score(items)
+    assert result.mode == "score"
+    assert result.score is not None
+    mel = result.score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) >= 2
+    assert [n.pitch for n in mel.measures[0].notes if n.pitch] == [
+        "3",
+        "5",
+        "5",
+        "3",
+    ]
+    assert [n.pitch for n in mel.measures[1].notes if n.pitch][:5] == [
+        "1",
+        "7",
+        "1",
+        "4",
+        "6",
+    ]
+    assert any("large horizontal" in w for w in result.warnings)
+
+
 def test_ocr_bar_confusion_I_recovered() -> None:
     """OCR often turns | into I/l between digits."""
     items = [

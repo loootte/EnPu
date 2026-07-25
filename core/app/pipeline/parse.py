@@ -360,27 +360,101 @@ def _lines_from_items(
 
     for row in rows:
         row_sorted = sorted(row, key=lambda x: x.box.x1)  # type: ignore[union-attr]
-        # If multiple jianpu-like fragments on one row, treat gaps as barlines
-        parts = [_item_text_for_line(r, underline_hits) for r in row_sorted]
-        jianpu_parts = [p for p in parts if _looks_like_jianpu_line(p) or _DIGIT_RE.search(p)]
-        if len(jianpu_parts) >= 2 and all(
-            _DIGIT_RE.search(p) and not re.search(r"[\u4e00-\u9fff]{3,}", p)
-            for p in jianpu_parts
-        ):
-            joined = " | ".join(jianpu_parts)
+        # Multiple boxes on one staff: only insert ``|`` on **large** horizontal
+        # gaps (measure boundaries). Joining every box with ``|`` was turning each
+        # OCR fragment into its own bar (M04: m2 became 17146 = real m3).
+        line, n_bars = _join_staff_row_with_gap_bars(
+            row_sorted, underline_hits=underline_hits
+        )
+        if line:
+            lines.append(line)
+        if n_bars > 0:
             warnings.append(
-                f"inserted {len(jianpu_parts) - 1} barline(s) from horizontal OCR boxes"
+                f"inserted {n_bars} barline(s) from large horizontal OCR gaps"
             )
-            lines.append(joined)
-            # also keep non-jianpu fragments from this row
-            for p in parts:
-                if p not in jianpu_parts:
-                    lines.append(p)
-        else:
-            # single box or mixed content — keep left-to-right join with spaces
-            lines.append(" ".join(parts))
 
     return lines
+
+
+def _join_staff_row_with_gap_bars(
+    row_sorted: list[OcrItem],
+    *,
+    underline_hits: list[UnderlineHit] | None = None,
+) -> tuple[str, int]:
+    """Join same-row OCR boxes L→R; insert ``|`` only on large x-gaps."""
+    if not row_sorted:
+        return "", 0
+
+    texts = [_item_text_for_line(r, underline_hits) for r in row_sorted]
+    # Non-digit-heavy fragments (lyrics mixed in) still included but don't force bars
+    if len(row_sorted) == 1:
+        return texts[0], 0
+
+    widths = [
+        max(4.0, (r.box.x2 - r.box.x1))  # type: ignore[union-attr]
+        for r in row_sorted
+        if r.box is not None
+    ]
+    med_w = sorted(widths)[len(widths) // 2] if widths else 20.0
+    # Inter-note gaps usually << one digit; measure gaps are larger.
+    # Base threshold from digit width only — never inflate using the same gaps
+    # we will classify (a single large gap must remain a bar, M04 3553|17146).
+    bar_gap = max(10.0, 0.55 * med_w)
+
+    gaps: list[float] = []
+    for a, b in zip(row_sorted, row_sorted[1:]):
+        if a.box is None or b.box is None:
+            gaps.append(0.0)
+        else:
+            gaps.append(float(b.box.x1 - a.box.x2))
+
+    # Adaptive note-gap only when we have enough small spacings to estimate.
+    positive = sorted(g for g in gaps if g > 0)
+    if len(positive) >= 3:
+        # Typical inter-note gap ≈ lower half median; bar ≫ that
+        low = positive[: max(1, len(positive) // 2)]
+        note_gap = low[len(low) // 2]
+        bar_gap = max(bar_gap, note_gap * 2.5)
+    elif len(positive) == 2:
+        bar_gap = max(bar_gap, min(positive) * 2.0 + 1.0)
+
+    parts: list[str] = [texts[0]]
+    n_bars = 0
+    for i, g in enumerate(gaps):
+        nxt = texts[i + 1]
+        # Only bar between digit-like fragments
+        left_dig = bool(_DIGIT_RE.search(parts[-1].split("|")[-1]))
+        right_dig = bool(_DIGIT_RE.search(nxt))
+        if g >= bar_gap and left_dig and right_dig:
+            parts.append("|")
+            n_bars += 1
+        parts.append(nxt)
+
+    # Collapse to spaced string: "3 5 | 1 7"
+    out: list[str] = []
+    for p in parts:
+        if p == "|":
+            out.append("|")
+        else:
+            out.append(p)
+    # Build: join non-bar with space, bars as separators
+    chunks: list[str] = []
+    buf: list[str] = []
+    for p in out:
+        if p == "|":
+            if buf:
+                chunks.append(" ".join(buf))
+                buf = []
+            chunks.append("|")
+        else:
+            buf.append(p)
+    if buf:
+        chunks.append(" ".join(buf))
+    # "a b | c" style
+    s = " ".join(chunks)
+    s = re.sub(r"\s*\|\s*", " | ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s, n_bars
 
 
 def _detect_key(texts: list[str]) -> str | None:

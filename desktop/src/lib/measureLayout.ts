@@ -99,8 +99,138 @@ function measuresPerRowPlan(nMeasures: number, nRows: number): number[] {
   if (nMeasures <= 0) return Array(nRows).fill(0);
   const base = Math.floor(nMeasures / nRows);
   const rem = nMeasures % nRows;
-  // Prefer fuller early rows (top of page)
   return Array.from({ length: nRows }, (_, i) => base + (i < rem ? 1 : 0));
+}
+
+/**
+ * Estimate measure count on a staff row from large horizontal gaps between
+ * pitch boxes (bar-sized gaps), not even split of total score measures.
+ */
+export function estimateRowMeasureSlots(rowBoxes: BoundingBox[]): number {
+  if (rowBoxes.length <= 1) return 1;
+  const sorted = [...rowBoxes].sort((a, b) => a.x1 - b.x1);
+  const widths = sorted.map((b) => Math.max(4, b.x2 - b.x1));
+  const medW = [...widths].sort((a, b) => a - b)[Math.floor(widths.length / 2)] ?? 16;
+  const gaps: number[] = [];
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    gaps.push(sorted[i + 1]!.x1 - sorted[i]!.x2);
+  }
+  const pos = gaps.filter((g) => g > 0);
+  const medGap =
+    pos.length > 0
+      ? [...pos].sort((a, b) => a - b)[Math.floor(pos.length / 2)]!
+      : medW * 0.3;
+  // Bar gap: clearly larger than typical inter-note spacing
+  const barThr = Math.max(medW * 0.75, medGap * 2.0, 12);
+  let bars = 0;
+  for (const g of gaps) {
+    if (g >= barThr) bars += 1;
+  }
+  return Math.max(1, bars + 1);
+}
+
+/**
+ * Split a staff row into ``count`` continuous x-segments using large gaps.
+ * Returns null if gap structure doesn't support ``count`` segments.
+ */
+function splitRowByGaps(
+  rowBoxes: BoundingBox[],
+  count: number,
+): CropRect[] | null {
+  if (count <= 0 || rowBoxes.length === 0) return null;
+  const sorted = [...rowBoxes].sort((a, b) => a.x1 - b.x1);
+  if (count === 1) {
+    return [
+      {
+        x1: sorted[0]!.x1,
+        y1: Math.min(...sorted.map((b) => b.y1)),
+        x2: sorted[sorted.length - 1]!.x2,
+        y2: Math.max(...sorted.map((b) => b.y2)),
+      },
+    ];
+  }
+  const widths = sorted.map((b) => Math.max(4, b.x2 - b.x1));
+  const medW = [...widths].sort((a, b) => a - b)[Math.floor(widths.length / 2)] ?? 16;
+  const gaps = sorted.slice(0, -1).map((b, i) => ({
+    i,
+    g: sorted[i + 1]!.x1 - b.x2,
+  }));
+  const pos = gaps.map((x) => x.g).filter((g) => g > 0);
+  const medGap =
+    pos.length > 0
+      ? [...pos].sort((a, b) => a - b)[Math.floor(pos.length / 2)]!
+      : medW * 0.3;
+  const barThr = Math.max(medW * 0.75, medGap * 2.0, 12);
+  // Pick the (count-1) largest gaps as bar cuts
+  const barGaps = gaps
+    .filter((x) => x.g >= barThr)
+    .sort((a, b) => b.g - a.g)
+    .slice(0, count - 1)
+    .sort((a, b) => a.i - b.i);
+  if (barGaps.length < count - 1) return null;
+
+  const cutAfter = new Set(barGaps.map((x) => x.i));
+  const segs: BoundingBox[][] = [[]];
+  for (let i = 0; i < sorted.length; i += 1) {
+    segs[segs.length - 1]!.push(sorted[i]!);
+    if (cutAfter.has(i) && i < sorted.length - 1) segs.push([]);
+  }
+  if (segs.length !== count || segs.some((s) => s.length === 0)) return null;
+
+  const y1 = Math.min(...sorted.map((b) => b.y1));
+  const y2 = Math.max(...sorted.map((b) => b.y2));
+  // Continuous tiles: boundaries at midpoints between segments
+  const rects: CropRect[] = [];
+  for (let s = 0; s < segs.length; s += 1) {
+    const boxes = segs[s]!;
+    const x1 = boxes[0]!.x1;
+    const x2 = boxes[boxes.length - 1]!.x2;
+    let left = x1;
+    let right = x2;
+    if (s > 0) {
+      const prev = segs[s - 1]!;
+      const prevRight = prev[prev.length - 1]!.x2;
+      left = (prevRight + x1) / 2;
+    }
+    if (s < segs.length - 1) {
+      const next = segs[s + 1]!;
+      right = (x2 + next[0]!.x1) / 2;
+    }
+    rects.push({ x1: left, y1, x2: right, y2 });
+  }
+  return rects;
+}
+
+/** Allocate n score measures across rows proportional to per-row slot estimates. */
+function measuresPerRowFromSlots(
+  nMeasures: number,
+  slotsPerRow: number[],
+): number[] {
+  const nRows = slotsPerRow.length;
+  if (nRows === 0) return [];
+  if (nMeasures <= 0) return Array(nRows).fill(0);
+  const totalSlots = slotsPerRow.reduce((a, b) => a + Math.max(1, b), 0);
+  const raw = slotsPerRow.map((s) =>
+    Math.max(1, Math.round((nMeasures * Math.max(1, s)) / totalSlots)),
+  );
+  // Fix sum to exactly nMeasures
+  let sum = raw.reduce((a, b) => a + b, 0);
+  let i = 0;
+  while (sum > nMeasures && i < 1000) {
+    const idx = i % nRows;
+    if (raw[idx]! > 1) {
+      raw[idx]! -= 1;
+      sum -= 1;
+    }
+    i += 1;
+  }
+  i = 0;
+  while (sum < nMeasures && i < 1000) {
+    raw[i % nRows]! += 1;
+    sum += 1;
+    i += 1;
+  }
+  return raw;
 }
 
 /**
@@ -147,9 +277,14 @@ export function buildMeasureRects(
   const padX = Math.max(4, (staffX2 - staffX1) * 0.02);
   staffX1 = Math.max(0, staffX1 - padX);
   staffX2 = Math.min(imageW || staffX2 + padX, staffX2 + padX);
-  const staffW = Math.max(8, staffX2 - staffX1);
+  // Prefer gap-based slots per staff row (visual bars), not even n/nRows.
+  const slotsPerRow = rows.map((r) => estimateRowMeasureSlots(r));
+  const slotSum = slotsPerRow.reduce((a, b) => a + b, 0);
+  const plan =
+    slotSum > 0
+      ? measuresPerRowFromSlots(n, slotsPerRow)
+      : measuresPerRowPlan(n, rows.length);
 
-  const plan = measuresPerRowPlan(n, rows.length);
   const rects: CropRect[] = [];
   let mi = 0;
 
@@ -159,14 +294,35 @@ export function buildMeasureRects(
     const rowBoxes = rows[ri]!;
     let y1 = Infinity;
     let y2 = -Infinity;
+    let rowX1 = Infinity;
+    let rowX2 = -Infinity;
     for (const b of rowBoxes) {
       y1 = Math.min(y1, b.y1);
       y2 = Math.max(y2, b.y2);
+      rowX1 = Math.min(rowX1, b.x1);
+      rowX2 = Math.max(rowX2, b.x2);
     }
     // Vertical pad so hover between underlines still hits the row
     const padY = Math.max(6, (y2 - y1) * 0.35);
     y1 = Math.max(0, y1 - padY);
     y2 = y2 + padY;
+
+    // Prefer this row's x-span for local bars (not full-page staff width),
+    // so first staff with 4 bars isn't stretched to page edges.
+    const padRX = Math.max(4, (rowX2 - rowX1) * 0.03);
+    const left = Math.max(0, rowX1 - padRX);
+    const right = Math.min(imageW || rowX2 + padRX, rowX2 + padRX);
+    const rowW = Math.max(8, right - left);
+
+    // Split row by large gaps when slot count matches; else equal/weighted tiles
+    const gapSplits = splitRowByGaps(rowBoxes, count);
+    if (gapSplits && gapSplits.length === count) {
+      for (const seg of gapSplits) {
+        rects.push({ x1: seg.x1, y1, x2: seg.x2, y2 });
+        mi += 1;
+      }
+      continue;
+    }
 
     const weights: number[] = [];
     for (let j = 0; j < count; j += 1) {
@@ -175,12 +331,11 @@ export function buildMeasureRects(
     }
     const wSum = weights.reduce((a, b) => a + b, 0) || count;
 
-    let x = staffX1;
+    let x = left;
     for (let j = 0; j < count; j += 1) {
       const frac = weights[j]! / wSum;
-      const slotW =
-        j === count - 1 ? staffX2 - x : Math.max(4, staffW * frac);
-      const x2 = j === count - 1 ? staffX2 : x + slotW;
+      const slotW = j === count - 1 ? right - x : Math.max(4, rowW * frac);
+      const x2 = j === count - 1 ? right : x + slotW;
       rects.push({ x1: x, y1, x2, y2 });
       x = x2;
       mi += 1;
