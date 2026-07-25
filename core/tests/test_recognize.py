@@ -101,6 +101,19 @@ def test_openapi_available() -> None:
     assert "/v1/recognize" in paths
 
 
+def test_recognize_includes_regions_field() -> None:
+    """Dual-view (#45) expects regions[] (may be empty under mock)."""
+    data = _png_bytes(40, 30)
+    response = client.post(
+        "/v1/recognize",
+        files={"file": ("sample.png", data, "image/png")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "regions" in body
+    assert isinstance(body["regions"], list)
+
+
 def test_preprocess_pipeline_on_digit_sheet() -> None:
     """Exercise OpenCV path even under mock OCR."""
     data = _digit_sheet_png()

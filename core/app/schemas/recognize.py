@@ -19,6 +19,22 @@ class BoundingBox(BaseModel):
     score: float | None = None
 
 
+class LayoutRegion(BaseModel):
+    """OCR box with layout kind for dual-view / crop mapping (#45).
+
+    Coordinates are in **input image** pixels (same as UI selection).
+    ``kind`` comes from layout classification (#34): pitch / meta / title / …
+    """
+
+    text: str = ""
+    box: BoundingBox
+    kind: str = Field(
+        default="other",
+        description="title|meta|pitch|lyrics|footer|annotation|other",
+    )
+    score: float | None = None
+
+
 class NoteHint(BaseModel):
     """Lightweight OCR-derived pitch hint (pre-Score).
 
@@ -51,6 +67,10 @@ class RecognizeResponse(BaseModel):
     engine: str
     texts: list[str] = Field(default_factory=list)
     boxes: list[BoundingBox] = Field(default_factory=list)
+    regions: list[LayoutRegion] = Field(
+        default_factory=list,
+        description="Paired text+box+layout kind (input pixels). Prefer for dual-view.",
+    )
     notes: list[NoteHint] = Field(default_factory=list)
     score: Score | None = Field(
         default=None,

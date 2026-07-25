@@ -51,11 +51,14 @@ export function RecognizePage() {
   const [hoverMeasure, setHoverMeasure] = useState<number | null>(null);
   const [overlayMode, setOverlayMode] = useState<ImageOverlayMode>("boxes");
   /**
-   * Boxes from the last *full-page* recognize (natural image coords).
-   * Crop re-recognize only returns ROI boxes — keep full map for dual-view.
+   * Full-page layout from last whole-image recognize (natural pixels).
+   * Crop only returns ROI boxes — keep full map for dual-view (#45).
    */
   const [layoutBoxes, setLayoutBoxes] = useState<
     import("../lib/types").BoundingBox[] | null
+  >(null);
+  const [layoutRegions, setLayoutRegions] = useState<
+    import("../lib/types").LayoutRegion[] | null
   >(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   // Keep latest score for keyboard crop without stale closures.
@@ -105,6 +108,7 @@ export function RecognizePage() {
     setHighlightMeasures(null);
     setHoverMeasure(null);
     setLayoutBoxes(null);
+    setLayoutRegions(null);
     setFile(f);
     setInfo(`已选择：${f.name}（${Math.round(f.size / 1024)} KB）`);
   };
@@ -118,7 +122,7 @@ export function RecognizePage() {
 
   const nMeasures = score?.parts?.[0]?.measures?.length ?? 0;
 
-  /** Spatial map from full-page OCR boxes (reading order) — not uniform page grid. */
+  /** Spatial map: pitch regions only (skip title / key-time / lyrics). */
   const allMeasureRects = useMemo((): CropRect[] => {
     if (!nMeasures || !imageSize.w || !imageSize.h) return [];
     return buildMeasureRects(
@@ -126,8 +130,9 @@ export function RecognizePage() {
       imageSize.w,
       imageSize.h,
       layoutBoxes,
+      layoutRegions,
     );
-  }, [imageSize.h, imageSize.w, layoutBoxes, nMeasures]);
+  }, [imageSize.h, imageSize.w, layoutBoxes, layoutRegions, nMeasures]);
 
   const selectionPreviewRange = useMemo(() => {
     if (!selection || !nMeasures || !imageSize.w) return null;
@@ -163,8 +168,8 @@ export function RecognizePage() {
         setHoverMeasure(null);
         return;
       }
-      const idx = pointToMeasureIndex(point.x, point.y, allMeasureRects);
-      setHoverMeasure(idx + 1);
+      const idx = pointToMeasureIndex(point.x, point.y, allMeasureRects, 20);
+      setHoverMeasure(idx == null ? null : idx + 1);
     },
     [allMeasureRects],
   );
@@ -178,10 +183,12 @@ export function RecognizePage() {
     setScore(null);
     setHighlightMeasures(null);
     setLayoutBoxes(null);
+    setLayoutRegions(null);
     try {
       const res = await recognizeImage(file, baseUrl);
       setResult(res);
       setLayoutBoxes(res.boxes ?? null);
+      setLayoutRegions(res.regions ?? null);
       setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
       setCoreState("online");
       setInfo(
@@ -226,7 +233,13 @@ export function RecognizePage() {
           measureFrom = 1;
           measureTo = n;
         } else {
-          const rects = buildMeasureRects(n, metaW, metaH, layoutBoxes);
+          const rects = buildMeasureRects(
+            n,
+            metaW,
+            metaH,
+            layoutBoxes,
+            layoutRegions,
+          );
           const range = rectToMeasureRange(sel, rects);
           measureFrom = range.from;
           measureTo = range.to;
@@ -291,6 +304,7 @@ export function RecognizePage() {
   }, [
     baseUrl,
     layoutBoxes,
+    layoutRegions,
     refreshHealth,
     result?.meta.height,
     result?.meta.width,
@@ -328,6 +342,7 @@ export function RecognizePage() {
       setHighlightMeasures(null);
       setHoverMeasure(null);
       setLayoutBoxes(null);
+      setLayoutRegions(null);
       setInfo(`已打开工程：${f.name}${proj.title ? ` · ${proj.title}` : ""}`);
     } catch (err) {
       setError(
@@ -465,6 +480,7 @@ export function RecognizePage() {
             setHighlightMeasures(null);
             setHoverMeasure(null);
             setLayoutBoxes(null);
+            setLayoutRegions(null);
             setInfo("已新建空白 Score，可直接编辑后导出");
           }}
           className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
@@ -482,6 +498,7 @@ export function RecognizePage() {
             setHighlightMeasures(null);
             setHoverMeasure(null);
             setLayoutBoxes(null);
+            setLayoutRegions(null);
             setError(null);
             setInfo(null);
           }}

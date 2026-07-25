@@ -27,6 +27,7 @@ from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, prepro
 from app.schemas.recognize import (
     BoundingBox,
     CropRecognizeResponse,
+    LayoutRegion,
     RecognizeMeta,
     RecognizeResponse,
 )
@@ -134,15 +135,33 @@ def _run_on_bgr(
     )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     steps = list(preprocess_prefix or []) + list(pre.steps)
-    # Boxes in input-image pixels (same space as UI selection / natural size).
+    # Boxes / regions in input-image pixels (same space as UI selection).
     boxes_in = _boxes_to_input_space(list(ocr.boxes), scale=pre.scale)
     in_h, in_w = image_bgr.shape[:2]
+
+    # Dual-view (#45): paired text+box+layout kind; skip title/meta for measure map.
+    regions: list[LayoutRegion] = []
+    for c in classified:
+        if c.item.box is None:
+            continue
+        box_list = _boxes_to_input_space([c.item.box], scale=pre.scale)
+        if not box_list:
+            continue
+        regions.append(
+            LayoutRegion(
+                text=(c.item.text or "").strip(),
+                box=box_list[0],
+                kind=c.kind.value,
+                score=c.item.score,
+            )
+        )
 
     return RecognizeResponse(
         ok=True,
         engine=ocr.engine,
         texts=ocr.texts,
         boxes=boxes_in,
+        regions=regions,
         notes=parsed.notes,
         score=parsed.score,
         meta=RecognizeMeta(

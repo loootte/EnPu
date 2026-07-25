@@ -1,11 +1,36 @@
 /**
  * Measure ↔ image region mapping for dual-view (#45).
  *
- * Prefer OCR boxes (reading-order partition) when available — uniform page-grid
- * fails on tall scores (e.g. M04) where measure 1 is mid-page but not mid-score.
+ * Prefer **pitch** OCR boxes (reading-order partition). Title / key-time / lyrics
+ * must not occupy measure slots (M04: title→m1, meta→m2, first bar→m3 offset).
  */
 
-import type { BoundingBox, CropRect } from "./types";
+import type { BoundingBox, CropRect, LayoutRegion } from "./types";
+
+/** Boxes used for measure geometry: pitch-only when regions available. */
+export function boxesForMeasureMap(
+  regions?: LayoutRegion[] | null,
+  fallbackBoxes?: BoundingBox[] | null,
+): BoundingBox[] {
+  if (regions && regions.length > 0) {
+    const pitch = regions
+      .filter((r) => r.kind === "pitch" && r.box)
+      .map((r) => r.box);
+    if (pitch.length > 0) return pitch;
+    // Soft fallback: exclude title/meta/footer/lyrics/annotation
+    const staffish = regions
+      .filter(
+        (r) =>
+          r.box &&
+          !["title", "meta", "footer", "lyrics", "annotation"].includes(
+            r.kind,
+          ),
+      )
+      .map((r) => r.box);
+    if (staffish.length > 0) return staffish;
+  }
+  return (fallbackBoxes ?? []).filter((b) => b.x2 > b.x1 && b.y2 > b.y1);
+}
 
 export function estimateMeasuresPerLine(
   nMeasures: number,
@@ -82,17 +107,20 @@ function sortBoxesReadingOrder(boxes: BoundingBox[]): BoundingBox[] {
 /**
  * Partition OCR boxes into one rect per measure (reading order).
  * Falls back to uniform page grid when boxes are missing.
+ *
+ * Prefer ``regions`` (pitch-only). Do not pass unfiltered page boxes.
  */
 export function buildMeasureRects(
   nMeasures: number,
   imageW: number,
   imageH: number,
   boxes?: BoundingBox[] | null,
+  regions?: LayoutRegion[] | null,
 ): CropRect[] {
   const n = Math.max(0, nMeasures);
   if (n === 0) return [];
 
-  const usable = (boxes ?? []).filter(
+  const usable = boxesForMeasureMap(regions, boxes).filter(
     (b) => b.x2 > b.x1 && b.y2 > b.y1 && Number.isFinite(b.x1),
   );
 
@@ -186,25 +214,32 @@ export function measureIndexToRect(
   );
 }
 
+/**
+ * Map image point → 0-based measure index, or null if outside staff measures
+ * (title / key-time / empty margin should not light up a measure).
+ */
 export function pointToMeasureIndex(
   x: number,
   y: number,
   measureRects: CropRect[],
-): number {
-  if (!measureRects.length) return 0;
-  // Prefer containing rect; else nearest center.
+  /** Soft snap distance in image pixels (0 = only strict inside). */
+  snapPx = 24,
+): number | null {
+  if (!measureRects.length) return null;
   for (let i = 0; i < measureRects.length; i += 1) {
     const r = measureRects[i]!;
     if (x >= r.x1 && x <= r.x2 && y >= r.y1 && y <= r.y2) return i;
   }
-  let best = 0;
-  let bestD = Infinity;
+  if (snapPx <= 0) return null;
+  let best: number | null = null;
+  let bestD = snapPx * snapPx;
   for (let i = 0; i < measureRects.length; i += 1) {
     const r = measureRects[i]!;
-    const cx = (r.x1 + r.x2) / 2;
-    const cy = (r.y1 + r.y2) / 2;
-    const d = (x - cx) ** 2 + (y - cy) ** 2;
-    if (d < bestD) {
+    // Distance to rect (0 if inside expanded box)
+    const dx = x < r.x1 ? r.x1 - x : x > r.x2 ? x - r.x2 : 0;
+    const dy = y < r.y1 ? r.y1 - y : y > r.y2 ? y - r.y2 : 0;
+    const d = dx * dx + dy * dy;
+    if (d <= bestD) {
       bestD = d;
       best = i;
     }
@@ -223,12 +258,14 @@ export function rectToMeasureRange(
     if (rectsIntersect(rect, measureRects[i]!)) hits.push(i);
   }
   if (hits.length === 0) {
-    // Fall back to centers of TL/BR
-    const a = pointToMeasureIndex(rect.x1, rect.y1, measureRects);
-    const b = pointToMeasureIndex(rect.x2, rect.y2, measureRects);
-    const lo = Math.min(a, b);
-    const hi = Math.max(a, b);
-    return { from: lo + 1, to: hi + 1 };
+    const a = pointToMeasureIndex(
+      (rect.x1 + rect.x2) / 2,
+      (rect.y1 + rect.y2) / 2,
+      measureRects,
+      48,
+    );
+    if (a == null) return { from: 1, to: 1 };
+    return { from: a + 1, to: a + 1 };
   }
   return { from: hits[0]! + 1, to: hits[hits.length - 1]! + 1 };
 }
