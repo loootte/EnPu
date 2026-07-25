@@ -23,6 +23,7 @@ from app.pipeline.layout import (
     summarize_classification,
 )
 from app.pipeline.ocr import OcrItem
+from app.pipeline.problems import attach_problems_to_score, collect_score_problems
 from app.schemas.recognize import NoteHint
 from app.schemas.score import (
     DurationName,
@@ -238,13 +239,15 @@ def parse_ocr_to_score(
             meta=ScoreMeta(
                 source_image=filename,
                 engine=engine,
-                created_by="enpu-parse-#10+#34+#35",
+                created_by="enpu-parse-#10+#34+#35+#46",
                 comments=(
                     "OCR parse with layout filter + multi-line/bar rebalance "
-                    "(#34/#35); durations heuristic."
+                    "(#34/#35); durations heuristic; problem tags (#46)."
                 ),
             ),
         )
+        problems = collect_score_problems(score, parse_warnings=warnings)
+        score = attach_problems_to_score(score, problems)
         return ParseResult(score=score, notes=hints, mode="score", warnings=warnings)
     except Exception as exc:  # noqa: BLE001
         warnings.append(f"score parse failed: {exc}")
