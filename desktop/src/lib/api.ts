@@ -9,6 +9,8 @@ import type {
   CropRect,
   ExportResponse,
   HealthResponse,
+  PreprocessOptions,
+  PreprocessResponse,
   RecognizeResponse,
   Score,
 } from "./types";
@@ -73,6 +75,28 @@ export async function healthCheck(
   }
 }
 
+function appendPreprocessForm(
+  form: FormData,
+  opts?: Partial<PreprocessOptions> | null,
+  crop?: CropRect | null,
+) {
+  if (!opts) return;
+  form.append("denoise", opts.denoise ? "true" : "false");
+  form.append("deskew", opts.deskew ? "true" : "false");
+  form.append("clahe", opts.clahe ? "true" : "false");
+  form.append("shadow_remove", opts.shadow_remove ? "true" : "false");
+  form.append("adaptive_binary", opts.adaptive_binary ? "true" : "false");
+  if (opts.brightness != null) form.append("brightness", String(opts.brightness));
+  if (opts.contrast != null) form.append("contrast", String(opts.contrast));
+  if (opts.max_side != null) form.append("max_side", String(opts.max_side));
+  if (opts.use_selection_crop && crop) {
+    form.append("crop_x1", String(crop.x1));
+    form.append("crop_y1", String(crop.y1));
+    form.append("crop_x2", String(crop.x2));
+    form.append("crop_y2", String(crop.y2));
+  }
+}
+
 /**
  * Upload an image file to POST /v1/recognize.
  */
@@ -80,9 +104,12 @@ export async function recognizeImage(
   file: File,
   baseUrl: string = getCoreBaseUrl(),
   signal?: AbortSignal,
+  preprocess?: Partial<PreprocessOptions> | null,
+  crop?: CropRect | null,
 ): Promise<RecognizeResponse> {
   const form = new FormData();
   form.append("file", file, file.name || "upload.png");
+  appendPreprocessForm(form, preprocess, crop);
 
   let res: Response;
   try {
@@ -114,6 +141,45 @@ export async function recognizeImage(
     return (await res.json()) as RecognizeResponse;
   } catch {
     throw new CoreApiError("识别响应不是合法 JSON", { kind: "parse" });
+  }
+}
+
+/** POST /v1/preprocess — preview toolbox result without OCR (#47). */
+export async function preprocessImage(
+  file: File,
+  opts: Partial<PreprocessOptions>,
+  crop?: CropRect | null,
+  baseUrl: string = getCoreBaseUrl(),
+  signal?: AbortSignal,
+): Promise<PreprocessResponse> {
+  const form = new FormData();
+  form.append("file", file, file.name || "upload.png");
+  appendPreprocessForm(form, opts, crop);
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/preprocess`, {
+      method: "POST",
+      body: form,
+      signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+  if (!res.ok) {
+    let detail = `预处理失败：HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+  try {
+    return (await res.json()) as PreprocessResponse;
+  } catch {
+    throw new CoreApiError("预处理响应不是合法 JSON", { kind: "parse" });
   }
 }
 

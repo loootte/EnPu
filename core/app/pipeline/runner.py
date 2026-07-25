@@ -23,7 +23,12 @@ from app.pipeline.crop_merge import (
 from app.pipeline.layout import classify_items, estimate_pitch_y_band, pitch_items
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
-from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
+from app.pipeline.preprocess import (
+    ImageDecodeError,
+    PreprocessOptions,
+    decode_image_bytes,
+    preprocess_for_ocr,
+)
 from app.pipeline.problems import attach_problems_to_score, collect_score_problems
 from app.schemas.recognize import (
     BoundingBox,
@@ -81,13 +86,19 @@ def _run_on_bgr(
     content_type: str | None,
     started: float,
     preprocess_prefix: list[str] | None = None,
+    preprocess_options: PreprocessOptions | None = None,
 ) -> RecognizeResponse:
     """Preprocess → OCR → barlines → Score parse for a BGR image array."""
     try:
-        pre = preprocess_for_ocr(
-            image_bgr,
+        opts = preprocess_options or PreprocessOptions(
             max_side=settings.ocr_max_side,
             denoise=settings.ocr_denoise,
+        )
+        pre = preprocess_for_ocr(
+            image_bgr,
+            max_side=opts.max_side,
+            denoise=opts.denoise,
+            options=opts,
         )
     except ImageDecodeError as exc:
         raise PipelineError(str(exc), status_code=400) from exc
@@ -197,6 +208,7 @@ def run_recognize(
     settings: Settings,
     filename: str | None = None,
     content_type: str | None = None,
+    preprocess_options: PreprocessOptions | None = None,
 ) -> RecognizeResponse:
     """Decode → recognize. Dispatches legacy OCR-first vs structure-first (#58)."""
     mode = (settings.pipeline_mode or "legacy").strip().lower()
@@ -209,6 +221,7 @@ def run_recognize(
                 settings=settings,
                 filename=filename,
                 content_type=content_type,
+                preprocess_options=preprocess_options,
             )
         except StructurePipelineError as exc:
             raise PipelineError(exc.message, status_code=exc.status_code) from exc
@@ -223,6 +236,7 @@ def run_recognize(
         settings=settings,
         filename=filename,
         content_type=content_type,
+        preprocess_options=preprocess_options,
         started=started,
     )
 

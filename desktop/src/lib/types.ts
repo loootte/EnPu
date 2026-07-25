@@ -194,6 +194,45 @@ export interface ExportResponse {
   warnings: string[];
 }
 
+/** OpenCV preprocess toolbox options (#47). */
+export interface PreprocessOptions {
+  denoise: boolean;
+  deskew: boolean;
+  clahe: boolean;
+  shadow_remove: boolean;
+  adaptive_binary: boolean;
+  brightness: number;
+  contrast: number;
+  max_side: number;
+  /** Use current selection as crop (applied on recognize / preview). */
+  use_selection_crop: boolean;
+}
+
+export const defaultPreprocessOptions = (): PreprocessOptions => ({
+  denoise: true,
+  deskew: false,
+  clahe: false,
+  shadow_remove: false,
+  adaptive_binary: false,
+  brightness: 0,
+  contrast: 1,
+  max_side: 2000,
+  use_selection_crop: false,
+});
+
+export interface PreprocessResponse {
+  ok: boolean;
+  steps: string[];
+  width: number;
+  height: number;
+  out_width: number;
+  out_height: number;
+  scale: number;
+  image_png_base64: string;
+  options: Record<string, unknown>;
+  elapsed_ms: number;
+}
+
 /** Lightweight EnPu project file (Phase 2 MVP). */
 export interface EnPuProject {
   project_version: "0.1";
