@@ -19,6 +19,7 @@ import {
 } from "../lib/api";
 import {
   buildMeasureRects,
+  measureRectsFromStructure,
   isLargeStaffRoi,
   pointToMeasureIndex,
   rectToMeasureRange,
@@ -135,9 +136,30 @@ export function RecognizePage() {
     return measures.map((m) => Math.max(1, m.notes?.length ?? 1));
   }, [score?.parts]);
 
-  /** Spatial map: pitch regions, row tiles continuous in X (no dead zones). */
+  /**
+   * Spatial map (#66): prefer structure L3 boxes (1:1 with Score measures);
+   * else pitch-region row tiles.
+   */
   const allMeasureRects = useMemo((): CropRect[] => {
     if (!nMeasures || !imageSize.w || !imageSize.h) return [];
+    const fromL3 = measureRectsFromStructure(result?.structure);
+    if (fromL3 && fromL3.length > 0) {
+      // Align length to Score measure count (pad/truncate edge cases)
+      if (fromL3.length === nMeasures) return fromL3;
+      if (fromL3.length > nMeasures) return fromL3.slice(0, nMeasures);
+      const padded = [...fromL3];
+      const last = fromL3[fromL3.length - 1]!;
+      while (padded.length < nMeasures) {
+        const w = Math.max(8, last.x2 - last.x1);
+        padded.push({
+          x1: last.x1,
+          y1: last.y2 + 4,
+          x2: last.x1 + w,
+          y2: last.y2 + 4 + Math.max(8, last.y2 - last.y1),
+        });
+      }
+      return padded;
+    }
     return buildMeasureRects(
       nMeasures,
       imageSize.w,
@@ -153,6 +175,7 @@ export function RecognizePage() {
     layoutRegions,
     nMeasures,
     noteCounts,
+    result?.structure,
   ]);
 
   const selectionPreviewRange = useMemo(() => {
@@ -261,18 +284,24 @@ export function RecognizePage() {
           measureFrom = 1;
           measureTo = n;
         } else {
+          const fromL3 = measureRectsFromStructure(result?.structure);
           const counts =
             base?.parts?.[0]?.measures?.map((m) =>
               Math.max(1, m.notes?.length ?? 1),
             ) ?? null;
-          const rects = buildMeasureRects(
-            n,
-            metaW,
-            metaH,
-            layoutBoxes,
-            layoutRegions,
-            counts,
-          );
+          const rects =
+            fromL3 && fromL3.length > 0
+              ? fromL3.length >= n
+                ? fromL3.slice(0, n)
+                : fromL3
+              : buildMeasureRects(
+                  n,
+                  metaW,
+                  metaH,
+                  layoutBoxes,
+                  layoutRegions,
+                  counts,
+                );
           const range = rectToMeasureRange(sel, rects);
           measureFrom = range.from;
           measureTo = range.to;

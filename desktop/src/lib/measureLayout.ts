@@ -1,17 +1,42 @@
 /**
- * Measure ↔ image region mapping for dual-view (#45).
+ * Measure ↔ image region mapping for dual-view (#45 / #66).
  *
- * Strategy:
- * 1. Use pitch (or non-meta) OCR boxes only
- * 2. Cluster into staff **rows** by Y
- * 3. Tile each row into continuous measure slots by X (no gaps)
- *    — equal width, or weighted by note counts when provided
+ * Strategy (priority):
+ * 1. **#66** When structure L3 measure boxes exist, use them 1:1 with Score
+ *    measure order (same flatten as core assemble).
+ * 2. Else use pitch (or non-meta) OCR boxes, cluster into staff **rows** by Y,
+ *    tile each row into continuous measure slots by X.
  *
  * Avoids: global equal-chunk of boxes (M04 mid-bar dead zones; whole-row
  * unions; score m3 → blank image).
  */
 
-import type { BoundingBox, CropRect, LayoutRegion } from "./types";
+import type {
+  BoundingBox,
+  CropRect,
+  LayoutRegion,
+  StructureDebug,
+} from "./types";
+
+/**
+ * Prefer structure-first L3 measure rects when present (#66).
+ * Order matches Score.parts[0].measures (system top→bottom, L→R).
+ */
+export function measureRectsFromStructure(
+  structure?: StructureDebug | null,
+): CropRect[] | null {
+  if (!structure?.items?.length) return null;
+  const l3 = structure.items.filter(
+    (it) => it.layer === "L3" && it.kind === "measure" && it.box,
+  );
+  if (l3.length === 0) return null;
+  return l3.map((it) => ({
+    x1: it.box.x1,
+    y1: it.box.y1,
+    x2: it.box.x2,
+    y2: it.box.y2,
+  }));
+}
 
 /** Boxes used for measure geometry: pitch-only when regions available. */
 export function boxesForMeasureMap(
