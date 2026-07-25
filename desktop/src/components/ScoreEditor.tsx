@@ -28,10 +28,15 @@ interface ScoreEditorProps {
   disabled?: boolean;
   onMessage?: (kind: "info" | "error", message: string) => void;
   /**
-   * 1-based measure numbers to highlight (dual-view crop linkage #49).
+   * 1-based measure numbers to highlight (dual-view crop linkage #49/#45).
    * Also auto-highlights measures tagged ``extra.from_crop``.
    */
   highlightMeasures?: number[] | null;
+  /** Dual-view hover measure (1-based). */
+  hoverMeasure?: number | null;
+  onHoverMeasure?: (measureNumber: number | null) => void;
+  /** Scroll this 1-based measure into view when set. */
+  focusMeasure?: number | null;
 }
 
 function updateNote(
@@ -64,14 +69,28 @@ export function ScoreEditor({
   disabled = false,
   onMessage,
   highlightMeasures = null,
+  hoverMeasure = null,
+  onHoverMeasure,
+  focusMeasure = null,
 }: ScoreEditorProps) {
   const highlightSet = new Set(highlightMeasures ?? []);
   const [playing, setPlaying] = useState(false);
   const [activeNote, setActiveNote] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
   const handleRef = useRef<PlaybackHandle | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const baseUrl = getCoreBaseUrl();
   const part = score.parts[0];
+
+  useEffect(() => {
+    if (focusMeasure == null || !listRef.current) return;
+    const el = listRef.current.querySelector(
+      `[data-measure="${focusMeasure}"]`,
+    );
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [focusMeasure]);
 
   const stopPlay = useCallback(() => {
     handleRef.current?.stop();
@@ -283,35 +302,56 @@ export function ScoreEditor({
       </div>
 
       {/* Measures */}
-      <div className="max-h-[360px] space-y-3 overflow-auto pr-1">
+      <div
+        ref={listRef}
+        className="max-h-[360px] space-y-3 overflow-auto pr-1"
+        onMouseLeave={() => onHoverMeasure?.(null)}
+      >
         {!part ? (
           <p className="text-sm text-slate-500">（无声部）</p>
         ) : (
           part.measures.map((m, mi) => {
             const fromCrop = Boolean(m.extra?.from_crop);
+            const num = m.number;
+            const hover = hoverMeasure === num || hoverMeasure === mi + 1;
             const highlighted =
-              fromCrop || highlightSet.has(m.number) || highlightSet.has(mi + 1);
+              fromCrop ||
+              hover ||
+              highlightSet.has(num) ||
+              highlightSet.has(mi + 1);
             return (
             <div
               key={`m-${m.number}-${mi}`}
+              data-measure={num}
               className={[
-                "rounded-lg border p-2",
-                highlighted
-                  ? "border-indigo-400/70 bg-indigo-500/15 ring-1 ring-indigo-400/40"
-                  : "border-white/10 bg-white/[0.03]",
+                "rounded-lg border p-2 transition-colors",
+                hover
+                  ? "border-amber-400/80 bg-amber-500/15 ring-1 ring-amber-300/40"
+                  : highlighted
+                    ? "border-indigo-400/70 bg-indigo-500/15 ring-1 ring-indigo-400/40"
+                    : "border-white/10 bg-white/[0.03]",
               ].join(" ")}
+              onMouseEnter={() => onHoverMeasure?.(num)}
             >
               <div className="mb-2 flex items-center justify-between">
                 <span
                   className={[
                     "text-xs font-medium",
-                    highlighted ? "text-indigo-200" : "text-slate-400",
+                    hover
+                      ? "text-amber-100"
+                      : highlighted
+                        ? "text-indigo-200"
+                        : "text-slate-400",
                   ].join(" ")}
                 >
                   小节 {m.number}
                   {fromCrop ? (
                     <span className="ml-1.5 text-[10px] text-amber-300/90">
                       · 框选重识别
+                    </span>
+                  ) : hover ? (
+                    <span className="ml-1.5 text-[10px] text-amber-200/90">
+                      · 双视图联动
                     </span>
                   ) : highlighted ? (
                     <span className="ml-1.5 text-[10px] text-indigo-300/80">

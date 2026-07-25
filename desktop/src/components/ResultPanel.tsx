@@ -14,6 +14,9 @@ interface ResultPanelProps {
   onMessage?: (kind: "info" | "error", message: string) => void;
   /** Dual-view measure highlight from crop selection (#49). */
   highlightMeasures?: number[] | null;
+  hoverMeasure?: number | null;
+  onHoverMeasure?: (n: number | null) => void;
+  focusMeasure?: number | null;
 }
 
 export function ResultPanel({
@@ -24,6 +27,9 @@ export function ResultPanel({
   coreOnline = true,
   onMessage,
   highlightMeasures = null,
+  hoverMeasure = null,
+  onHoverMeasure,
+  focusMeasure = null,
 }: ResultPanelProps) {
   const [tab, setTab] = useState<Tab>("edit");
 
@@ -105,6 +111,9 @@ export function ResultPanel({
                 coreOnline={coreOnline}
                 onMessage={onMessage}
                 highlightMeasures={highlightMeasures}
+                hoverMeasure={hoverMeasure}
+                onHoverMeasure={onHoverMeasure}
+                focusMeasure={focusMeasure}
               />
             ) : (
               <p className="text-sm text-slate-500">

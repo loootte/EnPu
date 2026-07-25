@@ -1,22 +1,29 @@
 /**
- * Image preview with rectangle selection, zoom, and pan (#49).
- * Display coords map to natural image pixels under current transform.
+ * Image preview: selection, zoom/pan (#49), dual-view overlays (#45).
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoundingBox, CropRect } from "../lib/types";
 
+export type ImageOverlayMode = "off" | "boxes" | "measures";
+
 export interface ImagePreviewProps {
   src: string | null;
   filename?: string | null;
-  /** Enable drag-to-select ROI on the image. */
   selectionEnabled?: boolean;
   selection?: CropRect | null;
   onSelectionChange?: (rect: CropRect | null) => void;
-  /** OCR boxes (full-image coords) to overlay. */
   boxes?: BoundingBox[] | null;
-  /** Highlight boxes that intersect selection. */
   highlightSelection?: boolean;
+  /** Dual-view: approx measure rects (full-image pixels) to draw. */
+  measureRects?: CropRect[] | null;
+  /** Dual-view: which measure numbers (1-based) are hovered/active. */
+  activeMeasureNumbers?: number[] | null;
+  overlayMode?: ImageOverlayMode;
+  onOverlayModeChange?: (mode: ImageOverlayMode) => void;
+  /** Hover image → measure index callback (0-based or null). */
+  onHoverImage?: (point: { x: number; y: number } | null) => void;
+  compact?: boolean;
 }
 
 type DragState = {
@@ -58,6 +65,12 @@ export function ImagePreview({
   onSelectionChange,
   boxes = null,
   highlightSelection = true,
+  measureRects = null,
+  activeMeasureNumbers = null,
+  overlayMode = "boxes",
+  onOverlayModeChange,
+  onHoverImage,
+  compact = false,
 }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -69,7 +82,6 @@ export function ImagePreview({
   const [panDrag, setPanDrag] = useState<PanDrag | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
 
-  // Reset view when source changes
   useEffect(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
@@ -100,18 +112,13 @@ export function ImagePreview({
   const syncBaseSize = useCallback(() => {
     const el = imgRef.current;
     if (!el) return;
-    // Unscaled layout size of the image (object-contain base).
     const nw = el.naturalWidth;
     const nh = el.naturalHeight;
     if (nw && nh) setNatural({ w: nw, h: nh });
-    // clientWidth is after CSS max constraints but before our transform scale.
-    // We keep zoom separate, so measure without relying on transform.
-    const parent = el.parentElement;
-    if (parent) {
-      // The stage uses transform; get layout size from offsetWidth of img at zoom=1
-      // Use natural aspect fitted into max box from CSS.
-    }
-    setBaseSize({ w: el.offsetWidth || el.clientWidth, h: el.offsetHeight || el.clientHeight });
+    setBaseSize({
+      w: el.offsetWidth || el.clientWidth,
+      h: el.offsetHeight || el.clientHeight,
+    });
   }, []);
 
   useEffect(() => {
@@ -124,7 +131,6 @@ export function ImagePreview({
     (clientX: number, clientY: number): { x: number; y: number } | null => {
       const el = imgRef.current;
       if (!el || !natural.w || !natural.h) return null;
-      // getBoundingClientRect includes CSS transform (zoom) — correct for hit-test.
       const rect = el.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return null;
       const dx = clientX - rect.left;
@@ -140,12 +146,10 @@ export function ImagePreview({
     (nextZoom: number, clientX?: number, clientY?: number) => {
       const z = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
       const el = imgRef.current;
-      const vp = viewportRef.current;
-      if (!el || !vp || clientX == null || clientY == null) {
+      if (!el || clientX == null || clientY == null) {
         setZoom(z);
         return;
       }
-      // Keep the image point under cursor stable when zooming.
       const before = el.getBoundingClientRect();
       const relX = clientX - before.left;
       const relY = clientY - before.top;
@@ -160,19 +164,15 @@ export function ImagePreview({
   );
 
   const onWheel = (e: React.WheelEvent) => {
-    // Always zoom with wheel inside viewport (Ctrl optional but not required).
     e.preventDefault();
     const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
     zoomAt(zoom * factor, e.clientX, e.clientY);
   };
 
-  const wantsPan = spaceDown || panDrag != null;
-
   const onPointerDown = (e: React.PointerEvent) => {
     if (!src) return;
     const el = e.currentTarget as HTMLElement;
 
-    // Middle button or Space+drag or Alt+drag → pan
     if (e.button === 1 || e.altKey || spaceDown) {
       e.preventDefault();
       el.setPointerCapture?.(e.pointerId);
@@ -200,13 +200,23 @@ export function ImagePreview({
       });
       return;
     }
-    if (!drag) return;
-    const p = toImageCoords(e.clientX, e.clientY);
-    if (!p) return;
-    setDrag({ ...drag, curX: p.x, curY: p.y });
+    if (drag) {
+      const p = toImageCoords(e.clientX, e.clientY);
+      if (!p) return;
+      setDrag({ ...drag, curX: p.x, curY: p.y });
+      return;
+    }
+    if (onHoverImage && !spaceDown) {
+      const p = toImageCoords(e.clientX, e.clientY);
+      onHoverImage(p);
+    }
   };
 
-  const onPointerUp = (e: React.PointerEvent) => {
+  const onPointerLeave = () => {
+    onHoverImage?.(null);
+  };
+
+  const onPointerUp = () => {
     if (panDrag) {
       setPanDrag(null);
       return;
@@ -215,8 +225,6 @@ export function ImagePreview({
     const r = normRect(drag.startX, drag.startY, drag.curX, drag.curY);
     setDrag(null);
     if (r.x2 - r.x1 < 4 || r.y2 - r.y1 < 4) {
-      // Tiny click: don't clear existing selection unless empty drag
-      if (e.detail === 0) onSelectionChange?.(null);
       return;
     }
     onSelectionChange?.(r);
@@ -231,8 +239,6 @@ export function ImagePreview({
     ? normRect(drag.startX, drag.startY, drag.curX, drag.curY)
     : selection;
 
-  // Overlay positions use unscaled base image box * (natural→base scale).
-  // Transform on stage applies zoom/pan to both image and overlays together.
   const layoutW = baseSize.w || 1;
   const layoutH = baseSize.h || 1;
   const scaleX = natural.w > 0 ? layoutW / natural.w : 1;
@@ -254,18 +260,46 @@ export function ImagePreview({
         ? "cursor-crosshair"
         : "cursor-default";
 
+  const vh = compact ? "h-[min(360px,42vh)]" : "h-[min(420px,50vh)]";
+  const imgMax = compact ? "max-h-[340px]" : "max-h-[400px]";
+  const showBoxes = overlayMode === "boxes" && boxes && boxes.length > 0;
+
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-3 py-2">
         <span className="truncate text-xs text-slate-400" title={filename ?? ""}>
-          {filename || "预览"}
+          {filename || "原稿"}
         </span>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+          {onOverlayModeChange ? (
+            <div className="mr-1 flex rounded border border-white/10 p-0.5">
+              {(
+                [
+                  ["off", "原图"],
+                  ["boxes", "叠图"],
+                  ["measures", "小节"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={[
+                    "rounded px-1.5 py-0.5",
+                    overlayMode === mode
+                      ? "bg-indigo-500/30 text-indigo-100"
+                      : "text-slate-400 hover:bg-white/5",
+                  ].join(" ")}
+                  onClick={() => onOverlayModeChange(mode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <button
             type="button"
             className="rounded border border-white/10 px-1.5 py-0.5 text-slate-300 hover:bg-white/5"
             onClick={() => zoomAt(zoom / ZOOM_STEP)}
-            title="缩小"
           >
             −
           </button>
@@ -276,7 +310,6 @@ export function ImagePreview({
             type="button"
             className="rounded border border-white/10 px-1.5 py-0.5 text-slate-300 hover:bg-white/5"
             onClick={() => zoomAt(zoom * ZOOM_STEP)}
-            title="放大"
           >
             +
           </button>
@@ -284,33 +317,25 @@ export function ImagePreview({
             type="button"
             className="rounded border border-white/10 px-1.5 py-0.5 text-slate-300 hover:bg-white/5"
             onClick={resetView}
-            title="重置缩放/位置"
           >
             重置
           </button>
-          {selectionEnabled ? (
-            <>
-              <span className="mx-1 hidden text-slate-600 sm:inline">|</span>
-              <span className="hidden sm:inline">
-                滚轮缩放 · 空格/中键拖移 · 拖拽框选
-              </span>
-              {selection ? (
-                <button
-                  type="button"
-                  className="rounded border border-white/10 px-1.5 py-0.5 text-slate-300 hover:bg-white/5"
-                  onClick={() => onSelectionChange?.(null)}
-                >
-                  清除选区
-                </button>
-              ) : null}
-            </>
+          {selectionEnabled && selection ? (
+            <button
+              type="button"
+              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-300 hover:bg-white/5"
+              onClick={() => onSelectionChange?.(null)}
+            >
+              清除选区
+            </button>
           ) : null}
         </div>
       </div>
       <div
         ref={viewportRef}
         className={[
-          "relative flex h-[min(420px,50vh)] items-center justify-center overflow-hidden bg-slate-950/40 p-3",
+          "relative flex items-center justify-center overflow-hidden bg-slate-950/40 p-3",
+          vh,
           cursorClass,
           "touch-none select-none",
         ].join(" ")}
@@ -319,6 +344,7 @@ export function ImagePreview({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onPointerLeave={onPointerLeave}
         onContextMenu={(e) => e.preventDefault()}
       >
         <div
@@ -331,16 +357,12 @@ export function ImagePreview({
             ref={imgRef}
             src={src}
             alt={filename ? `预览：${filename}` : "简谱预览"}
-            className="max-h-[400px] max-w-full object-contain"
+            className={`${imgMax} max-w-full object-contain`}
             draggable={false}
-            onLoad={() => {
-              // Measure after layout
-              requestAnimationFrame(syncBaseSize);
-            }}
+            onLoad={() => requestAnimationFrame(syncBaseSize)}
           />
-          {/* OCR boxes overlay — same transform as image */}
-          {boxes && natural.w > 0
-            ? boxes.map((b, i) => {
+          {showBoxes
+            ? boxes!.map((b, i) => {
                 const inSel =
                   highlightSelection &&
                   selection &&
@@ -356,8 +378,8 @@ export function ImagePreview({
                     className={[
                       "pointer-events-none absolute border",
                       inSel
-                        ? "border-amber-300/90 bg-amber-400/15"
-                        : "border-sky-400/40 bg-sky-400/5",
+                        ? "border-amber-300/90 bg-amber-400/20"
+                        : "border-sky-400/50 bg-sky-400/10",
                     ].join(" ")}
                     style={{
                       left: b.x1 * scaleX,
@@ -369,7 +391,31 @@ export function ImagePreview({
                 );
               })
             : null}
-          {/* Selection rect */}
+          {measureRects && measureRects.length > 0
+            ? measureRects.map((r, i) => {
+                const num = i + 1;
+                const active = Boolean(activeMeasureNumbers?.includes(num));
+                // Grid: show all in "measures" mode; only active when boxes/off
+                if (overlayMode !== "measures" && !active) return null;
+                return (
+                  <div
+                    key={`mrect-${i}-${r.x1}`}
+                    className={[
+                      "pointer-events-none absolute border",
+                      active
+                        ? "border-amber-300 bg-amber-400/30 ring-1 ring-amber-200/50"
+                        : "border-emerald-400/35 bg-emerald-500/10",
+                    ].join(" ")}
+                    style={{
+                      left: r.x1 * scaleX,
+                      top: r.y1 * scaleY,
+                      width: Math.max(1, (r.x2 - r.x1) * scaleX),
+                      height: Math.max(1, (r.y2 - r.y1) * scaleY),
+                    }}
+                  />
+                );
+              })
+            : null}
           {activeRect && natural.w > 0 ? (
             <div
               className="pointer-events-none absolute border-2 border-indigo-400 bg-indigo-500/20 shadow-[0_0_0_1px_rgba(99,102,241,0.4)]"
@@ -382,9 +428,9 @@ export function ImagePreview({
             />
           ) : null}
         </div>
-        {wantsPan ? (
+        {spaceDown || panDrag ? (
           <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/50 px-2 py-0.5 text-[10px] text-slate-300">
-            平移模式
+            平移
           </div>
         ) : null}
       </div>

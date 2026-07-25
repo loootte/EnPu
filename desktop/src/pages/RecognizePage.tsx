@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImagePicker } from "../components/ImagePicker";
-import { ImagePreview } from "../components/ImagePreview";
+import {
+  ImagePreview,
+  type ImageOverlayMode,
+} from "../components/ImagePreview";
 import { ResultPanel } from "../components/ResultPanel";
 import { StatusBanner } from "../components/StatusBanner";
 import {
@@ -10,6 +13,12 @@ import {
   recognizeCrop,
   recognizeImage,
 } from "../lib/api";
+import {
+  isLargeStaffRoi,
+  measureIndexToRect,
+  pointToMeasureIndex,
+  rectToMeasureRange,
+} from "../lib/measureLayout";
 import {
   emptyScore,
   parseProjectJson,
@@ -38,6 +47,9 @@ export function RecognizePage() {
   const [highlightMeasures, setHighlightMeasures] = useState<number[] | null>(
     null,
   );
+  /** Dual-view (#45): shared hover measure (1-based). */
+  const [hoverMeasure, setHoverMeasure] = useState<number | null>(null);
+  const [overlayMode, setOverlayMode] = useState<ImageOverlayMode>("boxes");
   const projectInputRef = useRef<HTMLInputElement>(null);
   // Keep latest score for keyboard crop without stale closures.
   const scoreRef = useRef<Score | null>(null);
@@ -84,9 +96,75 @@ export function RecognizePage() {
     setScore(null);
     setSelection(null);
     setHighlightMeasures(null);
+    setHoverMeasure(null);
     setFile(f);
     setInfo(`已选择：${f.name}（${Math.round(f.size / 1024)} KB）`);
   };
+
+  const imageSize = useMemo(() => {
+    const w = result?.meta.width ?? 0;
+    const h = result?.meta.height ?? 0;
+    return { w, h };
+  }, [result?.meta.height, result?.meta.width]);
+
+  const nMeasures = score?.parts?.[0]?.measures?.length ?? 0;
+
+  const allMeasureRects = useMemo((): CropRect[] | null => {
+    if (!nMeasures || !imageSize.w || !imageSize.h) return null;
+    return Array.from({ length: nMeasures }, (_, i) =>
+      measureIndexToRect(i, nMeasures, imageSize.w, imageSize.h),
+    );
+  }, [imageSize.h, imageSize.w, nMeasures]);
+
+  const selectionPreviewRange = useMemo(() => {
+    if (!selection || !nMeasures || !imageSize.w) return null;
+    if (isLargeStaffRoi(selection, imageSize.w, imageSize.h)) {
+      return { from: 1, to: nMeasures, large: true as const };
+    }
+    const r = rectToMeasureRange(
+      selection,
+      nMeasures,
+      imageSize.w,
+      imageSize.h,
+    );
+    return { ...r, large: false as const };
+  }, [imageSize.h, imageSize.w, nMeasures, selection]);
+
+  const activeMeasureNumbers = useMemo(() => {
+    const set = new Set<number>();
+    if (hoverMeasure != null) set.add(hoverMeasure);
+    if (highlightMeasures) {
+      for (const m of highlightMeasures) set.add(m);
+    }
+    if (selectionPreviewRange && !highlightMeasures?.length) {
+      for (
+        let m = selectionPreviewRange.from;
+        m <= selectionPreviewRange.to;
+        m += 1
+      ) {
+        set.add(m);
+      }
+    }
+    return set.size ? Array.from(set).sort((a, b) => a - b) : null;
+  }, [highlightMeasures, hoverMeasure, selectionPreviewRange]);
+
+  const onHoverImage = useCallback(
+    (point: { x: number; y: number } | null) => {
+      if (!point || !nMeasures || !imageSize.w || !imageSize.h) {
+        setHoverMeasure(null);
+        return;
+      }
+      const idx = pointToMeasureIndex(
+        point.x,
+        point.y,
+        nMeasures,
+        imageSize.w,
+        imageSize.h,
+      );
+      setHoverMeasure(idx + 1);
+    },
+    [imageSize.h, imageSize.w, nMeasures],
+  );
 
   const onRecognize = async () => {
     if (!file || loading) return;
@@ -104,7 +182,7 @@ export function RecognizePage() {
       setInfo(
         `识别完成 · engine=${res.engine} · ${res.texts.length} 段文本 · ${res.meta.elapsed_ms} ms` +
           (res.score ? " · 可编辑 Score" : " · 未解析出 Score") +
-          " · 可在原图上框选后局部重识别",
+          " · 双视图可悬停联动 · 框选后局部重识别",
       );
       void refreshHealth();
     } catch (err) {
@@ -242,17 +320,17 @@ export function RecognizePage() {
   const canCrop = Boolean(file && selection && !loading);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
+    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium tracking-[0.2em] text-indigo-300 uppercase">
-            EnPu · Phase 2
+            EnPu · Phase 2 / 4
           </p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-white">
             恩谱
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            导入识别 · 框选精调 · 编辑修正 · 试听 · 导出
+            双视图校对 · 框选精调 · 编辑试听 · 导出
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -288,125 +366,157 @@ export function RecognizePage() {
         />
       ) : null}
 
-      <div className="grid flex-1 gap-6 lg:grid-cols-2">
-        <section className="flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-slate-200">
-            1. 导入 · 预览 · 框选
-          </h2>
-          <ImagePicker
-            disabled={loading}
-            onFile={onFile}
-            onError={(msg) => {
-              setError(msg);
-              setInfo(null);
-            }}
-          />
+      <div className="flex flex-wrap gap-2">
+        <ImagePicker
+          disabled={loading}
+          onFile={onFile}
+          onError={(msg) => {
+            setError(msg);
+            setInfo(null);
+          }}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={!file || loading}
+          onClick={() => void onRecognize()}
+          className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {loading ? "识别中…" : "开始识别"}
+        </button>
+        <button
+          type="button"
+          disabled={!canCrop}
+          onClick={() => void onCropRecognize()}
+          className="rounded-lg border border-amber-400/40 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+          title="对矩形选区重新识别并合并进当前 Score（Ctrl+Shift+R）"
+        >
+          {loading ? "局部识别中…" : "局部重识别"}
+        </button>
+        <button
+          type="button"
+          disabled={loading || !selection}
+          onClick={() => setSelection(null)}
+          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40"
+        >
+          清除选区
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => projectInputRef.current?.click()}
+          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
+        >
+          打开工程
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            setScore(emptyScore("未命名"));
+            setResult(null);
+            setFile(null);
+            setSelection(null);
+            setHighlightMeasures(null);
+            setHoverMeasure(null);
+            setInfo("已新建空白 Score，可直接编辑后导出");
+          }}
+          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
+        >
+          新建谱
+        </button>
+        <button
+          type="button"
+          disabled={loading || (!file && !result && !score && !error)}
+          onClick={() => {
+            setFile(null);
+            setResult(null);
+            setScore(null);
+            setSelection(null);
+            setHighlightMeasures(null);
+            setHoverMeasure(null);
+            setError(null);
+            setInfo(null);
+          }}
+          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40"
+        >
+          清空
+        </button>
+        <input
+          ref={projectInputRef}
+          type="file"
+          accept=".json,.enpu.json,application/json"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) void onOpenProject(f);
+          }}
+        />
+      </div>
+
+      {/* Dual-view: left original · right score (#45) */}
+      <div className="grid flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <section className="flex min-w-0 flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-200">
+              原稿对照
+            </h2>
+            <span className="text-[11px] text-slate-500">
+              悬停同步小节 · 原图/叠图/小节格
+            </span>
+          </div>
           <ImagePreview
             src={previewUrl}
             filename={file?.name}
             selectionEnabled={Boolean(file)}
             selection={selection}
-            onSelectionChange={setSelection}
+            onSelectionChange={(r) => {
+              setSelection(r);
+              if (r && nMeasures && imageSize.w) {
+                // Preview which measures will be affected
+              }
+            }}
             boxes={result?.boxes ?? null}
             highlightSelection
+            measureRects={allMeasureRects}
+            activeMeasureNumbers={activeMeasureNumbers}
+            overlayMode={overlayMode}
+            onOverlayModeChange={setOverlayMode}
+            onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
           />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!file || loading}
-              onClick={() => void onRecognize()}
-              className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {loading ? "识别中…" : "开始识别"}
-            </button>
-            <button
-              type="button"
-              disabled={!canCrop}
-              onClick={() => void onCropRecognize()}
-              className="rounded-lg border border-amber-400/40 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-40"
-              title="对矩形选区重新识别并合并进当前 Score（Ctrl+Shift+R）"
-            >
-              {loading ? "局部识别中…" : "局部重识别"}
-            </button>
-            <button
-              type="button"
-              disabled={loading || !selection}
-              onClick={() => setSelection(null)}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40"
-            >
-              清除选区
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => projectInputRef.current?.click()}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
-            >
-              打开工程
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                setScore(emptyScore("未命名"));
-                setResult(null);
-                setFile(null);
-                setSelection(null);
-                setHighlightMeasures(null);
-                setInfo("已新建空白 Score，可直接编辑后导出");
-              }}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
-            >
-              新建谱
-            </button>
-            <button
-              type="button"
-              disabled={loading || (!file && !result && !score && !error)}
-              onClick={() => {
-                setFile(null);
-                setResult(null);
-                setScore(null);
-                setSelection(null);
-                setHighlightMeasures(null);
-                setError(null);
-                setInfo(null);
-              }}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40"
-            >
-              清空
-            </button>
-            <input
-              ref={projectInputRef}
-              type="file"
-              accept=".json,.enpu.json,application/json"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) void onOpenProject(f);
-              }}
-            />
-          </div>
           {selection ? (
             <p className="text-[11px] text-slate-500">
-              选区（原图像素）：(
-              {Math.round(selection.x1)},{Math.round(selection.y1)}) – (
-              {Math.round(selection.x2)},{Math.round(selection.y2)}) ·{" "}
-              {Math.round(selection.x2 - selection.x1)}×
+              选区 {Math.round(selection.x2 - selection.x1)}×
               {Math.round(selection.y2 - selection.y1)}
-              。合并按阅读顺序（先左后右、先上后下）定位小节。
+              {selectionPreviewRange
+                ? selectionPreviewRange.large
+                  ? ` · 大框选 → 将替换全部 ${selectionPreviewRange.to} 小节`
+                  : ` · 预计小节 ${selectionPreviewRange.from}–${selectionPreviewRange.to}`
+                : ""}
             </p>
           ) : (
             <p className="text-[11px] text-slate-600">
-              滚轮缩放、空格/中键拖移原谱；拖拽矩形框选后「局部重识别」。选区外人工修改不会被覆盖。
+              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 悬停原图联动右侧小节
             </p>
           )}
         </section>
 
-        <section className="flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-slate-200">
-            2. 编辑 · 试听 · 导出
-          </h2>
+        <section className="flex min-w-0 flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-200">
+              识别结果 · 编辑
+            </h2>
+            {hoverMeasure != null ? (
+              <span className="text-[11px] text-amber-200/90">
+                联动小节 {hoverMeasure}
+              </span>
+            ) : (
+              <span className="text-[11px] text-slate-500">试听 / 导出</span>
+            )}
+          </div>
           <ResultPanel
             result={result}
             loading={loading}
@@ -415,12 +525,15 @@ export function RecognizePage() {
             coreOnline={coreState === "online"}
             onMessage={onMessage}
             highlightMeasures={highlightMeasures}
+            hoverMeasure={hoverMeasure}
+            onHoverMeasure={setHoverMeasure}
+            focusMeasure={hoverMeasure}
           />
         </section>
       </div>
 
       <footer className="pb-4 text-center text-xs text-slate-500">
-        Phase 2 · 框选精调 #49 · core 默认 {baseUrl}
+        双视图 #45 · 框选 #49 · core {baseUrl}
       </footer>
     </div>
   );
