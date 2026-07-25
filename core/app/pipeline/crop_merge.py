@@ -132,6 +132,48 @@ def estimate_measure_index(
     return max(0, min(n_base - 1, idx))
 
 
+def _crop_coverage(
+    crop: CropRect,
+    *,
+    image_width: int,
+    image_height: int,
+) -> tuple[float, float, float]:
+    """Return (area_frac, width_frac, height_frac) of crop vs full image."""
+    w = max(1, image_width)
+    h = max(1, image_height)
+    cw = max(0.0, crop.x2 - crop.x1)
+    ch = max(0.0, crop.y2 - crop.y1)
+    area = (cw * ch) / float(w * h)
+    return (
+        max(0.0, min(1.0, area)),
+        max(0.0, min(1.0, cw / w)),
+        max(0.0, min(1.0, ch / h)),
+    )
+
+
+def is_large_staff_roi(
+    crop: CropRect,
+    *,
+    image_width: int,
+    image_height: int,
+) -> bool:
+    """True when crop likely covers most of the main staff (issue #45).
+
+    Large ROIs must replace the whole base measure list rather than insert at a
+    single hit index (regression: 001_poc_digits 10→15 with mid-score from_crop).
+    """
+    area, wf, hf = _crop_coverage(
+        crop, image_width=image_width, image_height=image_height
+    )
+    if area >= 0.40:
+        return True
+    if wf >= 0.65 and hf >= 0.40:
+        return True
+    if wf >= 0.85 and hf >= 0.28:
+        return True
+    return False
+
+
 def estimate_measure_window(
     *,
     n_base: int,
@@ -142,36 +184,51 @@ def estimate_measure_window(
 ) -> tuple[int, int]:
     """Estimate 0-based [start, end) measure indices in base for crop replace.
 
-    Auto mode replaces **one** base measure slot at the estimated reading-order
-    index, then splices in all crop measures (even if duration bugs split one
-    bar into many). Never shifts the window toward the end of the score when
-    ``n_crop`` is large — that caused "first measure → 小节 7" regressions.
+    Strategy (#45 region↔measure):
+    1. **Large staff ROI** → replace **all** base measures ``[0, n_base)`` so
+       crop becomes the new score body (no mid-score insert / ghost tail).
+    2. **Medium span** → map crop **corners** to reading-order indices and
+       replace that closed interval of base measures.
+    3. **Small ROI** → replace a single base slot at crop center.
 
-    Known limit (defer to #45 dual-view): large ROI covering the whole staff
-    (e.g. samples/001_poc_digits.png 10 bars → 15 after crop) still mis-hits
-    mid-score and inflates measure count; needs region↔measure mapping + better
-    replace span, not only a single hit index. See also duration over-split #54.
+    Crop may still produce more/fewer bars than the window (duration #54);
+    large ROI avoids the 7–13 mid-insert failure mode.
     """
     if n_base <= 0:
         return 0, 0
 
     w = image_width if image_width > 0 else max(1, image_height)
-    start = estimate_measure_index(
-        n_base=n_base,
-        crop=crop,
-        image_width=w,
-        image_height=max(1, image_height),
-    )
-    # Replace a single base measure at the hit index. Crop may insert 1..N bars.
-    end = min(n_base, start + 1)
-    # If crop Y-span is clearly multi-line (tall ROI), widen by span fraction.
     h = max(1, image_height)
-    span_frac = max(0.0, min(1.0, (crop.y2 - crop.y1) / h))
-    if span_frac > 0.22 and n_base > 1:
-        extra = max(0, int(math.floor(span_frac * n_base)) - 1)
-        end = min(n_base, start + 1 + extra)
-    # n_crop is intentionally not used to *move* start toward the score end.
-    _ = n_crop
+
+    if is_large_staff_roi(crop, image_width=w, image_height=h):
+        return 0, n_base
+
+    # Corner-based span: top-left → start, bottom-right → end (inclusive→exclusive)
+    tl = CropRect(x1=crop.x1, y1=crop.y1, x2=crop.x1 + 1, y2=crop.y1 + 1)
+    br = CropRect(x1=max(crop.x1, crop.x2 - 1), y1=max(crop.y1, crop.y2 - 1), x2=crop.x2, y2=crop.y2)
+    start = estimate_measure_index(
+        n_base=n_base, crop=tl, image_width=w, image_height=h
+    )
+    end_inclusive = estimate_measure_index(
+        n_base=n_base, crop=br, image_width=w, image_height=h
+    )
+    end = min(n_base, max(start + 1, end_inclusive + 1))
+
+    area, wf, hf = _crop_coverage(crop, image_width=w, image_height=h)
+    # If span covers most of the score, treat as full replace.
+    if (end - start) >= max(1, int(math.ceil(0.75 * n_base))) or (
+        area >= 0.28 and (end - start) >= max(2, n_base // 2)
+    ):
+        return 0, n_base
+
+    # Tiny ROI: single slot at center (more stable than TL-only for small boxes)
+    if wf < 0.22 and hf < 0.22:
+        start = estimate_measure_index(
+            n_base=n_base, crop=crop, image_width=w, image_height=h
+        )
+        end = min(n_base, start + 1)
+
+    _ = n_crop  # duration over-split handled by splice length, not window shift
     return start, end
 
 

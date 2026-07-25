@@ -81,11 +81,21 @@ export interface RecognizeMeta {
   parse_warnings?: string[];
 }
 
+/** OCR region with layout class (#34/#45) in input-image pixels. */
+export interface LayoutRegion {
+  text: string;
+  box: BoundingBox;
+  kind: "title" | "meta" | "pitch" | "lyrics" | "footer" | "annotation" | "other" | string;
+  score?: number | null;
+}
+
 export interface RecognizeResponse {
   ok: boolean;
   engine: string;
   texts: string[];
   boxes: BoundingBox[];
+  /** Paired text+box+kind; use pitch regions for dual-view measure map. */
+  regions?: LayoutRegion[];
   notes: NoteHint[];
   score?: Score | null;
   meta: RecognizeMeta;

@@ -141,8 +141,8 @@ def test_merge_preserves_outside_hand_edits() -> None:
 def test_merge_auto_window_without_explicit_measures() -> None:
     base = _score([["1"], ["2"], ["3"], ["4"]])
     crop = _score([["5"]])
-    # Bottom-right half → later measures in reading order
-    rect = CropRect(x1=200, y1=80, x2=280, y2=120)
+    # Small bottom-right ROI → later measures in reading order
+    rect = CropRect(x1=240, y1=90, x2=290, y2=115)
     merged, info = merge_crop_into_score(
         base, crop, crop=rect, image_height=120, image_width=300
     )
@@ -150,3 +150,27 @@ def test_merge_auto_window_without_explicit_measures() -> None:
     assert any(m.notes[0].pitch == "5" for m in merged.parts[0].measures)
     # First measure should still be base "1" when hit is not top-left
     assert merged.parts[0].measures[0].notes[0].pitch == "1"
+
+
+def test_large_staff_roi_replaces_all_base_measures() -> None:
+    """#45: full-staff crop must not mid-insert (001_poc_digits 10→mid 7–13)."""
+    from app.pipeline.crop_merge import is_large_staff_roi
+
+    base = _score([[str((i % 7) + 1)] for i in range(10)])
+    crop = _score([["3"] for _ in range(7)], title="crop-all")
+    # Cover most of the page (main staff)
+    rect = CropRect(x1=20, y1=30, x2=580, y2=360)
+    assert is_large_staff_roi(rect, image_width=600, image_height=400)
+    merged, info = merge_crop_into_score(
+        base,
+        crop,
+        crop=rect,
+        image_height=400,
+        image_width=600,
+    )
+    assert info.replaced_measure_from == 1
+    assert info.inserted_measure_count == 7
+    # Full replace: only crop measures remain (no base tail after mid insert)
+    assert len(merged.parts[0].measures) == 7
+    assert all(m.extra.get("from_crop") for m in merged.parts[0].measures)
+    assert merged.parts[0].measures[0].number == 1

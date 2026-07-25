@@ -25,7 +25,9 @@ from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
 from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
 from app.schemas.recognize import (
+    BoundingBox,
     CropRecognizeResponse,
+    LayoutRegion,
     RecognizeMeta,
     RecognizeResponse,
 )
@@ -41,6 +43,33 @@ class PipelineError(Exception):
         super().__init__(message)
         self.status_code = status_code
         self.message = message
+
+
+def _boxes_to_input_space(
+    boxes: list[BoundingBox],
+    *,
+    scale: float,
+) -> list[BoundingBox]:
+    """Map OCR boxes from preprocessed pixels back to input-image pixels.
+
+    ``preprocess_for_ocr`` may downscale (scale < 1). Dual-view selection uses
+    natural image coordinates, so API boxes must match that space (#45).
+    """
+    if not boxes:
+        return []
+    if scale <= 0 or abs(scale - 1.0) < 1e-9:
+        return list(boxes)
+    inv = 1.0 / scale
+    return [
+        BoundingBox(
+            x1=b.x1 * inv,
+            y1=b.y1 * inv,
+            x2=b.x2 * inv,
+            y2=b.y2 * inv,
+            score=b.score,
+        )
+        for b in boxes
+    ]
 
 
 def _run_on_bgr(
@@ -106,17 +135,38 @@ def _run_on_bgr(
     )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     steps = list(preprocess_prefix or []) + list(pre.steps)
+    # Boxes / regions in input-image pixels (same space as UI selection).
+    boxes_in = _boxes_to_input_space(list(ocr.boxes), scale=pre.scale)
+    in_h, in_w = image_bgr.shape[:2]
+
+    # Dual-view (#45): paired text+box+layout kind; skip title/meta for measure map.
+    regions: list[LayoutRegion] = []
+    for c in classified:
+        if c.item.box is None:
+            continue
+        box_list = _boxes_to_input_space([c.item.box], scale=pre.scale)
+        if not box_list:
+            continue
+        regions.append(
+            LayoutRegion(
+                text=(c.item.text or "").strip(),
+                box=box_list[0],
+                kind=c.kind.value,
+                score=c.item.score,
+            )
+        )
 
     return RecognizeResponse(
         ok=True,
         engine=ocr.engine,
         texts=ocr.texts,
-        boxes=ocr.boxes,
+        boxes=boxes_in,
+        regions=regions,
         notes=parsed.notes,
         score=parsed.score,
         meta=RecognizeMeta(
-            width=pre.width,
-            height=pre.height,
+            width=in_w,
+            height=in_h,
             elapsed_ms=elapsed_ms,
             filename=filename,
             content_type=content_type,
