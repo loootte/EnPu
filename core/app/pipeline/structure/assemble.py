@@ -37,6 +37,9 @@ def page_layout_to_score(
             mnum = n_l3  # 1-based global index == Score.measures position
             notes: list[NoteEvent] = []
             for nc in ml.notes:
+                # #69: only pitch L4 slots enter the melody Score
+                if (nc.extra or {}).get("kind", "pitch") != "pitch":
+                    continue
                 g = nc.glyph
                 if g is None:
                     continue
@@ -221,18 +224,29 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                 )
             )
             for nc in meas.notes:
+                kind = (nc.extra or {}).get("kind", "pitch")
+                l4_kind = (
+                    "note_roi"
+                    if kind == "pitch"
+                    else ("chord" if kind == "chord" else "lyric")
+                )
+                l4_label = (
+                    f"n{nc.index + 1}"
+                    if kind == "pitch"
+                    else f"{kind[0]}{nc.index + 1}"
+                )
                 items.append(
                     StructureBox(
                         layer="L4",
-                        id=f"l4-m{global_m}-n{nc.index}",
-                        label=f"n{nc.index + 1}",
+                        id=f"l4-m{global_m}-{kind}{nc.index}",
+                        label=l4_label,
                         box=nc.rect.as_box(),
-                        kind="note_roi",
+                        kind=l4_kind,
                         confidence=nc.confidence,
                     )
                 )
                 g = nc.glyph
-                if g is not None:
+                if g is not None and kind == "pitch":
                     dur = g.duration.value if hasattr(g.duration, "value") else str(g.duration)
                     label = g.pitch or ("0" if g.is_rest else "?")
                     if g.underlines:

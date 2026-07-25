@@ -200,6 +200,102 @@ def test_l3_segments_measures() -> None:
     assert any("L3" in w for w in warnings)
 
 
+def test_l4_pitch_rois_stay_in_pitch_band() -> None:
+    """#69: pitch L4 boxes must not swallow chord/lyric vertical stack."""
+    from app.pipeline.structure.ir import StaffSystem
+    from app.pipeline.structure.l4_notes import detect_note_candidates
+
+    h, w = 200, 360
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Pitch digits row y=40-70
+    for x in (40, 80, 120, 160):
+        img[45:68, x : x + 14] = 0
+    # Continuous underline (must not glue digits)
+    img[75:78, 30:200] = 0
+    # Chord row y=110-130
+    for x in (40, 100, 160):
+        img[112:128, x : x + 16] = 0
+    # Lyric row y=150-170
+    for x in (40, 90, 140):
+        img[152:168, x : x + 14] = 0
+
+    systems = [
+        StaffSystem(
+            index=0,
+            rect=Rect(20, 30, 220, 180),
+            measures=[
+                MeasureLayout(
+                    index=0,
+                    rect=Rect(30, 30, 210, 180),
+                    confidence=0.7,
+                )
+            ],
+            confidence=0.8,
+            extra={
+                "bands": [
+                    {"role": "pitch", "y0": 40, "y1": 70, "n_digitish": 4, "med_ch": 23},
+                    {"role": "underline", "y0": 75, "y1": 78, "n_digitish": 0, "med_ch": 3},
+                    {"role": "chord", "y0": 110, "y1": 130, "n_digitish": 3, "med_ch": 16},
+                    {"role": "lyric", "y0": 150, "y1": 170, "n_digitish": 3, "med_ch": 16},
+                ]
+            },
+        )
+    ]
+    systems, warnings = detect_note_candidates(img, systems)
+    notes = systems[0].measures[0].notes
+    pitch = [n for n in notes if (n.extra or {}).get("kind", "pitch") == "pitch"]
+    chord = [n for n in notes if (n.extra or {}).get("kind") == "chord"]
+    lyric = [n for n in notes if (n.extra or {}).get("kind") == "lyric"]
+    assert len(pitch) >= 3, [(n.rect.x1, n.rect.width, n.rect.height) for n in pitch]
+    # No pitch ROI should reach into chord band
+    for n in pitch:
+        assert n.rect.y2 < 110, n.rect
+        assert n.rect.height < 90, n.rect
+        assert n.rect.width < 50, n.rect
+    assert len(chord) >= 1
+    assert len(lyric) >= 1
+    for n in chord:
+        assert n.rect.y1 >= 100
+        assert n.rect.y2 <= 140
+    for n in lyric:
+        assert n.rect.y1 >= 140
+    assert any("pitch band only" in w for w in warnings)
+
+
+def test_l4_m04_first_measure_pitch_count() -> None:
+    """#69 acceptance: M04 m0 has ~7 tight pitch ROIs, not one tall multi-row box."""
+    from pathlib import Path
+
+    import cv2
+
+    p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
+    if not p.is_file():
+        pytest.skip("M04 sample not present")
+    img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+    regions, _ = detect_page_regions(img)
+    score = next(r for r in regions if r.role.value == "score")
+    systems, _ = detect_staff_systems(img, score.rect)
+    systems, _ = segment_measures_on_systems(img, systems)
+    systems, _ = detect_note_candidates(img, systems)
+    assert systems
+    m0 = systems[0].measures[0]
+    pitch = [n for n in m0.notes if (n.extra or {}).get("kind", "pitch") == "pitch"]
+    assert 5 <= len(pitch) <= 10, len(pitch)
+    pitch_y0 = min(
+        b["y0"]
+        for b in (systems[0].extra.get("bands") or [])
+        if b.get("role") == "pitch"
+    )
+    chord_bands = [
+        b for b in (systems[0].extra.get("bands") or []) if b.get("role") == "chord"
+    ]
+    chord_y0 = chord_bands[0]["y0"] if chord_bands else pitch_y0 + 80
+    for n in pitch:
+        assert n.rect.height < 100, n.rect
+        assert n.rect.width < 80, n.rect
+        assert n.rect.y2 < chord_y0 - 5, (n.rect, chord_y0)
+
+
 def test_l3_no_outer_margin_measures() -> None:
     """#66: do not treat left-of-first / right-of-last barline as measures."""
     from app.pipeline.structure.ir import StaffSystem

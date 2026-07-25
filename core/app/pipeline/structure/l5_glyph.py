@@ -60,6 +60,19 @@ def fill_note_glyphs(
         for meas in sys.measures:
             new_notes: list[NoteCandidate] = []
             for nc in meas.notes:
+                kind = (nc.extra or {}).get("kind", "pitch")
+                # #69: only OCR pitch-note ROIs; chord/lyric keep empty glyph for overlay
+                if kind != "pitch":
+                    new_notes.append(
+                        NoteCandidate(
+                            rect=nc.rect,
+                            index=nc.index,
+                            glyph=None,
+                            confidence=nc.confidence,
+                            extra=dict(nc.extra),
+                        )
+                    )
+                    continue
                 glyph = _glyph_for_candidate(
                     image_bgr,
                     bw,
