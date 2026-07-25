@@ -7,7 +7,9 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import type {
   BoundingBox,
@@ -41,9 +43,13 @@ export interface ImagePreviewProps {
   structureLayers?: Record<StructureLayerId, boolean> | null;
   /** #78: allow drag-resize of structure boxes */
   structureEditMode?: boolean;
+  /** #78: drag on image to create a new region of addLayer */
+  structureAddMode?: boolean;
+  structureAddLayer?: StructureLayerId;
   selectedStructureId?: string | null;
   onSelectStructureId?: (id: string | null) => void;
   onStructureBoxChange?: (id: string, box: BoundingBox) => void;
+  onStructureBoxAdd?: (box: BoundingBox, layer: StructureLayerId) => void;
 }
 
 type DragState = {
@@ -119,10 +125,16 @@ type ResizeHandle =
   | "sw"
   | "move";
 
+/**
+ * Structure box geometry is always in **natural image pixels** (authoritative).
+ * Screen size = natural * scale * zoom (zoom applied on parent transform).
+ * Drag deltas must divide by (scale * zoom) so edit handles match the painted box.
+ */
 function StructureItemOverlay({
   item,
   scaleX,
   scaleY,
+  zoom,
   editable,
   selected,
   onSelect,
@@ -133,6 +145,7 @@ function StructureItemOverlay({
   item: StructureBox;
   scaleX: number;
   scaleY: number;
+  zoom: number;
   editable?: boolean;
   selected?: boolean;
   onSelect?: (id: string) => void;
@@ -142,9 +155,10 @@ function StructureItemOverlay({
 }) {
   const st = LAYER_STYLE[item.layer];
   const showLabel = item.layer === "L1" || item.layer === "L2" || item.layer === "L5";
-  const thick =
-    selected || item.layer === "L1" || item.layer === "L2" ? "border-2" : "border";
   const id = item.id || `${item.layer}-${item.label}`;
+  // Visual scale: CSS layout px per natural px, then parent applies zoom
+  const sx = Math.max(scaleX * zoom, 1e-6);
+  const sy = Math.max(scaleY * zoom, 1e-6);
 
   const onPointerDownHandle = (
     e: ReactPointerEvent,
@@ -161,8 +175,9 @@ function StructureItemOverlay({
     target.setPointerCapture(e.pointerId);
 
     const onMove = (ev: PointerEvent) => {
-      const dx = (ev.clientX - startX) / Math.max(scaleX, 1e-6);
-      const dy = (ev.clientY - startY) / Math.max(scaleY, 1e-6);
+      // client delta → natural image pixels (accounts for zoom)
+      const dx = (ev.clientX - startX) / sx;
+      const dy = (ev.clientY - startY) / sy;
       let { x1, y1, x2, y2 } = origin;
       if (handle === "move") {
         const w = x2 - x1;
@@ -194,29 +209,39 @@ function StructureItemOverlay({
     window.addEventListener("pointerup", onUp);
   };
 
-  const handles: { h: ResizeHandle; className: string }[] = [
-    { h: "nw", className: "left-0 top-0 cursor-nwse-resize" },
-    { h: "ne", className: "right-0 top-0 cursor-nesw-resize" },
-    { h: "sw", className: "left-0 bottom-0 cursor-nesw-resize" },
-    { h: "se", className: "right-0 bottom-0 cursor-nwse-resize" },
-    { h: "n", className: "left-1/2 top-0 -translate-x-1/2 cursor-ns-resize" },
-    { h: "s", className: "left-1/2 bottom-0 -translate-x-1/2 cursor-ns-resize" },
-    { h: "w", className: "left-0 top-1/2 -translate-y-1/2 cursor-ew-resize" },
-    { h: "e", className: "right-0 top-1/2 -translate-y-1/2 cursor-ew-resize" },
+  const handles: { h: ResizeHandle; style: CSSProperties; cursor: string }[] = [
+    { h: "nw", style: { left: 0, top: 0, transform: "translate(-50%, -50%)" }, cursor: "nwse-resize" },
+    { h: "ne", style: { left: "100%", top: 0, transform: "translate(-50%, -50%)" }, cursor: "nesw-resize" },
+    { h: "sw", style: { left: 0, top: "100%", transform: "translate(-50%, -50%)" }, cursor: "nesw-resize" },
+    { h: "se", style: { left: "100%", top: "100%", transform: "translate(-50%, -50%)" }, cursor: "nwse-resize" },
+    { h: "n", style: { left: "50%", top: 0, transform: "translate(-50%, -50%)" }, cursor: "ns-resize" },
+    { h: "s", style: { left: "50%", top: "100%", transform: "translate(-50%, -50%)" }, cursor: "ns-resize" },
+    { h: "w", style: { left: 0, top: "50%", transform: "translate(-50%, -50%)" }, cursor: "ew-resize" },
+    { h: "e", style: { left: "100%", top: "50%", transform: "translate(-50%, -50%)" }, cursor: "ew-resize" },
   ];
 
   return (
     <div
-      className={`absolute ${thick} ${st.border} ${st.bg} ${
+      className={`absolute border-2 ${st.border} ${st.bg} box-border ${
         editable ? "pointer-events-auto" : "pointer-events-none"
-      } ${selected ? "ring-2 ring-white/80 z-20" : "z-10"}`}
+      } ${selected ? "z-20" : "z-10"}`}
       style={{
         left: item.box.x1 * scaleX,
         top: item.box.y1 * scaleY,
         width: Math.max(1, (item.box.x2 - item.box.x1) * scaleX),
         height: Math.max(1, (item.box.y2 - item.box.y1) * scaleY),
+        // Outline outside geometry so selected frame matches natural-pixel box
+        outline: selected ? "2px solid rgba(255,255,255,0.9)" : undefined,
+        outlineOffset: 0,
       }}
-      title={[item.layer, item.label, item.pitch, item.duration, editable ? "拖角缩放 · 拖框移动" : ""]
+      title={[
+        item.layer,
+        item.label,
+        item.pitch,
+        item.duration,
+        `像素 ${Math.round(item.box.x1)},${Math.round(item.box.y1)}–${Math.round(item.box.x2)},${Math.round(item.box.y2)}`,
+        editable ? "拖角缩放 · 拖框移动 · 以图像像素为准" : "",
+      ]
         .filter(Boolean)
         .join(" · ")}
       onPointerDown={(e) => {
@@ -231,23 +256,17 @@ function StructureItemOverlay({
     >
       {showLabel && item.label ? (
         <span
-          className={`absolute -top-0.5 left-0 max-w-full truncate px-0.5 text-[9px] leading-tight ${st.text} bg-black/55`}
+          className={`pointer-events-none absolute -top-0.5 left-0 max-w-full truncate px-0.5 text-[9px] leading-tight ${st.text} bg-black/55`}
         >
           {item.label}
         </span>
       ) : null}
       {editable && selected
-        ? handles.map(({ h, className }) => (
+        ? handles.map(({ h, style, cursor }) => (
             <div
               key={h}
-              className={`absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white bg-indigo-400 ${className}`}
-              style={
-                h === "e" || h === "w"
-                  ? { transform: "translate(0, -50%)" }
-                  : h === "n" || h === "s"
-                    ? { transform: "translate(-50%, 0)" }
-                    : undefined
-              }
+              className="absolute h-2.5 w-2.5 rounded-sm border border-white bg-indigo-400"
+              style={{ ...style, cursor }}
               onPointerDown={(e) => onPointerDownHandle(e, h)}
             />
           ))
@@ -273,9 +292,12 @@ export function ImagePreview({
   structure = null,
   structureLayers = null,
   structureEditMode = false,
+  structureAddMode = false,
+  structureAddLayer = "L2",
   selectedStructureId = null,
   onSelectStructureId,
   onStructureBoxChange,
+  onStructureBoxAdd,
 }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -368,13 +390,13 @@ export function ImagePreview({
     [zoom],
   );
 
-  const onWheel = (e: React.WheelEvent) => {
+  const onWheel = (e: ReactWheelEvent) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
     zoomAt(zoom * factor, e.clientX, e.clientY);
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
+  const onPointerDown = (e: ReactPointerEvent) => {
     if (!src) return;
     const el = e.currentTarget as HTMLElement;
 
@@ -390,6 +412,15 @@ export function ImagePreview({
       return;
     }
 
+    // #78: draw a new structure region
+    if (structureAddMode && structureEditMode && onStructureBoxAdd && e.button === 0) {
+      const p = toImageCoords(e.clientX, e.clientY);
+      if (!p) return;
+      el.setPointerCapture?.(e.pointerId);
+      setDrag({ startX: p.x, startY: p.y, curX: p.x, curY: p.y });
+      return;
+    }
+
     if (!selectionEnabled || e.button !== 0) return;
     const p = toImageCoords(e.clientX, e.clientY);
     if (!p) return;
@@ -397,7 +428,7 @@ export function ImagePreview({
     setDrag({ startX: p.x, startY: p.y, curX: p.x, curY: p.y });
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  const onPointerMove = (e: ReactPointerEvent) => {
     if (panDrag) {
       setPan({
         x: panDrag.originPanX + (e.clientX - panDrag.originClientX),
@@ -432,6 +463,10 @@ export function ImagePreview({
     if (r.x2 - r.x1 < 4 || r.y2 - r.y1 < 4) {
       return;
     }
+    if (structureAddMode && structureEditMode && onStructureBoxAdd) {
+      onStructureBoxAdd(r, structureAddLayer ?? "L2");
+      return;
+    }
     onSelectionChange?.(r);
   };
 
@@ -461,9 +496,11 @@ export function ImagePreview({
     ? "cursor-grabbing"
     : spaceDown
       ? "cursor-grab"
-      : selectionEnabled
+      : structureAddMode && structureEditMode
         ? "cursor-crosshair"
-        : "cursor-default";
+        : selectionEnabled
+          ? "cursor-crosshair"
+          : "cursor-default";
 
   const vh = compact ? "h-[min(360px,42vh)]" : "h-[min(420px,50vh)]";
   const imgMax = compact ? "max-h-[340px]" : "max-h-[400px]";
@@ -639,7 +676,8 @@ export function ImagePreview({
                     item={it}
                     scaleX={scaleX}
                     scaleY={scaleY}
-                    editable={structureEditMode}
+                    zoom={zoom}
+                    editable={structureEditMode && !structureAddMode}
                     selected={selectedStructureId === sid}
                     onSelect={onSelectStructureId}
                     onBoxChange={onStructureBoxChange}

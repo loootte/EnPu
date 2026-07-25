@@ -147,6 +147,7 @@ export function RecognizePage() {
   const [structureFromLayer, setStructureFromLayer] =
     useState<StructureLayerId>("L2");
   const [structureRerunning, setStructureRerunning] = useState(false);
+  const [structureAddMode, setStructureAddMode] = useState(false);
   /**
    * Full-page layout from last whole-image recognize (natural pixels).
    * Crop only returns ROI boxes — keep full map for dual-view (#45).
@@ -562,7 +563,66 @@ export function RecognizePage() {
       result?.structure ? structuredClone(result.structure) : null,
     );
     setSelectedStructureId(null);
+    setStructureAddMode(false);
   }, [result?.structure]);
+
+  const onStructureBoxAdd = useCallback(
+    (box: BoundingBox, layer: StructureLayerId) => {
+      setStructureDraft((prev) => {
+        const base =
+          prev ??
+          (result?.structure
+            ? structuredClone(result.structure)
+            : { pipeline: "structure", items: [], summary: {} });
+        const nSame = base.items.filter((it) => it.layer === layer).length;
+        const id = `user-${layer.toLowerCase()}-${Date.now().toString(36)}`;
+        const kindByLayer: Record<StructureLayerId, string> = {
+          L1: "score",
+          L2: "system",
+          L3: "measure",
+          L4: "note_roi",
+          L5: "glyph",
+        };
+        const labelByLayer: Record<StructureLayerId, string> = {
+          L1: "自定义区域",
+          L2: `谱行+${nSame + 1}`,
+          L3: `m+${nSame + 1}`,
+          L4: `n+${nSame + 1}`,
+          L5: `g+${nSame + 1}`,
+        };
+        const item = {
+          layer,
+          id,
+          label: labelByLayer[layer],
+          kind: kindByLayer[layer],
+          box: { ...box },
+          confidence: 1,
+        };
+        return { ...base, items: [...base.items, item] };
+      });
+      setStructureAddMode(false);
+      setStructureFromLayer(layer);
+      setOverlayMode("structure");
+      setInfo(
+        `已添加 ${layer} 区域 · 可继续拖拽调整，然后点「重识别 ${layer} 及下层」`,
+      );
+    },
+    [result?.structure],
+  );
+
+  const onDeleteSelectedStructure = useCallback(() => {
+    if (!selectedStructureId) return;
+    setStructureDraft((prev) => {
+      if (!prev?.items?.length) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter(
+          (it) => (it.id || `${it.layer}-${it.label}`) !== selectedStructureId,
+        ),
+      };
+    });
+    setSelectedStructureId(null);
+  }, [selectedStructureId]);
 
   const onStructureRerun = useCallback(async () => {
     const f = fileRef.current;
@@ -838,19 +898,10 @@ export function RecognizePage() {
         />
       </div>
 
-      {/* Dual-view: left original · right score (#45) */}
-      <div className="grid flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <section className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-200">
-              原稿对照
-            </h2>
-            <span className="text-[11px] text-slate-500">
-              {result?.structure
-                ? "结构叠图 L1–L5 · 悬停联动"
-                : "悬停同步小节 · 原图/叠图/小节格"}
-            </span>
-          </div>
+      {/* Left tools + dual-view aligned 原稿 | 识别 (#45/#78) */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row lg:items-start">
+        {/* Tools column — does not push 原稿 below 识别谱 */}
+        <aside className="flex w-full shrink-0 flex-col gap-2 lg:sticky lg:top-2 lg:w-72 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
           <PreprocessPanel
             options={preprocessOpts}
             onChange={setPreprocessOpts}
@@ -873,6 +924,7 @@ export function RecognizePage() {
             onEditModeChange={(on) => {
               setStructureEditMode(on);
               if (on) setOverlayMode("structure");
+              if (!on) setStructureAddMode(false);
             }}
             fromLayer={structureFromLayer}
             onFromLayerChange={setStructureFromLayer}
@@ -881,6 +933,9 @@ export function RecognizePage() {
             onRerun={() => void onStructureRerun()}
             onResetEdits={onResetStructureEdits}
             rerunning={structureRerunning}
+            addMode={structureAddMode}
+            onAddModeChange={setStructureAddMode}
+            onDeleteSelected={onDeleteSelectedStructure}
           />
           <ProblemNavPanel
             score={score}
@@ -893,72 +948,97 @@ export function RecognizePage() {
               }
             }}
           />
-          <ImagePreview
-            src={preprocessPreviewUrl || previewUrl}
-            filename={file?.name}
-            selectionEnabled={Boolean(file) && !structureEditMode}
-            selection={selection}
-            onSelectionChange={(r) => {
-              setSelection(r);
-            }}
-            boxes={result?.boxes ?? layoutBoxes}
-            highlightSelection
-            measureRects={allMeasureRects.length ? allMeasureRects : null}
-            activeMeasureNumbers={activeMeasureNumbers}
-            overlayMode={overlayMode}
-            onOverlayModeChange={setOverlayMode}
-            onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
-            structure={structureDraft ?? result?.structure}
-            structureLayers={structureLayers}
-            structureEditMode={structureEditMode}
-            selectedStructureId={selectedStructureId}
-            onSelectStructureId={setSelectedStructureId}
-            onStructureBoxChange={onStructureBoxChange}
-          />
-          {selection && !structureEditMode ? (
-            <p className="text-[11px] text-slate-500">
-              选区 {Math.round(selection.x2 - selection.x1)}×
-              {Math.round(selection.y2 - selection.y1)}
-              {selectionPreviewRange
-                ? selectionPreviewRange.large
-                  ? ` · 大框选 → 将替换全部 ${selectionPreviewRange.to} 小节`
-                  : ` · 预计小节 ${selectionPreviewRange.from}–${selectionPreviewRange.to}`
-                : ""}
-            </p>
-          ) : (
-            <p className="text-[11px] text-slate-600">
-              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 结构编辑模式可改 L1–L5
-              框并重识别下层
-            </p>
-          )}
-        </section>
+        </aside>
 
-        <section className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-200">
-              识别结果 · 编辑
-            </h2>
-            {hoverMeasure != null ? (
-              <span className="text-[11px] text-amber-200/90">
-                联动小节 {hoverMeasure}
+        {/* Dual-view: tops aligned */}
+        <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
+          <section className="flex min-w-0 flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-200">
+                原稿对照
+              </h2>
+              <span className="text-[11px] text-slate-500">
+                {result?.structure
+                  ? "结构叠图 L1–L5 · 悬停联动"
+                  : "悬停同步小节 · 原图/叠图/小节格"}
               </span>
+            </div>
+            <ImagePreview
+              src={preprocessPreviewUrl || previewUrl}
+              filename={file?.name}
+              selectionEnabled={
+                Boolean(file) && !structureEditMode && !structureAddMode
+              }
+              selection={selection}
+              onSelectionChange={(r) => {
+                setSelection(r);
+              }}
+              boxes={result?.boxes ?? layoutBoxes}
+              highlightSelection
+              measureRects={allMeasureRects.length ? allMeasureRects : null}
+              activeMeasureNumbers={activeMeasureNumbers}
+              overlayMode={overlayMode}
+              onOverlayModeChange={setOverlayMode}
+              onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
+              structure={structureDraft ?? result?.structure}
+              structureLayers={structureLayers}
+              structureEditMode={structureEditMode}
+              structureAddMode={structureAddMode}
+              structureAddLayer={structureFromLayer}
+              selectedStructureId={selectedStructureId}
+              onSelectStructureId={setSelectedStructureId}
+              onStructureBoxChange={onStructureBoxChange}
+              onStructureBoxAdd={onStructureBoxAdd}
+            />
+            {selection && !structureEditMode ? (
+              <p className="text-[11px] text-slate-500">
+                选区 {Math.round(selection.x2 - selection.x1)}×
+                {Math.round(selection.y2 - selection.y1)}
+                {selectionPreviewRange
+                  ? selectionPreviewRange.large
+                    ? ` · 大框选 → 将替换全部 ${selectionPreviewRange.to} 小节`
+                    : ` · 预计小节 ${selectionPreviewRange.from}–${selectionPreviewRange.to}`
+                  : ""}
+              </p>
             ) : (
-              <span className="text-[11px] text-slate-500">试听 / 导出</span>
+              <p className="text-[11px] text-slate-600">
+                滚轮缩放 · 空格/中键平移
+                {structureAddMode
+                  ? " · 拖拽添加区域（图像像素）"
+                  : structureEditMode
+                    ? " · 拖角缩放结构框"
+                    : " · 拖拽框选"}
+              </p>
             )}
-          </div>
-          <ResultPanel
-            result={result}
-            loading={loading}
-            score={score}
-            onScoreChange={setScore}
-            coreOnline={coreState === "online"}
-            onMessage={onMessage}
-            highlightMeasures={editorHighlights}
-            hoverMeasure={hoverMeasure}
-            onHoverMeasure={setHoverMeasure}
-            focusMeasure={focusMeasure ?? hoverMeasure}
-          />
-        </section>
+          </section>
+
+          <section className="flex min-w-0 flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-200">
+                识别结果 · 编辑
+              </h2>
+              {hoverMeasure != null ? (
+                <span className="text-[11px] text-amber-200/90">
+                  联动小节 {hoverMeasure}
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-500">试听 / 导出</span>
+              )}
+            </div>
+            <ResultPanel
+              result={result}
+              loading={loading}
+              score={score}
+              onScoreChange={setScore}
+              coreOnline={coreState === "online"}
+              onMessage={onMessage}
+              highlightMeasures={editorHighlights}
+              hoverMeasure={hoverMeasure}
+              onHoverMeasure={setHoverMeasure}
+              focusMeasure={focusMeasure ?? hoverMeasure}
+            />
+          </section>
+        </div>
       </div>
 
       <footer className="pb-4 text-center text-xs text-slate-500">

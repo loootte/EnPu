@@ -38,6 +38,10 @@ interface StructureLayerPanelProps {
   onRerun?: () => void;
   onResetEdits?: () => void;
   rerunning?: boolean;
+  /** #78 draw new region on image */
+  addMode?: boolean;
+  onAddModeChange?: (on: boolean) => void;
+  onDeleteSelected?: () => void;
 }
 
 export function StructureLayerPanel({
@@ -53,6 +57,9 @@ export function StructureLayerPanel({
   onRerun,
   onResetEdits,
   rerunning = false,
+  addMode = false,
+  onAddModeChange,
+  onDeleteSelected,
 }: StructureLayerPanelProps) {
   if (!structure?.items?.length) {
     return (
@@ -158,11 +165,13 @@ export function StructureLayerPanel({
           </label>
         </div>
         <p className="text-[10px] leading-relaxed text-slate-500">
-          开启后点选结构框，拖边角缩放 / 拖框移动。确认后从指定层重跑下层，上层结果保留。
+          开启后点选结构框，拖边角缩放 / 拖框移动。框的坐标以{" "}
+          <span className="text-slate-300">图像像素</span>为准（与重识别一致）。
+          「添加区域」后在原图上拖出新框。
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1 text-[11px] text-slate-400">
-            起始层
+            层
             <select
               className="rounded border border-white/15 bg-slate-900 px-1.5 py-0.5 text-[11px] text-slate-200"
               value={fromLayer}
@@ -188,8 +197,30 @@ export function StructureLayerPanel({
           {dirty ? (
             <span className="text-[10px] text-rose-300">已改框</span>
           ) : null}
+          {addMode ? (
+            <span className="text-[10px] text-emerald-300">
+              拖拽添加 {fromLayer} 区域…
+            </span>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            disabled={!editMode || rerunning}
+            onClick={() => {
+              const next = !addMode;
+              onAddModeChange?.(next);
+              if (next) onEditModeChange?.(true);
+            }}
+            className={[
+              "rounded-md border px-2.5 py-1 text-[11px] font-medium disabled:opacity-40",
+              addMode
+                ? "border-emerald-400/50 bg-emerald-500/25 text-emerald-100"
+                : "border-white/15 text-slate-200 hover:bg-white/5",
+            ].join(" ")}
+          >
+            {addMode ? "取消添加" : "添加区域"}
+          </button>
           <button
             type="button"
             disabled={!onRerun || rerunning || (!dirty && !editMode)}
@@ -197,6 +228,14 @@ export function StructureLayerPanel({
             className="rounded-md bg-indigo-500/90 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-400 disabled:opacity-40"
           >
             {rerunning ? "重识别中…" : `重识别 ${fromLayer} 及下层`}
+          </button>
+          <button
+            type="button"
+            disabled={!selectedId || !onDeleteSelected || rerunning}
+            onClick={() => onDeleteSelected?.()}
+            className="rounded-md border border-rose-400/30 px-2.5 py-1 text-[11px] text-rose-200 hover:bg-rose-500/15 disabled:opacity-40"
+          >
+            删除选中
           </button>
           <button
             type="button"
