@@ -200,6 +200,193 @@ def test_l3_segments_measures() -> None:
     assert any("L3" in w for w in warnings)
 
 
+def test_l5_geometry_pitch_fallback_and_meter() -> None:
+    """OCR-junk → geometry pitch; M04 m0 matches expected rhythm (#69)."""
+    from pathlib import Path
+
+    import cv2
+
+    from app.pipeline.structure.assemble import page_layout_to_score
+    from app.pipeline.structure.ir import PageLayout
+    from app.pipeline.structure.l5_glyph import fill_note_glyphs, validate_measure_durations
+
+    p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
+    if not p.is_file():
+        pytest.skip("M04 sample not present")
+    img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+    regions, _ = detect_page_regions(img)
+    score_roi = next(r for r in regions if r.role.value == "score")
+    systems, _ = detect_staff_systems(img, score_roi.rect)
+    systems, _ = segment_measures_on_systems(img, systems)
+    systems, _ = detect_note_candidates(img, systems)
+    # mock OCR text is multi-token junk → geometry should win
+    systems, w5 = fill_note_glyphs(img, systems, engine_name="mock")
+    systems, wm = validate_measure_durations(systems, "4/4")
+    assert any("meter check" in x for x in wm)
+    m0 = systems[0].measures[0]
+    assert m0.extra.get("meter_status") == "ok"
+    assert abs(float(m0.extra.get("meter_beats") or 0) - 4.0) < 0.4
+    layout = PageLayout(
+        width=img.shape[1],
+        height=img.shape[0],
+        systems=systems,
+        time_signature="4/4",
+    )
+    sc = page_layout_to_score(layout)
+    mel = sc.melody_part()
+    assert mel is not None
+    notes = mel.measures[0].notes
+    assert [n.pitch for n in notes] == ["3", "5", "5", "3", "2", "5", "7"]
+    assert [n.duration for n in notes] == [
+        DurationName.eighth,
+        DurationName.eighth,
+        DurationName.eighth,
+        DurationName.eighth,
+        DurationName.quarter,
+        DurationName.eighth,
+        DurationName.eighth,
+    ]
+    assert any("geometry_fallback" in x for x in w5)
+
+
+def test_l5_underlines_counted_below_digit_body() -> None:
+    """Duration strokes below the digit → eighth; no stroke → quarter (#69 follow-up)."""
+    import cv2
+
+    from app.pipeline.structure.ir import NoteCandidate
+    from app.pipeline.structure.l5_glyph import _glyph_for_candidate
+
+    h, w = 80, 40
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Digit body
+    img[20:45, 10:30] = 0
+    # One underline under digit
+    img[52:55, 10:30] = 0
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    nc = NoteCandidate(
+        rect=Rect(8, 18, 32, 58),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 10,
+            "body_x1": 30,
+            "body_y0": 20,
+            "body_y1": 45,
+            "underline_band_y0": 52,
+            "underline_band_y1": 55,
+        },
+    )
+    g = _glyph_for_candidate(img, bw, nc, engine=None, img_w=w, img_h=h)
+    assert g.underlines == 1
+    assert g.duration == DurationName.eighth
+
+    # No underline → quarter (digit strokes must not count)
+    img2 = np.full((h, w, 3), 255, dtype=np.uint8)
+    img2[20:45, 10:30] = 0
+    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    _, bw2 = cv2.threshold(gray2, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    g2 = _glyph_for_candidate(img2, bw2, nc, engine=None, img_w=w, img_h=h)
+    assert g2.underlines == 0
+    assert g2.duration == DurationName.quarter
+
+
+def test_l4_pitch_rois_stay_in_pitch_band() -> None:
+    """#69: pitch L4 boxes must not swallow chord/lyric vertical stack."""
+    from app.pipeline.structure.ir import StaffSystem
+    from app.pipeline.structure.l4_notes import detect_note_candidates
+
+    h, w = 200, 360
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Pitch digits row y=40-70
+    for x in (40, 80, 120, 160):
+        img[45:68, x : x + 14] = 0
+    # Continuous underline (must not glue digits)
+    img[75:78, 30:200] = 0
+    # Chord row y=110-130
+    for x in (40, 100, 160):
+        img[112:128, x : x + 16] = 0
+    # Lyric row y=150-170
+    for x in (40, 90, 140):
+        img[152:168, x : x + 14] = 0
+
+    systems = [
+        StaffSystem(
+            index=0,
+            rect=Rect(20, 30, 220, 180),
+            measures=[
+                MeasureLayout(
+                    index=0,
+                    rect=Rect(30, 30, 210, 180),
+                    confidence=0.7,
+                )
+            ],
+            confidence=0.8,
+            extra={
+                "bands": [
+                    {"role": "pitch", "y0": 40, "y1": 70, "n_digitish": 4, "med_ch": 23},
+                    {"role": "underline", "y0": 75, "y1": 78, "n_digitish": 0, "med_ch": 3},
+                    {"role": "chord", "y0": 110, "y1": 130, "n_digitish": 3, "med_ch": 16},
+                    {"role": "lyric", "y0": 150, "y1": 170, "n_digitish": 3, "med_ch": 16},
+                ]
+            },
+        )
+    ]
+    systems, warnings = detect_note_candidates(img, systems)
+    notes = systems[0].measures[0].notes
+    pitch = [n for n in notes if (n.extra or {}).get("kind", "pitch") == "pitch"]
+    chord = [n for n in notes if (n.extra or {}).get("kind") == "chord"]
+    lyric = [n for n in notes if (n.extra or {}).get("kind") == "lyric"]
+    assert len(pitch) >= 3, [(n.rect.x1, n.rect.width, n.rect.height) for n in pitch]
+    # No pitch ROI should reach into chord band
+    for n in pitch:
+        assert n.rect.y2 < 110, n.rect
+        assert n.rect.height < 90, n.rect
+        assert n.rect.width < 50, n.rect
+    assert len(chord) >= 1
+    assert len(lyric) >= 1
+    for n in chord:
+        assert n.rect.y1 >= 100
+        assert n.rect.y2 <= 140
+    for n in lyric:
+        assert n.rect.y1 >= 140
+    assert any("pitch band only" in w for w in warnings)
+
+
+def test_l4_m04_first_measure_pitch_count() -> None:
+    """#69 acceptance: M04 m0 has ~7 tight pitch ROIs, not one tall multi-row box."""
+    from pathlib import Path
+
+    import cv2
+
+    p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
+    if not p.is_file():
+        pytest.skip("M04 sample not present")
+    img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+    regions, _ = detect_page_regions(img)
+    score = next(r for r in regions if r.role.value == "score")
+    systems, _ = detect_staff_systems(img, score.rect)
+    systems, _ = segment_measures_on_systems(img, systems)
+    systems, _ = detect_note_candidates(img, systems)
+    assert systems
+    m0 = systems[0].measures[0]
+    pitch = [n for n in m0.notes if (n.extra or {}).get("kind", "pitch") == "pitch"]
+    assert 5 <= len(pitch) <= 10, len(pitch)
+    pitch_y0 = min(
+        b["y0"]
+        for b in (systems[0].extra.get("bands") or [])
+        if b.get("role") == "pitch"
+    )
+    chord_bands = [
+        b for b in (systems[0].extra.get("bands") or []) if b.get("role") == "chord"
+    ]
+    chord_y0 = chord_bands[0]["y0"] if chord_bands else pitch_y0 + 80
+    for n in pitch:
+        assert n.rect.height < 100, n.rect
+        assert n.rect.width < 80, n.rect
+        assert n.rect.y2 < chord_y0 - 5, (n.rect, chord_y0)
+
+
 def test_l3_no_outer_margin_measures() -> None:
     """#66: do not treat left-of-first / right-of-last barline as measures."""
     from app.pipeline.structure.ir import StaffSystem

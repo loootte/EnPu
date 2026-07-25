@@ -37,6 +37,9 @@ def page_layout_to_score(
             mnum = n_l3  # 1-based global index == Score.measures position
             notes: list[NoteEvent] = []
             for nc in ml.notes:
+                # #69: only pitch L4 slots enter the melody Score
+                if (nc.extra or {}).get("kind", "pitch") != "pitch":
+                    continue
                 g = nc.glyph
                 if g is None:
                     continue
@@ -99,6 +102,10 @@ def page_layout_to_score(
                         "barline_x_left": ml.barline_x_left,
                         "barline_x_right": ml.barline_x_right,
                         "l3_confidence": ml.confidence,
+                        # L4/L5 meter check fields (if present)
+                        "meter_capacity": ml.extra.get("meter_capacity"),
+                        "meter_beats": ml.extra.get("meter_beats"),
+                        "meter_status": ml.extra.get("meter_status"),
                     },
                 )
             )
@@ -221,24 +228,39 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                 )
             )
             for nc in meas.notes:
+                kind = (nc.extra or {}).get("kind", "pitch")
+                l4_kind = (
+                    "note_roi"
+                    if kind == "pitch"
+                    else ("chord" if kind == "chord" else "lyric")
+                )
+                l4_label = (
+                    f"n{nc.index + 1}"
+                    if kind == "pitch"
+                    else f"{kind[0]}{nc.index + 1}"
+                )
                 items.append(
                     StructureBox(
                         layer="L4",
-                        id=f"l4-m{global_m}-n{nc.index}",
-                        label=f"n{nc.index + 1}",
+                        id=f"l4-m{global_m}-{kind}{nc.index}",
+                        label=l4_label,
                         box=nc.rect.as_box(),
-                        kind="note_roi",
+                        kind=l4_kind,
                         confidence=nc.confidence,
                     )
                 )
                 g = nc.glyph
-                if g is not None:
+                if g is not None and kind == "pitch":
                     dur = g.duration.value if hasattr(g.duration, "value") else str(g.duration)
                     label = g.pitch or ("0" if g.is_rest else "?")
                     if g.underlines:
                         label = f"{label}_{g.underlines}"
+                    if g.dots:
+                        label = f"{label}."
                     if g.octave:
                         label = f"{label}@{g.octave:+d}"
+                    if (g.extra or {}).get("pitch_from") == "geometry":
+                        label = f"{label}~"
                     items.append(
                         StructureBox(
                             layer="L5",
