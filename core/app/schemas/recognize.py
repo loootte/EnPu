@@ -59,6 +59,42 @@ class RecognizeResponse(BaseModel):
     meta: RecognizeMeta = Field(default_factory=RecognizeMeta)
 
 
+class CropRect(BaseModel):
+    """Axis-aligned crop ROI in full-image pixel coordinates (issue #49)."""
+
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+
+class CropMergeInfo(BaseModel):
+    """How crop Score measures were spliced into base Score."""
+
+    replaced_measure_from: int | None = Field(
+        default=None,
+        description="1-based first measure index replaced/inserted in merged score.",
+    )
+    replaced_measure_to: int | None = Field(
+        default=None,
+        description="1-based last measure index of inserted crop block in merged score.",
+    )
+    inserted_measure_count: int = 0
+    crop: CropRect
+    preserved_outside: bool = True
+
+
+class CropRecognizeResponse(RecognizeResponse):
+    """Crop re-recognize result with optional merge into base Score (#49)."""
+
+    crop: CropRect
+    merged_score: Score | None = Field(
+        default=None,
+        description="Base Score with crop measures spliced in; outside measures preserved.",
+    )
+    merge: CropMergeInfo | None = None
+
+
 class HealthResponse(BaseModel):
     status: str = "ok"
     version: str | None = None

@@ -27,6 +27,11 @@ interface ScoreEditorProps {
   coreOnline?: boolean;
   disabled?: boolean;
   onMessage?: (kind: "info" | "error", message: string) => void;
+  /**
+   * 1-based measure numbers to highlight (dual-view crop linkage #49).
+   * Also auto-highlights measures tagged ``extra.from_crop``.
+   */
+  highlightMeasures?: number[] | null;
 }
 
 function updateNote(
@@ -58,7 +63,9 @@ export function ScoreEditor({
   coreOnline = true,
   disabled = false,
   onMessage,
+  highlightMeasures = null,
 }: ScoreEditorProps) {
+  const highlightSet = new Set(highlightMeasures ?? []);
   const [playing, setPlaying] = useState(false);
   const [activeNote, setActiveNote] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -280,14 +287,37 @@ export function ScoreEditor({
         {!part ? (
           <p className="text-sm text-slate-500">（无声部）</p>
         ) : (
-          part.measures.map((m, mi) => (
+          part.measures.map((m, mi) => {
+            const fromCrop = Boolean(m.extra?.from_crop);
+            const highlighted =
+              fromCrop || highlightSet.has(m.number) || highlightSet.has(mi + 1);
+            return (
             <div
               key={`m-${m.number}-${mi}`}
-              className="rounded-lg border border-white/10 bg-white/[0.03] p-2"
+              className={[
+                "rounded-lg border p-2",
+                highlighted
+                  ? "border-indigo-400/70 bg-indigo-500/15 ring-1 ring-indigo-400/40"
+                  : "border-white/10 bg-white/[0.03]",
+              ].join(" ")}
             >
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">
+                <span
+                  className={[
+                    "text-xs font-medium",
+                    highlighted ? "text-indigo-200" : "text-slate-400",
+                  ].join(" ")}
+                >
                   小节 {m.number}
+                  {fromCrop ? (
+                    <span className="ml-1.5 text-[10px] text-amber-300/90">
+                      · 框选重识别
+                    </span>
+                  ) : highlighted ? (
+                    <span className="ml-1.5 text-[10px] text-indigo-300/80">
+                      · 选区联动
+                    </span>
+                  ) : null}
                 </span>
                 <button
                   type="button"
@@ -408,13 +438,15 @@ export function ScoreEditor({
                 })}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
       <p className="text-[11px] text-slate-500">
         试听使用浏览器 WebAudio（近似时值）。MusicXML / MIDI 经本地 core
-        的 /v1/export 生成。工程文件为 .enpu.json，可再次打开。
+        的 /v1/export 生成。工程文件为 .enpu.json，可再次打开。框选重识别见
+        #49。
       </p>
     </div>
   );

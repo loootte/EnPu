@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import time
 
+import numpy as np
+
 from app.config import Settings
 from app.pipeline.barlines import (
     detect_barline_xs,
@@ -12,11 +14,22 @@ from app.pipeline.barlines import (
     pitch_line_y_range,
     pitch_y_bands_from_items,
 )
+from app.pipeline.crop_merge import (
+    crop_slice_indices,
+    merge_crop_into_score,
+    normalize_crop_rect,
+    offset_boxes,
+)
 from app.pipeline.layout import classify_items, estimate_pitch_y_band, pitch_items
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
 from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
-from app.schemas.recognize import RecognizeMeta, RecognizeResponse
+from app.schemas.recognize import (
+    CropRecognizeResponse,
+    RecognizeMeta,
+    RecognizeResponse,
+)
+from app.schemas.score import Score
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +43,17 @@ class PipelineError(Exception):
         self.message = message
 
 
-def run_recognize(
-    data: bytes,
+def _run_on_bgr(
+    image_bgr: np.ndarray,
     *,
     settings: Settings,
-    filename: str | None = None,
-    content_type: str | None = None,
+    filename: str | None,
+    content_type: str | None,
+    started: float,
+    preprocess_prefix: list[str] | None = None,
 ) -> RecognizeResponse:
-    """Decode → preprocess → OCR → Score parse (with fallback)."""
-    started = time.perf_counter()
-
+    """Preprocess → OCR → barlines → Score parse for a BGR image array."""
     try:
-        image_bgr = decode_image_bytes(data)
         pre = preprocess_for_ocr(
             image_bgr,
             max_side=settings.ocr_max_side,
@@ -93,6 +105,7 @@ def run_recognize(
         engine=ocr.engine,
     )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
+    steps = list(preprocess_prefix or []) + list(pre.steps)
 
     return RecognizeResponse(
         ok=True,
@@ -108,10 +121,122 @@ def run_recognize(
             filename=filename,
             content_type=content_type,
             mock=ocr.mock,
-            preprocess_steps=list(pre.steps),
+            preprocess_steps=steps,
             scale=pre.scale,
             item_count=len(ocr.items),
             parse_mode=parsed.mode,
             parse_warnings=list(parsed.warnings),
         ),
+    )
+
+
+def run_recognize(
+    data: bytes,
+    *,
+    settings: Settings,
+    filename: str | None = None,
+    content_type: str | None = None,
+) -> RecognizeResponse:
+    """Decode → preprocess → OCR → Score parse (with fallback)."""
+    started = time.perf_counter()
+    try:
+        image_bgr = decode_image_bytes(data)
+    except ImageDecodeError as exc:
+        raise PipelineError(str(exc), status_code=400) from exc
+    return _run_on_bgr(
+        image_bgr,
+        settings=settings,
+        filename=filename,
+        content_type=content_type,
+        started=started,
+    )
+
+
+def run_recognize_crop(
+    data: bytes,
+    *,
+    settings: Settings,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    filename: str | None = None,
+    content_type: str | None = None,
+    base_score: Score | None = None,
+    measure_from: int | None = None,
+    measure_to: int | None = None,
+) -> CropRecognizeResponse:
+    """Crop full image to ROI, recognize locally, optionally merge into base Score.
+
+    Boxes are remapped to full-image coordinates. Measures outside the replace
+    window in ``base_score`` are preserved (hand edits kept).
+    """
+    started = time.perf_counter()
+    try:
+        image_bgr = decode_image_bytes(data)
+    except ImageDecodeError as exc:
+        raise PipelineError(str(exc), status_code=400) from exc
+
+    full_h, full_w = image_bgr.shape[:2]
+    try:
+        crop = normalize_crop_rect(x1, y1, x2, y2, width=full_w, height=full_h)
+    except ValueError as exc:
+        raise PipelineError(str(exc), status_code=400) from exc
+
+    cx1, cy1, cx2, cy2 = crop_slice_indices(crop)
+    roi = image_bgr[cy1:cy2, cx1:cx2]
+    if roi.size == 0:
+        raise PipelineError("Crop region is empty.", status_code=400)
+
+    prefix = [f"crop:{cx1},{cy1},{cx2},{cy2}"]
+    local = _run_on_bgr(
+        roi,
+        settings=settings,
+        filename=filename,
+        content_type=content_type,
+        started=started,
+        preprocess_prefix=prefix,
+    )
+
+    # Boxes / meta dimensions: keep crop-local size for preprocess stats but
+    # expose full-image boxes for dual-view overlay.
+    full_boxes = offset_boxes(list(local.boxes), float(cx1), float(cy1))
+    meta = local.meta.model_copy(
+        update={
+            "width": full_w,
+            "height": full_h,
+        }
+    )
+    # Stash crop-local size for debugging.
+    steps = list(meta.preprocess_steps)
+    steps.append(f"crop_size:{cx2 - cx1}x{cy2 - cy1}")
+    meta.preprocess_steps = steps
+
+    merged_score = None
+    merge_info = None
+    if base_score is not None:
+        try:
+            merged_score, merge_info = merge_crop_into_score(
+                base_score,
+                local.score,
+                crop=crop,
+                image_height=full_h,
+                image_width=full_w,
+                measure_from=measure_from,
+                measure_to=measure_to,
+            )
+        except ValueError as exc:
+            raise PipelineError(str(exc), status_code=400) from exc
+
+    return CropRecognizeResponse(
+        ok=local.ok,
+        engine=local.engine,
+        texts=local.texts,
+        boxes=full_boxes,
+        notes=local.notes,
+        score=local.score,
+        meta=meta,
+        crop=crop,
+        merged_score=merged_score,
+        merge=merge_info,
     )

@@ -5,6 +5,8 @@
  */
 
 import type {
+  CropRecognizeResponse,
+  CropRect,
   ExportResponse,
   HealthResponse,
   RecognizeResponse,
@@ -132,6 +134,70 @@ export function isAllowedImageFile(file: File): boolean {
   const dot = name.lastIndexOf(".");
   if (dot < 0) return false;
   return ALLOWED_EXTENSIONS.has(name.slice(dot));
+}
+
+/**
+ * POST /v1/recognize/crop — rectangle ROI re-recognize + optional Score merge (#49).
+ */
+export async function recognizeCrop(
+  file: File,
+  crop: CropRect,
+  opts?: {
+    baseScore?: Score | null;
+    measureFrom?: number | null;
+    measureTo?: number | null;
+    baseUrl?: string;
+    signal?: AbortSignal;
+  },
+): Promise<CropRecognizeResponse> {
+  const baseUrl = opts?.baseUrl ?? getCoreBaseUrl();
+  const form = new FormData();
+  form.append("file", file, file.name || "upload.png");
+  form.append("x1", String(crop.x1));
+  form.append("y1", String(crop.y1));
+  form.append("x2", String(crop.x2));
+  form.append("y2", String(crop.y2));
+  if (opts?.baseScore) {
+    form.append("base_score", JSON.stringify(opts.baseScore));
+  }
+  if (opts?.measureFrom != null) {
+    form.append("measure_from", String(opts.measureFrom));
+  }
+  if (opts?.measureTo != null) {
+    form.append("measure_to", String(opts.measureTo));
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/recognize/crop`, {
+      method: "POST",
+      body: form,
+      signal: opts?.signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+
+  if (!res.ok) {
+    let detail = `局部识别失败：HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") {
+        detail = body.detail;
+      } else if (body.detail != null) {
+        detail = JSON.stringify(body.detail);
+      }
+    } catch {
+      // ignore
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+
+  try {
+    return (await res.json()) as CropRecognizeResponse;
+  } catch {
+    throw new CoreApiError("局部识别响应不是合法 JSON", { kind: "parse" });
+  }
 }
 
 /**
