@@ -200,6 +200,55 @@ def test_l3_segments_measures() -> None:
     assert any("L3" in w for w in warnings)
 
 
+def test_l5_geometry_pitch_fallback_and_meter() -> None:
+    """OCR-junk → geometry pitch; M04 m0 matches expected rhythm (#69)."""
+    from pathlib import Path
+
+    import cv2
+
+    from app.pipeline.structure.assemble import page_layout_to_score
+    from app.pipeline.structure.ir import PageLayout
+    from app.pipeline.structure.l5_glyph import fill_note_glyphs, validate_measure_durations
+
+    p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
+    if not p.is_file():
+        pytest.skip("M04 sample not present")
+    img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+    regions, _ = detect_page_regions(img)
+    score_roi = next(r for r in regions if r.role.value == "score")
+    systems, _ = detect_staff_systems(img, score_roi.rect)
+    systems, _ = segment_measures_on_systems(img, systems)
+    systems, _ = detect_note_candidates(img, systems)
+    # mock OCR text is multi-token junk → geometry should win
+    systems, w5 = fill_note_glyphs(img, systems, engine_name="mock")
+    systems, wm = validate_measure_durations(systems, "4/4")
+    assert any("meter check" in x for x in wm)
+    m0 = systems[0].measures[0]
+    assert m0.extra.get("meter_status") == "ok"
+    assert abs(float(m0.extra.get("meter_beats") or 0) - 4.0) < 0.4
+    layout = PageLayout(
+        width=img.shape[1],
+        height=img.shape[0],
+        systems=systems,
+        time_signature="4/4",
+    )
+    sc = page_layout_to_score(layout)
+    mel = sc.melody_part()
+    assert mel is not None
+    notes = mel.measures[0].notes
+    assert [n.pitch for n in notes] == ["3", "5", "5", "3", "2", "5", "7"]
+    assert [n.duration for n in notes] == [
+        DurationName.eighth,
+        DurationName.eighth,
+        DurationName.eighth,
+        DurationName.eighth,
+        DurationName.quarter,
+        DurationName.eighth,
+        DurationName.eighth,
+    ]
+    assert any("geometry_fallback" in x for x in w5)
+
+
 def test_l5_underlines_counted_below_digit_body() -> None:
     """Duration strokes below the digit → eighth; no stroke → quarter (#69 follow-up)."""
     import cv2

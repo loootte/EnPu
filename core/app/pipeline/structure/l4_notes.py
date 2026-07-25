@@ -262,25 +262,46 @@ def _pitch_candidates_in_measure(
         filtered.append(r)
     final = filtered
 
-    # Expand final ROIs for L5: include duration underline band under digit,
-    # but stop well above chord/lyric.
+    # Expand final ROIs for L5: underlines below + 附点/延音线 to the right.
     out: list[NoteCandidate] = []
     for i, r in enumerate(final):
         pad_x = max(2.0, 0.12 * r.width)
         pad_top = max(3.0, 0.22 * r.height)
-        # Prefer L2 underline band bottom when present (true duration lines)
         if underline_y is not None and underline_y[0] <= by1 + max(20.0, 0.9 * band_h):
             bot = float(underline_y[1] + 3)
         else:
             bot = r.y2 + max(10.0, 0.55 * r.height)
-        # Hard cap: not past mid-gap to typical chord (~1.5× pitch height below)
         if pitch_y is not None:
             bot = min(bot, pitch_y[1] + max(18.0, 0.7 * (pitch_y[1] - pitch_y[0])))
         bot = min(bot, by1 + max(16.0, 0.65 * band_h))
+
+        # Right ornaments: augmentation dots + sustain/tie dashes (延音线)
+        right_limit = min(float(img_w), float(meas_rect.x2) - 1.0)
+        # Don't eat next note: stop at midpoint to next body if close
+        if i + 1 < len(final):
+            right_limit = min(right_limit, 0.5 * (r.x2 + final[i + 1].x1))
+        aug_dots, has_sustain, right_x = _detect_right_ornaments(
+            bw,
+            body=r,
+            x_limit=right_limit,
+            img_w=img_w,
+            img_h=img_h,
+        )
+        x2 = max(r.x2 + pad_x, right_x)
+        x2 = min(float(img_w), x2)
+
+        # Pre-count underlines for meter checks even before L5
+        u_count = _precount_underlines(
+            bw,
+            body=r,
+            underline_y=underline_y,
+            img_h=img_h,
+        )
+
         pr = Rect(
             max(0.0, r.x1 - pad_x),
             max(0.0, r.y1 - pad_top),
-            min(float(img_w), r.x2 + pad_x),
+            x2,
             min(float(img_h), bot),
         )
         out.append(
@@ -299,10 +320,88 @@ def _pitch_candidates_in_measure(
                     "pitch_band_y1": float(by1),
                     "underline_band_y0": float(underline_y[0]) if underline_y else None,
                     "underline_band_y1": float(underline_y[1]) if underline_y else None,
+                    "aug_dots": aug_dots,
+                    "has_sustain": has_sustain,
+                    "underline_count": u_count,
                 },
             )
         )
     return out
+
+
+def _detect_right_ornaments(
+    bw: np.ndarray,
+    *,
+    body: Rect,
+    x_limit: float,
+    img_w: int,
+    img_h: int,
+) -> tuple[int, bool, float]:
+    """Find 附点 (dots) and 延音线/延音横线 to the right of digit body.
+
+    Returns (aug_dots, has_sustain, expanded_x2).
+    """
+    bh = max(body.height, 8.0)
+    bw_ = max(body.width, 6.0)
+    x0 = int(body.x2 + 1)
+    x1 = int(min(img_w, max(x_limit, body.x2 + 0.35 * bw_)))
+    y0 = int(max(0, body.y1 - 0.1 * bh))
+    y1 = int(min(img_h, body.y2 + 0.2 * bh))
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        return 0, False, float(body.x2)
+
+    roi = bw[y0:y1, x0:x1]
+    if roi.size == 0 or (roi > 0).sum() == 0:
+        return 0, False, float(body.x2)
+
+    contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    aug = 0
+    has_sustain = False
+    max_x = float(body.x2)
+    max_dot_a = max(8.0, 0.15 * bw_ * bh)
+    for cnt in contours:
+        x, y, cw, ch = cv2.boundingRect(cnt)
+        area = cw * ch
+        if area < 3:
+            continue
+        gx2 = float(x0 + x + cw)
+        aspect = cw / max(ch, 1)
+        # Roundish small → augmentation dot
+        if area <= max_dot_a and aspect <= 2.0 and ch <= 0.45 * bh:
+            aug += 1
+            max_x = max(max_x, gx2 + 2)
+            continue
+        # Wide thin horizontal → sustain dash / tie start
+        if aspect >= 2.2 and ch <= max(6, 0.35 * bh) and cw >= 0.35 * bw_:
+            has_sustain = True
+            max_x = max(max_x, gx2 + 2)
+            continue
+        # Small leftover ink still expand slightly
+        if gx2 <= body.x2 + 1.1 * bw_:
+            max_x = max(max_x, gx2)
+    return min(2, aug), has_sustain, min(float(x_limit), max_x)
+
+
+def _precount_underlines(
+    bw: np.ndarray,
+    *,
+    body: Rect,
+    underline_y: tuple[float, float] | None,
+    img_h: int,
+) -> int:
+    """Same geometry as L5 underline count (for L4 meter preview)."""
+    from app.pipeline.structure.l5_glyph import _count_underlines_below_body
+
+    return _count_underlines_below_body(
+        bw,
+        x0=max(0, int(body.x1 - 1)),
+        x1=min(bw.shape[1], int(body.x2 + 1)),
+        body_y1=int(body.y2),
+        body_h=max(4, int(body.height)),
+        underline_band_y0=underline_y[0] if underline_y else None,
+        underline_band_y1=underline_y[1] if underline_y else None,
+        img_h=img_h,
+    )
 
 
 def _aux_candidates_in_measure(

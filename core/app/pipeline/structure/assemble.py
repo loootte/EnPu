@@ -102,6 +102,10 @@ def page_layout_to_score(
                         "barline_x_left": ml.barline_x_left,
                         "barline_x_right": ml.barline_x_right,
                         "l3_confidence": ml.confidence,
+                        # L4/L5 meter check fields (if present)
+                        "meter_capacity": ml.extra.get("meter_capacity"),
+                        "meter_beats": ml.extra.get("meter_beats"),
+                        "meter_status": ml.extra.get("meter_status"),
                     },
                 )
             )
@@ -251,8 +255,12 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                     label = g.pitch or ("0" if g.is_rest else "?")
                     if g.underlines:
                         label = f"{label}_{g.underlines}"
+                    if g.dots:
+                        label = f"{label}."
                     if g.octave:
                         label = f"{label}@{g.octave:+d}"
+                    if (g.extra or {}).get("pitch_from") == "geometry":
+                        label = f"{label}~"
                     items.append(
                         StructureBox(
                             layer="L5",

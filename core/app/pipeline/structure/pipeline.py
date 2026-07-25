@@ -25,7 +25,7 @@ from app.pipeline.structure.l1_page import detect_page_regions
 from app.pipeline.structure.l2_systems import detect_staff_systems
 from app.pipeline.structure.l3_measures import segment_measures_on_systems
 from app.pipeline.structure.l4_notes import detect_note_candidates
-from app.pipeline.structure.l5_glyph import fill_note_glyphs
+from app.pipeline.structure.l5_glyph import fill_note_glyphs, validate_measure_durations
 from app.schemas.recognize import (
     BoundingBox,
     LayoutRegion,
@@ -98,7 +98,16 @@ def run_structure_recognize(
     systems, w4 = detect_note_candidates(work, systems)
     warnings.extend(w4)
 
-    # --- L5 (OCR pitch on note ROIs — after structure)
+    # Meta text (title / key / time) early — needed for L4/L5 meter check
+    title, key, time_sig, meta_warnings = _read_page_meta(
+        work,
+        score_rect.y1,
+        settings=settings,
+    )
+    warnings.extend(meta_warnings)
+    time_sig = time_sig or "4/4"
+
+    # --- L5 (OCR / geometry pitch on note ROIs — after structure)
     systems, w5 = fill_note_glyphs(
         work,
         systems,
@@ -109,13 +118,9 @@ def run_structure_recognize(
     )
     warnings.extend(w5)
 
-    # Meta text (title / key / time) — light full-page OCR only on top band
-    title, key, time_sig, meta_warnings = _read_page_meta(
-        work,
-        score_rect.y1,
-        settings=settings,
-    )
-    warnings.extend(meta_warnings)
+    # --- Meter validation vs time signature (after L5 durations known)
+    systems, w_meter = validate_measure_durations(systems, time_sig, soft_fit=True)
+    warnings.extend(w_meter)
 
     layout = PageLayout(
         width=w,
