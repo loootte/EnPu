@@ -67,6 +67,30 @@ export interface Score {
   extra?: Record<string, unknown>;
 }
 
+/** Recognition problem tag (#46 / P4-G). */
+export type ScoreProblemKind =
+  | "low_confidence"
+  | "meter_over"
+  | "meter_under"
+  | "empty_measure"
+  | "layout_pollution"
+  | "geometry_pitch"
+  | "other";
+
+export type ScoreProblemSeverity = "error" | "warning" | "info";
+
+export interface ScoreProblem {
+  id: string;
+  kind: ScoreProblemKind | string;
+  severity?: ScoreProblemSeverity | string;
+  message: string;
+  measure?: number | null;
+  note_index?: number | null;
+  confidence?: number | null;
+  source?: string | null;
+  extra?: Record<string, unknown>;
+}
+
 export interface RecognizeMeta {
   width: number;
   height: number;

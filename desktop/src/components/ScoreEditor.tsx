@@ -3,7 +3,7 @@
  * Edit meta + notes; play via WebAudio; export JSON/MusicXML/MIDI/project.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CoreApiError, exportScore, getCoreBaseUrl } from "../lib/api";
 import { playScore, type PlaybackHandle } from "../lib/playback";
 import {
@@ -74,6 +74,23 @@ export function ScoreEditor({
   focusMeasure = null,
 }: ScoreEditorProps) {
   const highlightSet = new Set(highlightMeasures ?? []);
+  const problemSet = useMemo(() => {
+    // Measures tagged in score extra problems (fallback if parent only passes highlights)
+    const raw = score.extra?.problems;
+    const s = new Set<number>();
+    if (Array.isArray(raw)) {
+      for (const p of raw) {
+        if (
+          p &&
+          typeof p === "object" &&
+          typeof (p as { measure?: unknown }).measure === "number"
+        ) {
+          s.add((p as { measure: number }).measure);
+        }
+      }
+    }
+    return s;
+  }, [score.extra?.problems]);
   const [playing, setPlaying] = useState(false);
   const [activeNote, setActiveNote] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -314,11 +331,12 @@ export function ScoreEditor({
             const fromCrop = Boolean(m.extra?.from_crop);
             const num = m.number;
             const hover = hoverMeasure === num || hoverMeasure === mi + 1;
-            const highlighted =
-              fromCrop ||
-              hover ||
+            const hasProblem =
+              problemSet.has(num) ||
               highlightSet.has(num) ||
               highlightSet.has(mi + 1);
+            const highlighted =
+              fromCrop || hover || hasProblem;
             return (
             <div
               key={`m-${m.number}-${mi}`}
@@ -327,9 +345,11 @@ export function ScoreEditor({
                 "rounded-lg border p-2 transition-colors",
                 hover
                   ? "border-amber-400/80 bg-amber-500/15 ring-1 ring-amber-300/40"
-                  : highlighted
-                    ? "border-indigo-400/70 bg-indigo-500/15 ring-1 ring-indigo-400/40"
-                    : "border-white/10 bg-white/[0.03]",
+                  : hasProblem && !fromCrop
+                    ? "border-rose-400/60 bg-rose-500/10 ring-1 ring-rose-400/30"
+                    : highlighted
+                      ? "border-indigo-400/70 bg-indigo-500/15 ring-1 ring-indigo-400/40"
+                      : "border-white/10 bg-white/[0.03]",
               ].join(" ")}
               onMouseEnter={() => onHoverMeasure?.(num)}
             >
@@ -339,12 +359,19 @@ export function ScoreEditor({
                     "text-xs font-medium",
                     hover
                       ? "text-amber-100"
-                      : highlighted
-                        ? "text-indigo-200"
-                        : "text-slate-400",
+                      : hasProblem && !fromCrop
+                        ? "text-rose-200"
+                        : highlighted
+                          ? "text-indigo-200"
+                          : "text-slate-400",
                   ].join(" ")}
                 >
                   小节 {m.number}
+                  {hasProblem && !fromCrop && !hover ? (
+                    <span className="ml-1.5 text-[10px] text-rose-300/90">
+                      · 问题
+                    </span>
+                  ) : null}
                   {fromCrop ? (
                     <span className="ml-1.5 text-[10px] text-amber-300/90">
                       · 框选重识别

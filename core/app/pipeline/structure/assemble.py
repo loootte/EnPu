@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.pipeline.problems import attach_problems_to_score, collect_score_problems
 from app.pipeline.structure.ir import PageLayout
 from app.schemas.recognize import BoundingBox, StructureBox, StructureDebug
 from app.schemas.score import (
@@ -72,6 +73,9 @@ def page_layout_to_score(
                                     "duration_from", "default"
                                 ),
                                 "sustain_dashes": g.extra.get("sustain_dashes"),
+                                "confidence": g.confidence,
+                                "ocr_score": g.ocr_score,
+                                "pitch_from": g.extra.get("pitch_from"),
                                 "l3_system": sys.index,
                                 "l3_measure": ml.index,
                             },
@@ -94,6 +98,9 @@ def page_layout_to_score(
                                     "duration_from", "default"
                                 ),
                                 "sustain_dashes": g.extra.get("sustain_dashes"),
+                                "confidence": g.confidence,
+                                "ocr_score": g.ocr_score,
+                                "pitch_from": g.extra.get("pitch_from"),
                                 "l3_system": sys.index,
                                 "l3_measure": ml.index,
                             },
@@ -142,7 +149,7 @@ def page_layout_to_score(
             )
         ]
 
-    return Score(
+    score = Score(
         schema_version="0.1",
         title=layout.title or "",
         key=layout.key or "C",
@@ -167,6 +174,12 @@ def page_layout_to_score(
             },
         ),
     )
+    # #46: problem tags for navigation UI
+    problems = collect_score_problems(
+        score,
+        parse_warnings=list(layout.warnings),
+    )
+    return attach_problems_to_score(score, problems)
 
 
 def layout_debug_summary(layout: PageLayout) -> dict:

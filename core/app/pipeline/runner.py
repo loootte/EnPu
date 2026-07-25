@@ -24,6 +24,7 @@ from app.pipeline.layout import classify_items, estimate_pitch_y_band, pitch_ite
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
 from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
+from app.pipeline.problems import attach_problems_to_score, collect_score_problems
 from app.schemas.recognize import (
     BoundingBox,
     CropRecognizeResponse,
@@ -156,6 +157,16 @@ def _run_on_bgr(
             )
         )
 
+    score = parsed.score
+    if score is not None:
+        # #46: refresh problem tags with layout regions (title/meta digit pollution)
+        problems = collect_score_problems(
+            score,
+            regions=regions,
+            parse_warnings=list(parsed.warnings),
+        )
+        score = attach_problems_to_score(score, problems)
+
     return RecognizeResponse(
         ok=True,
         engine=ocr.engine,
@@ -163,7 +174,7 @@ def _run_on_bgr(
         boxes=boxes_in,
         regions=regions,
         notes=parsed.notes,
-        score=parsed.score,
+        score=score,
         meta=RecognizeMeta(
             width=in_w,
             height=in_h,

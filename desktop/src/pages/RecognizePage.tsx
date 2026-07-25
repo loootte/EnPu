@@ -6,10 +6,15 @@ import {
 } from "../components/ImagePreview";
 import { ResultPanel } from "../components/ResultPanel";
 import { StatusBanner } from "../components/StatusBanner";
+import { ProblemNavPanel } from "../components/ProblemNavPanel";
 import {
   StructureLayerPanel,
   defaultStructureLayersEnabled,
 } from "../components/StructureLayerPanel";
+import {
+  problemMeasureNumbers,
+  problemsFromScore,
+} from "../lib/problems";
 import {
   CoreApiError,
   getCoreBaseUrl,
@@ -54,6 +59,9 @@ export function RecognizePage() {
   );
   /** Dual-view (#45): shared hover measure (1-based). */
   const [hoverMeasure, setHoverMeasure] = useState<number | null>(null);
+  /** Problem nav (#46): scroll ScoreEditor to this measure. */
+  const [focusMeasure, setFocusMeasure] = useState<number | null>(null);
+  const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
   const [overlayMode, setOverlayMode] = useState<ImageOverlayMode>("boxes");
   const [structureLayers, setStructureLayers] = useState(
     defaultStructureLayersEnabled,
@@ -129,6 +137,19 @@ export function RecognizePage() {
   }, [result?.meta.height, result?.meta.width]);
 
   const nMeasures = score?.parts?.[0]?.measures?.length ?? 0;
+
+  const problemMeasures = useMemo(
+    () => problemMeasureNumbers(problemsFromScore(score)),
+    [score],
+  );
+
+  /** Crop selection highlights ∪ problem measures (red-ish via editor). */
+  const editorHighlights = useMemo(() => {
+    const set = new Set<number>();
+    for (const m of highlightMeasures ?? []) set.add(m);
+    for (const m of problemMeasures) set.add(m);
+    return set.size ? [...set].sort((a, b) => a - b) : null;
+  }, [highlightMeasures, problemMeasures]);
 
   const noteCounts = useMemo(() => {
     const measures = score?.parts?.[0]?.measures;
@@ -604,6 +625,17 @@ export function RecognizePage() {
               }
             }}
           />
+          <ProblemNavPanel
+            score={score}
+            activeId={activeProblemId}
+            onSelect={(p) => {
+              setActiveProblemId(p.id);
+              if (p.measure != null) {
+                setFocusMeasure(p.measure);
+                setHoverMeasure(p.measure);
+              }
+            }}
+          />
           <ImagePreview
             src={previewUrl}
             filename={file?.name}
@@ -659,16 +691,16 @@ export function RecognizePage() {
             onScoreChange={setScore}
             coreOnline={coreState === "online"}
             onMessage={onMessage}
-            highlightMeasures={highlightMeasures}
+            highlightMeasures={editorHighlights}
             hoverMeasure={hoverMeasure}
             onHoverMeasure={setHoverMeasure}
-            focusMeasure={hoverMeasure}
+            focusMeasure={focusMeasure ?? hoverMeasure}
           />
         </section>
       </div>
 
       <footer className="pb-4 text-center text-xs text-slate-500">
-        双视图 #45 · 框选 #49 · core {baseUrl}
+        双视图 #45 · 问题导航 #46 · 框选 #49 · core {baseUrl}
       </footer>
     </div>
   );
