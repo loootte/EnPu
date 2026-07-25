@@ -14,8 +14,8 @@ import {
   recognizeImage,
 } from "../lib/api";
 import {
+  buildMeasureRects,
   isLargeStaffRoi,
-  measureIndexToRect,
   pointToMeasureIndex,
   rectToMeasureRange,
 } from "../lib/measureLayout";
@@ -50,6 +50,13 @@ export function RecognizePage() {
   /** Dual-view (#45): shared hover measure (1-based). */
   const [hoverMeasure, setHoverMeasure] = useState<number | null>(null);
   const [overlayMode, setOverlayMode] = useState<ImageOverlayMode>("boxes");
+  /**
+   * Boxes from the last *full-page* recognize (natural image coords).
+   * Crop re-recognize only returns ROI boxes — keep full map for dual-view.
+   */
+  const [layoutBoxes, setLayoutBoxes] = useState<
+    import("../lib/types").BoundingBox[] | null
+  >(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   // Keep latest score for keyboard crop without stale closures.
   const scoreRef = useRef<Score | null>(null);
@@ -97,11 +104,13 @@ export function RecognizePage() {
     setSelection(null);
     setHighlightMeasures(null);
     setHoverMeasure(null);
+    setLayoutBoxes(null);
     setFile(f);
     setInfo(`已选择：${f.name}（${Math.round(f.size / 1024)} KB）`);
   };
 
   const imageSize = useMemo(() => {
+    // Prefer meta (original pixels after box unscale); 0 until recognize.
     const w = result?.meta.width ?? 0;
     const h = result?.meta.height ?? 0;
     return { w, h };
@@ -109,26 +118,26 @@ export function RecognizePage() {
 
   const nMeasures = score?.parts?.[0]?.measures?.length ?? 0;
 
-  const allMeasureRects = useMemo((): CropRect[] | null => {
-    if (!nMeasures || !imageSize.w || !imageSize.h) return null;
-    return Array.from({ length: nMeasures }, (_, i) =>
-      measureIndexToRect(i, nMeasures, imageSize.w, imageSize.h),
+  /** Spatial map from full-page OCR boxes (reading order) — not uniform page grid. */
+  const allMeasureRects = useMemo((): CropRect[] => {
+    if (!nMeasures || !imageSize.w || !imageSize.h) return [];
+    return buildMeasureRects(
+      nMeasures,
+      imageSize.w,
+      imageSize.h,
+      layoutBoxes,
     );
-  }, [imageSize.h, imageSize.w, nMeasures]);
+  }, [imageSize.h, imageSize.w, layoutBoxes, nMeasures]);
 
   const selectionPreviewRange = useMemo(() => {
     if (!selection || !nMeasures || !imageSize.w) return null;
     if (isLargeStaffRoi(selection, imageSize.w, imageSize.h)) {
       return { from: 1, to: nMeasures, large: true as const };
     }
-    const r = rectToMeasureRange(
-      selection,
-      nMeasures,
-      imageSize.w,
-      imageSize.h,
-    );
+    if (!allMeasureRects.length) return null;
+    const r = rectToMeasureRange(selection, allMeasureRects);
     return { ...r, large: false as const };
-  }, [imageSize.h, imageSize.w, nMeasures, selection]);
+  }, [allMeasureRects, imageSize.h, imageSize.w, nMeasures, selection]);
 
   const activeMeasureNumbers = useMemo(() => {
     const set = new Set<number>();
@@ -150,20 +159,14 @@ export function RecognizePage() {
 
   const onHoverImage = useCallback(
     (point: { x: number; y: number } | null) => {
-      if (!point || !nMeasures || !imageSize.w || !imageSize.h) {
+      if (!point || !allMeasureRects.length) {
         setHoverMeasure(null);
         return;
       }
-      const idx = pointToMeasureIndex(
-        point.x,
-        point.y,
-        nMeasures,
-        imageSize.w,
-        imageSize.h,
-      );
+      const idx = pointToMeasureIndex(point.x, point.y, allMeasureRects);
       setHoverMeasure(idx + 1);
     },
-    [imageSize.h, imageSize.w, nMeasures],
+    [allMeasureRects],
   );
 
   const onRecognize = async () => {
@@ -174,9 +177,11 @@ export function RecognizePage() {
     setResult(null);
     setScore(null);
     setHighlightMeasures(null);
+    setLayoutBoxes(null);
     try {
       const res = await recognizeImage(file, baseUrl);
       setResult(res);
+      setLayoutBoxes(res.boxes ?? null);
       setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
       setCoreState("online");
       setInfo(
@@ -209,11 +214,38 @@ export function RecognizePage() {
     setInfo(null);
     setLoading(true);
     try {
+      // Spatial measure range from OCR-box map (not page-grid) → explicit merge window.
+      const base = scoreRef.current;
+      const n = base?.parts?.[0]?.measures?.length ?? 0;
+      const metaW = result?.meta.width ?? 0;
+      const metaH = result?.meta.height ?? 0;
+      let measureFrom: number | undefined;
+      let measureTo: number | undefined;
+      if (n > 0 && metaW > 0 && metaH > 0) {
+        if (isLargeStaffRoi(sel, metaW, metaH)) {
+          measureFrom = 1;
+          measureTo = n;
+        } else {
+          const rects = buildMeasureRects(n, metaW, metaH, layoutBoxes);
+          const range = rectToMeasureRange(sel, rects);
+          measureFrom = range.from;
+          measureTo = range.to;
+        }
+      }
+
       const res = await recognizeCrop(f, sel, {
-        baseScore: scoreRef.current,
+        baseScore: base,
         baseUrl,
+        measureFrom: measureFrom ?? null,
+        measureTo: measureTo ?? null,
       });
-      setResult(res);
+      // Keep full-page layout boxes for dual-view; only merge OCR boxes into display.
+      setResult({
+        ...res,
+        boxes: layoutBoxes?.length
+          ? [...layoutBoxes, ...(res.boxes ?? [])]
+          : res.boxes,
+      });
       const next =
         res.merged_score != null
           ? scoreFromRecognize(res.merged_score, res.meta.filename || f.name)
@@ -223,7 +255,7 @@ export function RecognizePage() {
       const to = res.merge?.replaced_measure_to;
       if (from != null && to != null) {
         const list: number[] = [];
-        for (let n = from; n <= to; n += 1) list.push(n);
+        for (let nM = from; nM <= to; nM += 1) list.push(nM);
         setHighlightMeasures(list);
       } else {
         setHighlightMeasures(null);
@@ -231,7 +263,10 @@ export function RecognizePage() {
       setCoreState("online");
       const mergeHint =
         res.merge != null
-          ? ` · 已合并小节 ${res.merge.replaced_measure_from ?? "?"}-${res.merge.replaced_measure_to ?? "?"}（区外手改保留）`
+          ? ` · 已合并小节 ${res.merge.replaced_measure_from ?? "?"}-${res.merge.replaced_measure_to ?? "?"}` +
+            (measureFrom != null
+              ? `（客户端定位 ${measureFrom}-${measureTo}）`
+              : "（区外手改保留）")
           : res.score
             ? " · 无 base Score，仅返回选区识别"
             : " · 选区未解析出 Score";
@@ -253,7 +288,13 @@ export function RecognizePage() {
     } finally {
       setLoading(false);
     }
-  }, [baseUrl, refreshHealth]);
+  }, [
+    baseUrl,
+    layoutBoxes,
+    refreshHealth,
+    result?.meta.height,
+    result?.meta.width,
+  ]);
 
   // Esc clear selection; Ctrl+Shift+R crop re-recognize
   useEffect(() => {
@@ -285,6 +326,8 @@ export function RecognizePage() {
       setFile(null);
       setSelection(null);
       setHighlightMeasures(null);
+      setHoverMeasure(null);
+      setLayoutBoxes(null);
       setInfo(`已打开工程：${f.name}${proj.title ? ` · ${proj.title}` : ""}`);
     } catch (err) {
       setError(
@@ -421,6 +464,7 @@ export function RecognizePage() {
             setSelection(null);
             setHighlightMeasures(null);
             setHoverMeasure(null);
+            setLayoutBoxes(null);
             setInfo("已新建空白 Score，可直接编辑后导出");
           }}
           className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
@@ -437,6 +481,7 @@ export function RecognizePage() {
             setSelection(null);
             setHighlightMeasures(null);
             setHoverMeasure(null);
+            setLayoutBoxes(null);
             setError(null);
             setInfo(null);
           }}
@@ -479,9 +524,9 @@ export function RecognizePage() {
                 // Preview which measures will be affected
               }
             }}
-            boxes={result?.boxes ?? null}
+            boxes={result?.boxes ?? layoutBoxes}
             highlightSelection
-            measureRects={allMeasureRects}
+            measureRects={allMeasureRects.length ? allMeasureRects : null}
             activeMeasureNumbers={activeMeasureNumbers}
             overlayMode={overlayMode}
             onOverlayModeChange={setOverlayMode}
