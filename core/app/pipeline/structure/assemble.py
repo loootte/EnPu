@@ -11,7 +11,19 @@ from app.schemas.score import (
     Part,
     Score,
     ScoreMeta,
+    TieType,
 )
+
+
+def _tie_from_glyph(g) -> TieType | None:
+    t = (g.extra or {}).get("tie")
+    if t == "start":
+        return TieType.start
+    if t == "stop":
+        return TieType.stop
+    if t in {"continue", "continue_"}:
+        return TieType.continue_
+    return None
 
 
 def page_layout_to_score(
@@ -43,6 +55,7 @@ def page_layout_to_score(
                 g = nc.glyph
                 if g is None:
                     continue
+                tie = _tie_from_glyph(g)
                 if g.is_rest:
                     notes.append(
                         NoteEvent(
@@ -51,12 +64,14 @@ def page_layout_to_score(
                             duration=g.duration or DurationName.quarter,
                             dots=g.dots,
                             octave=0,
+                            tie=tie,
                             extra={
                                 "source": "structure_l5",
                                 "underlines": g.underlines,
                                 "duration_from": g.extra.get(
                                     "duration_from", "default"
                                 ),
+                                "sustain_dashes": g.extra.get("sustain_dashes"),
                                 "l3_system": sys.index,
                                 "l3_measure": ml.index,
                             },
@@ -70,6 +85,7 @@ def page_layout_to_score(
                             duration=g.duration or DurationName.quarter,
                             dots=g.dots,
                             octave=int(g.octave or 0),
+                            tie=tie,
                             extra={
                                 "source": "structure_l5",
                                 "underlines": g.underlines,
@@ -77,6 +93,7 @@ def page_layout_to_score(
                                 "duration_from": g.extra.get(
                                     "duration_from", "default"
                                 ),
+                                "sustain_dashes": g.extra.get("sustain_dashes"),
                                 "l3_system": sys.index,
                                 "l3_measure": ml.index,
                             },
@@ -256,9 +273,11 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                     if g.underlines:
                         label = f"{label}_{g.underlines}"
                     if g.dots:
-                        label = f"{label}."
+                        label = f"{label}{'.' * min(2, g.dots)}"
                     if g.octave:
                         label = f"{label}@{g.octave:+d}"
+                    if (g.extra or {}).get("sustain_dashes"):
+                        label = f"{label}-"
                     if (g.extra or {}).get("pitch_from") == "geometry":
                         label = f"{label}~"
                     items.append(

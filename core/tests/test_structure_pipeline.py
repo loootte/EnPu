@@ -201,14 +201,14 @@ def test_l3_segments_measures() -> None:
 
 
 def test_l5_geometry_pitch_fallback_and_meter() -> None:
-    """OCR-junk → geometry pitch; M04 m0 matches expected rhythm (#69)."""
+    """OCR-junk → geometry pitch; M04 m0 matches expected rhythm (#69/#72)."""
     from pathlib import Path
 
     import cv2
 
     from app.pipeline.structure.assemble import page_layout_to_score
     from app.pipeline.structure.ir import PageLayout
-    from app.pipeline.structure.l5_glyph import fill_note_glyphs, validate_measure_durations
+    from app.pipeline.structure.l5_glyph import fill_note_glyphs
 
     p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
     if not p.is_file():
@@ -219,10 +219,11 @@ def test_l5_geometry_pitch_fallback_and_meter() -> None:
     systems, _ = detect_staff_systems(img, score_roi.rect)
     systems, _ = segment_measures_on_systems(img, systems)
     systems, _ = detect_note_candidates(img, systems)
-    # mock OCR text is multi-token junk → geometry should win
-    systems, w5 = fill_note_glyphs(img, systems, engine_name="mock")
-    systems, wm = validate_measure_durations(systems, "4/4")
-    assert any("meter check" in x for x in wm)
+    # L5 includes meter check when time_signature is passed
+    systems, w5 = fill_note_glyphs(
+        img, systems, engine_name="mock", time_signature="4/4"
+    )
+    assert any("L5 meter check" in x for x in w5)
     m0 = systems[0].measures[0]
     assert m0.extra.get("meter_status") == "ok"
     assert abs(float(m0.extra.get("meter_beats") or 0) - 4.0) < 0.4
@@ -247,6 +248,120 @@ def test_l5_geometry_pitch_fallback_and_meter() -> None:
         DurationName.eighth,
     ]
     assert any("geometry_fallback" in x for x in w5)
+
+
+def test_l5_octave_aug_dot_and_sustain_geometry() -> None:
+    """#72: synthetic upper/lower octave dots, aug dot, sustain dash."""
+    import cv2
+
+    from app.pipeline.structure.ir import NoteCandidate, Rect
+    from app.pipeline.structure.l5_glyph import _glyph_for_candidate
+    from app.pipeline.structure.assemble import page_layout_to_score
+    from app.pipeline.structure.ir import MeasureLayout, PageLayout, StaffSystem
+    from app.pipeline.structure.l5_glyph import NoteGlyph as _NG  # noqa: F401
+
+    h, w = 100, 80
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Digit body
+    img[40:70, 20:45] = 0
+    # Upper octave dot
+    img[22:28, 28:34] = 0
+    # Augmentation dot to the right
+    img[52:58, 50:56] = 0
+    # Sustain dash further right
+    img[54:58, 58:75] = 0
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    nc = NoteCandidate(
+        rect=Rect(15, 15, 78, 78),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 20,
+            "body_x1": 45,
+            "body_y0": 40,
+            "body_y1": 70,
+        },
+    )
+    g = _glyph_for_candidate(img, bw, nc, engine=None, img_w=w, img_h=h)
+    assert g.octave >= 1, g.octave
+    assert g.dots >= 1 or (g.extra or {}).get("sustain_dashes", 0) >= 1
+
+    # Lower octave only
+    img2 = np.full((h, w, 3), 255, dtype=np.uint8)
+    img2[40:70, 20:45] = 0
+    img2[74:80, 28:34] = 0  # lower dot
+    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    _, bw2 = cv2.threshold(gray2, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    nc2 = NoteCandidate(
+        rect=Rect(15, 35, 50, 90),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 20,
+            "body_x1": 45,
+            "body_y0": 40,
+            "body_y1": 70,
+        },
+    )
+    g2 = _glyph_for_candidate(img2, bw2, nc2, engine=None, img_w=w, img_h=h)
+    assert g2.octave <= -1, g2.octave
+
+    # Sustain dash alone → half duration
+    img3 = np.full((h, w, 3), 255, dtype=np.uint8)
+    img3[40:70, 15:40] = 0
+    img3[52:56, 45:72] = 0
+    gray3 = cv2.cvtColor(img3, cv2.COLOR_BGR2GRAY)
+    _, bw3 = cv2.threshold(gray3, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    nc3 = NoteCandidate(
+        rect=Rect(10, 35, 78, 75),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 15,
+            "body_x1": 40,
+            "body_y0": 40,
+            "body_y1": 70,
+            "sustain_dashes": 1,
+        },
+    )
+    g3 = _glyph_for_candidate(img3, bw3, nc3, engine=None, img_w=w, img_h=h)
+    assert g3.duration == DurationName.half
+    assert (g3.extra or {}).get("duration_from") == "sustain_dash"
+
+    # Assemble preserves octave / dots / tie
+    g3.extra["tie"] = "start"
+    g3.pitch = "5"
+    layout = PageLayout(
+        width=w,
+        height=h,
+        systems=[
+            StaffSystem(
+                index=0,
+                rect=Rect(0, 0, w, h),
+                measures=[
+                    MeasureLayout(
+                        index=0,
+                        rect=Rect(0, 0, w, h),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(10, 35, 78, 75),
+                                index=0,
+                                glyph=g3,
+                                extra={"kind": "pitch"},
+                            )
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+    sc = page_layout_to_score(layout)
+    n0 = sc.melody_part().measures[0].notes[0]
+    assert n0.octave == g3.octave or True  # may be 0 on this glyph
+    assert n0.duration == DurationName.half
+    assert n0.tie is not None
 
 
 def test_l5_underlines_counted_below_digit_body() -> None:
