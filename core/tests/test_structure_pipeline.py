@@ -112,6 +112,83 @@ def test_l2_detects_systems() -> None:
     assert systems[0].rect.width > 0
 
 
+def _synthetic_pitch_chord_lyric_bgr(w: int = 480, h: int = 420) -> np.ndarray:
+    """Two melody systems, each with pitch + chord + lyric bands (#61)."""
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+
+    def _digit_row(y0: int, band_h: int, glyph_h: int, n: int = 12) -> None:
+        # Staff body
+        img[y0 : y0 + band_h, 30 : w - 30] = 240
+        step = (w - 80) // n
+        for i in range(n):
+            x = 40 + i * step
+            gy0 = y0 + max(1, (band_h - glyph_h) // 2)
+            img[gy0 : gy0 + glyph_h, x : x + max(8, glyph_h // 2)] = 0
+
+    # System 0: pitch (tall) + underline + chord + lyric
+    _digit_row(60, 36, 30, 14)
+    img[100:106, 50 : w - 50] = 0  # duration underline
+    _digit_row(130, 28, 22, 10)  # chord (shorter glyphs)
+    _digit_row(175, 26, 20, 10)  # lyric
+    # System 1 (gap ~90px)
+    _digit_row(270, 36, 30, 14)
+    img[310:316, 50 : w - 50] = 0
+    _digit_row(340, 28, 22, 10)
+    _digit_row(385, 26, 20, 10)
+    return img
+
+
+def test_l2_binds_chord_lyric_into_pitch_system() -> None:
+    """#61: chord/lyric are aux bands, not separate StaffSystems."""
+    img = _synthetic_pitch_chord_lyric_bgr()
+    score = Rect(0, 40, float(img.shape[1]), float(img.shape[0]))
+    systems, warnings = detect_staff_systems(img, score)
+    assert len(systems) == 2, [(s.rect.y1, s.rect.y2, s.extra) for s in systems]
+    for s in systems:
+        assert s.extra.get("n_pitch_bands") == 1
+        # At least one aux (chord and/or lyric and/or underline)
+        n_aux = (
+            int(s.extra.get("n_chord_bands") or 0)
+            + int(s.extra.get("n_lyric_bands") or 0)
+            + int(s.extra.get("n_underline_bands") or 0)
+        )
+        assert n_aux >= 1, s.extra
+        bands = s.extra.get("bands") or []
+        roles = [b["role"] for b in bands]
+        assert "pitch" in roles
+        # System rect covers from pitch through lower aux
+        assert s.rect.height >= 80
+    assert any("#61" in w or "aux band" in w for w in warnings)
+
+
+def test_l2_m04_binds_lyrics_not_extra_systems() -> None:
+    """#61 acceptance: M04 → few melody systems with chord/lyric attached."""
+    from pathlib import Path
+
+    import cv2
+
+    p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
+    if not p.is_file():
+        pytest.skip("M04 sample not present")
+    img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+    assert img is not None
+    regions, _ = detect_page_regions(img)
+    score = next(r for r in regions if r.role.value == "score")
+    systems, warnings = detect_staff_systems(img, score.rect)
+    # Pre-#61 split every fine band (~17); bound should be ~melody rows
+    assert 4 <= len(systems) <= 8, len(systems)
+    with_aux = sum(
+        1
+        for s in systems
+        if (s.extra.get("n_chord_bands") or 0) + (s.extra.get("n_lyric_bands") or 0) >= 1
+    )
+    assert with_aux >= 4, [(s.extra, s.rect) for s in systems]
+    # Each system must include a pitch band
+    for s in systems:
+        assert s.extra.get("n_pitch_bands", 0) >= 1
+    assert any("melody system" in w and "#61" in w for w in warnings)
+
+
 def test_l3_segments_measures() -> None:
     img = _synthetic_score_bgr()
     regions, _ = detect_page_regions(img)
