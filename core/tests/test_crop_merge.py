@@ -50,13 +50,54 @@ def test_offset_boxes() -> None:
     assert out[0].x2 == 13 and out[0].y2 == 24
 
 
-def test_estimate_measure_window_top_third() -> None:
-    crop = CropRect(x1=0, y1=0, x2=100, y2=30)
+def test_estimate_measure_window_top_left_is_first_measure() -> None:
+    """Top-left crop must map to measure 0 (not mid-score via Y-only)."""
+    crop = CropRect(x1=10, y1=10, x2=80, y2=40)
     start, end = estimate_measure_window(
-        n_base=9, n_crop=2, crop=crop, image_height=90
+        n_base=12,
+        n_crop=1,
+        crop=crop,
+        image_height=400,
+        image_width=600,
     )
     assert start == 0
-    assert end >= 2
+    assert end == 1
+
+
+def test_estimate_does_not_shift_to_end_when_crop_splits_many_bars() -> None:
+    """Duration bugs may yield many crop measures; start must stay at hit index."""
+    crop = CropRect(x1=5, y1=5, x2=90, y2=50)
+    start, end = estimate_measure_window(
+        n_base=10,
+        n_crop=7,  # over-split like all-quarter parse
+        crop=crop,
+        image_height=300,
+        image_width=500,
+    )
+    assert start == 0
+    assert end == 1  # single base slot; insert may expand after merge
+
+
+def test_merge_first_measure_crop_stays_at_number_one() -> None:
+    base = _score([["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["1"]])
+    # Crop "over-splits" into 3 bars (duration bug simulation)
+    crop = _score([["5"], ["5"], ["5"]], title="crop")
+    rect = CropRect(x1=0, y1=0, x2=60, y2=40)
+    merged, info = merge_crop_into_score(
+        base,
+        crop,
+        crop=rect,
+        image_height=200,
+        image_width=400,
+    )
+    assert info.replaced_measure_from == 1
+    assert merged.parts[0].measures[0].extra.get("from_crop") is True
+    assert merged.parts[0].measures[0].number == 1
+    # Outside later measures preserved (shifted after insert of 3)
+    pitches = [m.notes[0].pitch for m in merged.parts[0].measures]
+    assert pitches[0] == "5"
+    assert pitches[-1] == "1"
+    assert len(merged.parts[0].measures) == 8 - 1 + 3  # replace 1 with 3
 
 
 def test_merge_preserves_outside_hand_edits() -> None:
@@ -100,14 +141,12 @@ def test_merge_preserves_outside_hand_edits() -> None:
 def test_merge_auto_window_without_explicit_measures() -> None:
     base = _score([["1"], ["2"], ["3"], ["4"]])
     crop = _score([["5"]])
-    # Bottom half of image → later measures
-    rect = CropRect(x1=0, y1=50, x2=80, y2=100)
+    # Bottom-right half → later measures in reading order
+    rect = CropRect(x1=200, y1=80, x2=280, y2=120)
     merged, info = merge_crop_into_score(
-        base, crop, crop=rect, image_height=100
+        base, crop, crop=rect, image_height=120, image_width=300
     )
     assert info.inserted_measure_count == 1
-    assert any(
-        m.notes[0].pitch == "5" for m in merged.parts[0].measures
-    )
-    # First measure should still be base "1" if window starts mid-page
+    assert any(m.notes[0].pitch == "5" for m in merged.parts[0].measures)
+    # First measure should still be base "1" when hit is not top-left
     assert merged.parts[0].measures[0].notes[0].pitch == "1"

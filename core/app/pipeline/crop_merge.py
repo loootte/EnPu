@@ -77,32 +77,96 @@ def _measures(score: Score) -> list[Measure]:
     return list(_part0(score).measures)
 
 
+def estimate_measures_per_line(
+    n_base: int,
+    *,
+    image_width: int,
+    image_height: int,
+) -> int:
+    """Heuristic measures-per-staff-line for jianpu reading order."""
+    if n_base <= 1:
+        return 1
+    w = max(1, image_width)
+    h = max(1, image_height)
+    # Wider pages → more measures per line; clamp to typical 2–8.
+    aspect = w / float(h)
+    guess = int(round(math.sqrt(max(1, n_base) * max(0.5, aspect))))
+    return max(2, min(8, guess, n_base))
+
+
+def estimate_measure_index(
+    *,
+    n_base: int,
+    crop: CropRect,
+    image_width: int,
+    image_height: int,
+    measures_per_line: int | None = None,
+) -> int:
+    """Map crop center to a 0-based measure index using row-major reading order.
+
+    Jianpu measures run left→right on a staff, then top→bottom. Pure Y-fraction
+    mapping wrongly sends a top-left (first) measure to a mid-score index.
+    """
+    if n_base <= 0:
+        return 0
+    if n_base == 1:
+        return 0
+
+    w = max(1, image_width)
+    h = max(1, image_height)
+    cx = (crop.x1 + crop.x2) / 2.0
+    cy = (crop.y1 + crop.y2) / 2.0
+    fx = max(0.0, min(0.9999, cx / w))
+    fy = max(0.0, min(0.9999, cy / h))
+
+    mpl = measures_per_line or estimate_measures_per_line(
+        n_base, image_width=w, image_height=h
+    )
+    mpl = max(1, min(mpl, n_base))
+    n_rows = max(1, math.ceil(n_base / mpl))
+
+    row = min(n_rows - 1, int(fy * n_rows))
+    col = min(mpl - 1, int(fx * mpl))
+    idx = row * mpl + col
+    # Last row may be short.
+    return max(0, min(n_base - 1, idx))
+
+
 def estimate_measure_window(
     *,
     n_base: int,
     n_crop: int,
     crop: CropRect,
     image_height: int,
+    image_width: int = 0,
 ) -> tuple[int, int]:
-    """Estimate 0-based [start, end) measure indices in base from crop Y span."""
+    """Estimate 0-based [start, end) measure indices in base for crop replace.
+
+    Auto mode replaces **one** base measure slot at the estimated reading-order
+    index, then splices in all crop measures (even if duration bugs split one
+    bar into many). Never shifts the window toward the end of the score when
+    ``n_crop`` is large — that caused "first measure → 小节 7" regressions.
+    """
     if n_base <= 0:
         return 0, 0
+
+    w = image_width if image_width > 0 else max(1, image_height)
+    start = estimate_measure_index(
+        n_base=n_base,
+        crop=crop,
+        image_width=w,
+        image_height=max(1, image_height),
+    )
+    # Replace a single base measure at the hit index. Crop may insert 1..N bars.
+    end = min(n_base, start + 1)
+    # If crop Y-span is clearly multi-line (tall ROI), widen by span fraction.
     h = max(1, image_height)
-    start_frac = max(0.0, min(1.0, crop.y1 / h))
-    end_frac = max(start_frac, min(1.0, crop.y2 / h))
-    start = int(math.floor(start_frac * n_base))
-    end = int(math.ceil(end_frac * n_base))
-    if end <= start:
-        end = start + 1
-    # Prefer covering at least crop measure count when base is dense enough.
-    need = max(1, n_crop)
-    if end - start < need and start + need <= n_base:
-        end = start + need
-    elif end - start < need:
-        start = max(0, n_base - need)
-        end = n_base
-    start = max(0, min(start, n_base - 1 if n_base else 0))
-    end = max(start + 1, min(end, n_base))
+    span_frac = max(0.0, min(1.0, (crop.y2 - crop.y1) / h))
+    if span_frac > 0.22 and n_base > 1:
+        extra = max(0, int(math.floor(span_frac * n_base)) - 1)
+        end = min(n_base, start + 1 + extra)
+    # n_crop is intentionally not used to *move* start toward the score end.
+    _ = n_crop
     return start, end
 
 
@@ -112,6 +176,7 @@ def merge_crop_into_score(
     *,
     crop: CropRect,
     image_height: int,
+    image_width: int = 0,
     measure_from: int | None = None,
     measure_to: int | None = None,
 ) -> tuple[Score, CropMergeInfo]:
@@ -150,6 +215,7 @@ def merge_crop_into_score(
             n_crop=max(1, n_crop),
             crop=crop,
             image_height=image_height,
+            image_width=image_width,
         )
 
     # Tag crop measures for UI highlight.
@@ -163,7 +229,6 @@ def merge_crop_into_score(
         inserted.append(cm)
 
     if not inserted and crop_score is None:
-        # No crop score — keep base untouched but report window.
         info = CropMergeInfo(
             replaced_measure_from=start + 1 if n_base else None,
             replaced_measure_to=end if n_base else None,
@@ -174,7 +239,6 @@ def merge_crop_into_score(
         return merged, info
 
     if not inserted:
-        # Crop recognized nothing musical — leave base measures in window.
         info = CropMergeInfo(
             replaced_measure_from=start + 1 if n_base else None,
             replaced_measure_to=end if n_base else None,
@@ -209,6 +273,7 @@ def merge_crop_into_score(
     elif merged.meta is not None:
         extra = dict(merged.meta.extra or {})
         extra["last_crop"] = crop.model_dump()
+        extra["last_crop_merge_start"] = start + 1
         merged.meta.extra = extra
 
     info = CropMergeInfo(

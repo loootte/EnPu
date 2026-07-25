@@ -394,10 +394,11 @@ export function RecognizePage() {
               {Math.round(selection.x2)},{Math.round(selection.y2)}) ·{" "}
               {Math.round(selection.x2 - selection.x1)}×
               {Math.round(selection.y2 - selection.y1)}
+              。合并按阅读顺序（先左后右、先上后下）定位小节。
             </p>
           ) : (
             <p className="text-[11px] text-slate-600">
-              在预览图上拖拽矩形框选有效谱表或问题小节，再点「局部重识别」。选区外人工修改不会被覆盖。
+              滚轮缩放、空格/中键拖移原谱；拖拽矩形框选后「局部重识别」。选区外人工修改不会被覆盖。
             </p>
           )}
         </section>

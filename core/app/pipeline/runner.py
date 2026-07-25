@@ -221,6 +221,7 @@ def run_recognize_crop(
                 local.score,
                 crop=crop,
                 image_height=full_h,
+                image_width=full_w,
                 measure_from=measure_from,
                 measure_to=measure_to,
             )
