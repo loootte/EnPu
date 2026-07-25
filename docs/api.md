@@ -20,6 +20,34 @@
 
 ---
 
+## POST `/v1/recognize/structure/rerun`（#78）
+
+结构优先模式下，用户调整 L1–L5 区域框后，**从指定层起重跑该层及下层**，保留上层结果。
+
+**Content-Type**：`multipart/form-data`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `file` | file | 是 | 与首次识别相同的原图 png/jpg |
+| `from_layer` | string | 是 | `L1` \| `L2` \| `L3` \| `L4` \| `L5` |
+| `base_structure` | string (JSON) | 是 | 当前 `RecognizeResponse.structure` |
+| `edits` | string (JSON) | 否 | `[{ "id": "l2-sys0", "box": {x1,y1,x2,y2} }, ...]` |
+| `key` / `time_signature` / `title` | string | 否 | 覆盖元数据 |
+
+**语义**
+
+| from_layer | 保留 | 重跑 |
+|------------|------|------|
+| L1 | （用户 L1 框） | L2–L5 |
+| L2 | L1 | L3–L5（系统框用用户 L2） |
+| L3 | L1–L2 | L4–L5（小节框用用户 L3） |
+| L4 | L1–L3 | L5（音符 ROI 用用户 L4） |
+| L5 | L1–L4 候选 | 字形 OCR/几何 |
+
+**响应**：同 `/v1/recognize`，并增加 `from_layer`、`edited_item_count`。
+
+---
+
 ## POST `/v1/recognize`
 
 上传一张简谱图片，返回识别结果。

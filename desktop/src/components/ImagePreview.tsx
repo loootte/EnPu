@@ -2,7 +2,13 @@
  * Image preview: selection, zoom/pan (#49), dual-view overlays (#45).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import type {
   BoundingBox,
   CropRect,
@@ -33,6 +39,11 @@ export interface ImagePreviewProps {
   /** #58 structure-first layer overlays */
   structure?: StructureDebug | null;
   structureLayers?: Record<StructureLayerId, boolean> | null;
+  /** #78: allow drag-resize of structure boxes */
+  structureEditMode?: boolean;
+  selectedStructureId?: string | null;
+  onSelectStructureId?: (id: string | null) => void;
+  onStructureBoxChange?: (id: string, box: BoundingBox) => void;
 }
 
 type DragState = {
@@ -97,30 +108,126 @@ const LAYER_STYLE: Record<
   },
 };
 
+type ResizeHandle =
+  | "n"
+  | "s"
+  | "e"
+  | "w"
+  | "ne"
+  | "nw"
+  | "se"
+  | "sw"
+  | "move";
+
 function StructureItemOverlay({
   item,
   scaleX,
   scaleY,
+  editable,
+  selected,
+  onSelect,
+  onBoxChange,
+  naturalW,
+  naturalH,
 }: {
   item: StructureBox;
   scaleX: number;
   scaleY: number;
+  editable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  onBoxChange?: (id: string, box: BoundingBox) => void;
+  naturalW: number;
+  naturalH: number;
 }) {
   const st = LAYER_STYLE[item.layer];
   const showLabel = item.layer === "L1" || item.layer === "L2" || item.layer === "L5";
-  const thick = item.layer === "L1" || item.layer === "L2" ? "border-2" : "border";
+  const thick =
+    selected || item.layer === "L1" || item.layer === "L2" ? "border-2" : "border";
+  const id = item.id || `${item.layer}-${item.label}`;
+
+  const onPointerDownHandle = (
+    e: ReactPointerEvent,
+    handle: ResizeHandle,
+  ) => {
+    if (!editable || !onBoxChange) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.(id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origin = { ...item.box };
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = (ev.clientX - startX) / Math.max(scaleX, 1e-6);
+      const dy = (ev.clientY - startY) / Math.max(scaleY, 1e-6);
+      let { x1, y1, x2, y2 } = origin;
+      if (handle === "move") {
+        const w = x2 - x1;
+        const h = y2 - y1;
+        x1 = clamp(origin.x1 + dx, 0, Math.max(0, naturalW - w));
+        y1 = clamp(origin.y1 + dy, 0, Math.max(0, naturalH - h));
+        x2 = x1 + w;
+        y2 = y1 + h;
+      } else {
+        if (handle.includes("e")) x2 = origin.x2 + dx;
+        if (handle.includes("w")) x1 = origin.x1 + dx;
+        if (handle.includes("s")) y2 = origin.y2 + dy;
+        if (handle.includes("n")) y1 = origin.y1 + dy;
+        x1 = clamp(x1, 0, naturalW);
+        x2 = clamp(x2, 0, naturalW);
+        y1 = clamp(y1, 0, naturalH);
+        y2 = clamp(y2, 0, naturalH);
+      }
+      const next = normRect(x1, y1, x2, y2);
+      if (next.x2 - next.x1 < 4 || next.y2 - next.y1 < 4) return;
+      onBoxChange(id, next);
+    };
+    const onUp = (ev: PointerEvent) => {
+      target.releasePointerCapture(ev.pointerId);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const handles: { h: ResizeHandle; className: string }[] = [
+    { h: "nw", className: "left-0 top-0 cursor-nwse-resize" },
+    { h: "ne", className: "right-0 top-0 cursor-nesw-resize" },
+    { h: "sw", className: "left-0 bottom-0 cursor-nesw-resize" },
+    { h: "se", className: "right-0 bottom-0 cursor-nwse-resize" },
+    { h: "n", className: "left-1/2 top-0 -translate-x-1/2 cursor-ns-resize" },
+    { h: "s", className: "left-1/2 bottom-0 -translate-x-1/2 cursor-ns-resize" },
+    { h: "w", className: "left-0 top-1/2 -translate-y-1/2 cursor-ew-resize" },
+    { h: "e", className: "right-0 top-1/2 -translate-y-1/2 cursor-ew-resize" },
+  ];
+
   return (
     <div
-      className={`pointer-events-none absolute ${thick} ${st.border} ${st.bg}`}
+      className={`absolute ${thick} ${st.border} ${st.bg} ${
+        editable ? "pointer-events-auto" : "pointer-events-none"
+      } ${selected ? "ring-2 ring-white/80 z-20" : "z-10"}`}
       style={{
         left: item.box.x1 * scaleX,
         top: item.box.y1 * scaleY,
         width: Math.max(1, (item.box.x2 - item.box.x1) * scaleX),
         height: Math.max(1, (item.box.y2 - item.box.y1) * scaleY),
       }}
-      title={[item.layer, item.label, item.pitch, item.duration]
+      title={[item.layer, item.label, item.pitch, item.duration, editable ? "拖角缩放 · 拖框移动" : ""]
         .filter(Boolean)
         .join(" · ")}
+      onPointerDown={(e) => {
+        if (!editable) return;
+        onPointerDownHandle(e, "move");
+      }}
+      onClick={(e) => {
+        if (!editable) return;
+        e.stopPropagation();
+        onSelect?.(id);
+      }}
     >
       {showLabel && item.label ? (
         <span
@@ -129,6 +236,22 @@ function StructureItemOverlay({
           {item.label}
         </span>
       ) : null}
+      {editable && selected
+        ? handles.map(({ h, className }) => (
+            <div
+              key={h}
+              className={`absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white bg-indigo-400 ${className}`}
+              style={
+                h === "e" || h === "w"
+                  ? { transform: "translate(0, -50%)" }
+                  : h === "n" || h === "s"
+                    ? { transform: "translate(-50%, 0)" }
+                    : undefined
+              }
+              onPointerDown={(e) => onPointerDownHandle(e, h)}
+            />
+          ))
+        : null}
     </div>
   );
 }
@@ -149,6 +272,10 @@ export function ImagePreview({
   compact = false,
   structure = null,
   structureLayers = null,
+  structureEditMode = false,
+  selectedStructureId = null,
+  onSelectStructureId,
+  onStructureBoxChange,
 }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -497,7 +624,7 @@ export function ImagePreview({
                 );
               })
             : null}
-          {/* #58 structure L1–L5 overlays */}
+          {/* #58 structure L1–L5 overlays (#78 editable) */}
           {structure?.items?.length && natural.w > 0
             ? structure.items.map((it) => {
                 const show =
@@ -505,12 +632,19 @@ export function ImagePreview({
                     ? structureLayers?.[it.layer] !== false
                     : false;
                 if (!show) return null;
+                const sid = it.id || `${it.layer}-${it.label}`;
                 return (
                   <StructureItemOverlay
-                    key={it.id || `${it.layer}-${it.label}-${it.box.x1}`}
+                    key={sid}
                     item={it}
                     scaleX={scaleX}
                     scaleY={scaleY}
+                    editable={structureEditMode}
+                    selected={selectedStructureId === sid}
+                    onSelect={onSelectStructureId}
+                    onBoxChange={onStructureBoxChange}
+                    naturalW={natural.w}
+                    naturalH={natural.h}
                   />
                 );
               })

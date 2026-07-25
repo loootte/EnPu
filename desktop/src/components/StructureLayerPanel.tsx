@@ -1,9 +1,9 @@
 /**
  * Structure-first layer controls + summary (#58).
- * Toggle which L1–L5 overlays appear on the original image.
+ * Toggle L1–L5 overlays; edit boxes and re-run layer (#78).
  */
 
-import type { StructureDebug } from "../lib/types";
+import type { StructureBox, StructureDebug } from "../lib/types";
 
 export type StructureLayerId = "L1" | "L2" | "L3" | "L4" | "L5";
 
@@ -20,16 +20,39 @@ export const STRUCTURE_LAYERS: {
   { id: "L5", name: "L5 字形", color: "bg-amber-400/80", desc: "音高 OCR + 时值/八度" },
 ];
 
+export function defaultStructureLayersEnabled(): Record<StructureLayerId, boolean> {
+  return { L1: true, L2: true, L3: true, L4: true, L5: true };
+}
+
 interface StructureLayerPanelProps {
   structure: StructureDebug | null | undefined;
   enabled: Record<StructureLayerId, boolean>;
   onChange: (next: Record<StructureLayerId, boolean>) => void;
+  /** #78 */
+  editMode?: boolean;
+  onEditModeChange?: (on: boolean) => void;
+  fromLayer?: StructureLayerId;
+  onFromLayerChange?: (layer: StructureLayerId) => void;
+  dirty?: boolean;
+  selectedId?: string | null;
+  onRerun?: () => void;
+  onResetEdits?: () => void;
+  rerunning?: boolean;
 }
 
 export function StructureLayerPanel({
   structure,
   enabled,
   onChange,
+  editMode = false,
+  onEditModeChange,
+  fromLayer = "L2",
+  onFromLayerChange,
+  dirty = false,
+  selectedId = null,
+  onRerun,
+  onResetEdits,
+  rerunning = false,
 }: StructureLayerPanelProps) {
   if (!structure?.items?.length) {
     return (
@@ -51,6 +74,9 @@ export function StructureLayerPanel({
     counts[it.layer] = (counts[it.layer] ?? 0) + 1;
   }
   const s = structure.summary ?? {};
+  const selected = structure.items.find(
+    (it) => (it.id || `${it.layer}-${it.label}`) === selectedId,
+  ) as StructureBox | undefined;
 
   const setAll = (on: boolean) => {
     const next = { ...enabled };
@@ -63,7 +89,7 @@ export function StructureLayerPanel({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs font-semibold text-slate-200">
-            结构分层叠图 · #58
+            结构分层叠图 · #58 / #78
           </p>
           <p className="text-[11px] text-slate-500">
             谱行 {String(s.n_systems ?? "—")} · 小节{" "}
@@ -95,40 +121,93 @@ export function StructureLayerPanel({
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {STRUCTURE_LAYERS.map((L) => {
-          const on = enabled[L.id];
-          return (
-            <button
-              key={L.id}
-              type="button"
-              title={L.desc}
-              onClick={() => onChange({ ...enabled, [L.id]: !on })}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition",
-                on
-                  ? "border-white/25 bg-white/10 text-white"
-                  : "border-white/10 text-slate-500 hover:bg-white/5",
-              ].join(" ")}
-            >
-              <span className={`h-2 w-2 rounded-sm ${L.color}`} />
-              {L.name}
-              <span className="tabular-nums text-slate-400">
-                {counts[L.id] ?? 0}
-              </span>
-            </button>
-          );
-        })}
+        {STRUCTURE_LAYERS.map((L) => (
+          <button
+            key={L.id}
+            type="button"
+            title={L.desc}
+            onClick={() => onChange({ ...enabled, [L.id]: !enabled[L.id] })}
+            className={[
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]",
+              enabled[L.id]
+                ? "border-white/20 bg-white/10 text-slate-100"
+                : "border-white/10 text-slate-500",
+            ].join(" ")}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${L.color}`} />
+            {L.name}
+            <span className="text-slate-500">{counts[L.id] ?? 0}</span>
+          </button>
+        ))}
       </div>
 
-      {(structure.barlines?.length ?? 0) > 0 ? (
-        <p className="mt-2 text-[11px] text-slate-500">
-          小节线 {structure.barlines!.length} 条（L3 红线）
+      {/* #78 edit + rerun */}
+      <div className="mt-3 space-y-2 rounded-lg border border-indigo-500/25 bg-indigo-950/20 px-2.5 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] font-medium text-indigo-100/90">
+            改框 · 重识别本层及下层
+          </p>
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-slate-300">
+            <input
+              type="checkbox"
+              className="rounded border-white/20"
+              checked={editMode}
+              onChange={(e) => onEditModeChange?.(e.target.checked)}
+            />
+            编辑模式
+          </label>
+        </div>
+        <p className="text-[10px] leading-relaxed text-slate-500">
+          开启后点选结构框，拖边角缩放 / 拖框移动。确认后从指定层重跑下层，上层结果保留。
         </p>
-      ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1 text-[11px] text-slate-400">
+            起始层
+            <select
+              className="rounded border border-white/15 bg-slate-900 px-1.5 py-0.5 text-[11px] text-slate-200"
+              value={fromLayer}
+              onChange={(e) =>
+                onFromLayerChange?.(e.target.value as StructureLayerId)
+              }
+              disabled={!editMode && !dirty}
+            >
+              {STRUCTURE_LAYERS.map((L) => (
+                <option key={L.id} value={L.id}>
+                  {L.id}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selected ? (
+            <span className="truncate text-[10px] text-amber-200/90">
+              选中 {selected.layer} · {selected.label || selected.id}
+            </span>
+          ) : (
+            <span className="text-[10px] text-slate-600">未选中框</span>
+          )}
+          {dirty ? (
+            <span className="text-[10px] text-rose-300">已改框</span>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            disabled={!onRerun || rerunning || (!dirty && !editMode)}
+            onClick={() => onRerun?.()}
+            className="rounded-md bg-indigo-500/90 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-400 disabled:opacity-40"
+          >
+            {rerunning ? "重识别中…" : `重识别 ${fromLayer} 及下层`}
+          </button>
+          <button
+            type="button"
+            disabled={!dirty || !onResetEdits || rerunning}
+            onClick={() => onResetEdits?.()}
+            className="rounded-md border border-white/15 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-white/5 disabled:opacity-40"
+          >
+            恢复自动框
+          </button>
+        </div>
+      </div>
     </div>
   );
-}
-
-export function defaultStructureLayersEnabled(): Record<StructureLayerId, boolean> {
-  return { L1: true, L2: true, L3: true, L4: false, L5: true };
 }

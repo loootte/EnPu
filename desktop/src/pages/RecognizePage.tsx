@@ -11,6 +11,7 @@ import { ProblemNavPanel } from "../components/ProblemNavPanel";
 import {
   StructureLayerPanel,
   defaultStructureLayersEnabled,
+  type StructureLayerId,
 } from "../components/StructureLayerPanel";
 import {
   problemMeasureNumbers,
@@ -23,6 +24,7 @@ import {
   preprocessImage,
   recognizeCrop,
   recognizeImage,
+  recognizeStructureRerun,
 } from "../lib/api";
 import {
   buildMeasureRects,
@@ -37,14 +39,69 @@ import {
   scoreFromRecognize,
 } from "../lib/scoreUtils";
 import type {
+  BoundingBox,
   CoreConnectionState,
   CropRect,
   HealthResponse,
   PreprocessOptions,
   RecognizeResponse,
   Score,
+  StructureBoxEdit,
+  StructureDebug,
 } from "../lib/types";
 import { defaultPreprocessOptions } from "../lib/types";
+
+const LAYER_RANK: Record<StructureLayerId, number> = {
+  L1: 1,
+  L2: 2,
+  L3: 3,
+  L4: 4,
+  L5: 5,
+};
+
+function boxChanged(a: BoundingBox, b: BoundingBox, eps = 0.5): boolean {
+  return (
+    Math.abs(a.x1 - b.x1) > eps ||
+    Math.abs(a.y1 - b.y1) > eps ||
+    Math.abs(a.x2 - b.x2) > eps ||
+    Math.abs(a.y2 - b.y2) > eps
+  );
+}
+
+function collectStructureEdits(
+  base: StructureDebug | null | undefined,
+  draft: StructureDebug | null | undefined,
+): StructureBoxEdit[] {
+  if (!base?.items?.length || !draft?.items?.length) return [];
+  const byId = new Map(base.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]));
+  const edits: StructureBoxEdit[] = [];
+  for (const it of draft.items) {
+    const id = it.id || `${it.layer}-${it.label}`;
+    const prev = byId.get(id);
+    if (!prev || boxChanged(prev.box, it.box)) {
+      edits.push({ id, layer: it.layer, label: it.label, box: { ...it.box } });
+    }
+  }
+  return edits;
+}
+
+function highestEditedLayer(
+  edits: StructureBoxEdit[],
+  fallback: StructureLayerId,
+): StructureLayerId {
+  if (!edits.length) return fallback;
+  let best = fallback;
+  let bestRank = LAYER_RANK[fallback];
+  for (const e of edits) {
+    const L = (e.layer || fallback) as StructureLayerId;
+    const r = LAYER_RANK[L] ?? 9;
+    if (r < bestRank) {
+      best = L;
+      bestRank = r;
+    }
+  }
+  return best;
+}
 
 export function RecognizePage() {
   const baseUrl = useMemo(() => getCoreBaseUrl(), []);
@@ -79,6 +136,17 @@ export function RecognizePage() {
   const [structureLayers, setStructureLayers] = useState(
     defaultStructureLayersEnabled,
   );
+  /** #78 structure box edit draft (session). */
+  const [structureDraft, setStructureDraft] = useState<StructureDebug | null>(
+    null,
+  );
+  const [structureEditMode, setStructureEditMode] = useState(false);
+  const [selectedStructureId, setSelectedStructureId] = useState<string | null>(
+    null,
+  );
+  const [structureFromLayer, setStructureFromLayer] =
+    useState<StructureLayerId>("L2");
+  const [structureRerunning, setStructureRerunning] = useState(false);
   /**
    * Full-page layout from last whole-image recognize (natural pixels).
    * Crop only returns ROI boxes — keep full map for dual-view (#45).
@@ -322,12 +390,17 @@ export function RecognizePage() {
       setLayoutBoxes(res.boxes ?? null);
       setLayoutRegions(res.regions ?? null);
       setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
+      setStructureDraft(
+        res.structure ? structuredClone(res.structure) : null,
+      );
+      setSelectedStructureId(null);
+      setStructureEditMode(false);
       setCoreState("online");
       if (res.structure?.items?.length) {
         setOverlayMode("structure");
       }
       const structHint = res.structure?.items?.length
-        ? ` · 结构分层 ${res.structure.items.length} 框（可切换 L1–L5）`
+        ? ` · 结构分层 ${res.structure.items.length} 框（可改框重识别）`
         : "";
       const ppHint =
         res.meta.preprocess_steps && res.meta.preprocess_steps.length > 2
@@ -465,6 +538,96 @@ export function RecognizePage() {
     result?.meta.width,
   ]);
 
+  const structureEdits = useMemo(
+    () => collectStructureEdits(result?.structure, structureDraft),
+    [result?.structure, structureDraft],
+  );
+  const structureDirty = structureEdits.length > 0;
+
+  const onStructureBoxChange = useCallback((id: string, box: BoundingBox) => {
+    setStructureDraft((prev) => {
+      if (!prev?.items?.length) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((it) => {
+          const sid = it.id || `${it.layer}-${it.label}`;
+          return sid === id ? { ...it, box: { ...box } } : it;
+        }),
+      };
+    });
+  }, []);
+
+  const onResetStructureEdits = useCallback(() => {
+    setStructureDraft(
+      result?.structure ? structuredClone(result.structure) : null,
+    );
+    setSelectedStructureId(null);
+  }, [result?.structure]);
+
+  const onStructureRerun = useCallback(async () => {
+    const f = fileRef.current;
+    const base = result?.structure;
+    if (!f || !base || structureRerunning || loading) return;
+    setError(null);
+    setInfo(null);
+    setStructureRerunning(true);
+    setLoading(true);
+    try {
+      const edits = collectStructureEdits(base, structureDraft);
+      const fromLayer =
+        edits.length > 0
+          ? highestEditedLayer(edits, structureFromLayer)
+          : structureFromLayer;
+      // Prefer user's explicit from_layer if higher (earlier) than auto
+      const chosen =
+        LAYER_RANK[structureFromLayer] <= LAYER_RANK[fromLayer]
+          ? structureFromLayer
+          : fromLayer;
+      const res = await recognizeStructureRerun(f, {
+        fromLayer: chosen,
+        baseStructure: structureDraft ?? base,
+        edits,
+        baseUrl,
+      });
+      setResult(res);
+      setLayoutBoxes(res.boxes ?? null);
+      setLayoutRegions(res.regions ?? null);
+      setScore(scoreFromRecognize(res.score, res.meta.filename || f.name));
+      setStructureDraft(
+        res.structure ? structuredClone(res.structure) : null,
+      );
+      setSelectedStructureId(null);
+      setOverlayMode("structure");
+      setCoreState("online");
+      setInfo(
+        `结构层重识别完成 · from=${res.from_layer} · 改框 ${res.edited_item_count} · ${res.meta.elapsed_ms} ms · L${res.from_layer.slice(1)} 及下层已更新`,
+      );
+      void refreshHealth();
+    } catch (err) {
+      const message =
+        err instanceof CoreApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : String(err);
+      setError(message);
+      if (err instanceof CoreApiError && err.kind === "network") {
+        setCoreState("offline");
+      }
+    } finally {
+      setStructureRerunning(false);
+      setLoading(false);
+    }
+  }, [
+    baseUrl,
+    loading,
+    refreshHealth,
+    result?.structure,
+    structureDraft,
+    structureFromLayer,
+    structureRerunning,
+  ]);
+
   // Esc clear selection; Ctrl+Shift+R crop re-recognize
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -472,6 +635,7 @@ export function RecognizePage() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "Escape") {
         setSelection(null);
+        setSelectedStructureId(null);
         return;
       }
       if (e.key === "R" && e.ctrlKey && e.shiftKey) {
@@ -697,14 +861,26 @@ export function RecognizePage() {
             steps={preprocessSteps}
           />
           <StructureLayerPanel
-            structure={result?.structure}
+            structure={structureDraft ?? result?.structure}
             enabled={structureLayers}
             onChange={(next) => {
               setStructureLayers(next);
-              if (result?.structure?.items?.length) {
+              if ((structureDraft ?? result?.structure)?.items?.length) {
                 setOverlayMode("structure");
               }
             }}
+            editMode={structureEditMode}
+            onEditModeChange={(on) => {
+              setStructureEditMode(on);
+              if (on) setOverlayMode("structure");
+            }}
+            fromLayer={structureFromLayer}
+            onFromLayerChange={setStructureFromLayer}
+            dirty={structureDirty}
+            selectedId={selectedStructureId}
+            onRerun={() => void onStructureRerun()}
+            onResetEdits={onResetStructureEdits}
+            rerunning={structureRerunning}
           />
           <ProblemNavPanel
             score={score}
@@ -720,7 +896,7 @@ export function RecognizePage() {
           <ImagePreview
             src={preprocessPreviewUrl || previewUrl}
             filename={file?.name}
-            selectionEnabled={Boolean(file)}
+            selectionEnabled={Boolean(file) && !structureEditMode}
             selection={selection}
             onSelectionChange={(r) => {
               setSelection(r);
@@ -732,10 +908,14 @@ export function RecognizePage() {
             overlayMode={overlayMode}
             onOverlayModeChange={setOverlayMode}
             onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
-            structure={result?.structure}
+            structure={structureDraft ?? result?.structure}
             structureLayers={structureLayers}
+            structureEditMode={structureEditMode}
+            selectedStructureId={selectedStructureId}
+            onSelectStructureId={setSelectedStructureId}
+            onStructureBoxChange={onStructureBoxChange}
           />
-          {selection ? (
+          {selection && !structureEditMode ? (
             <p className="text-[11px] text-slate-500">
               选区 {Math.round(selection.x2 - selection.x1)}×
               {Math.round(selection.y2 - selection.y1)}
@@ -747,7 +927,8 @@ export function RecognizePage() {
             </p>
           ) : (
             <p className="text-[11px] text-slate-600">
-              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 结构模式看 L1–L5 叠图
+              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 结构编辑模式可改 L1–L5
+              框并重识别下层
             </p>
           )}
         </section>

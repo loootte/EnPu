@@ -13,6 +13,9 @@ import type {
   PreprocessResponse,
   RecognizeResponse,
   Score,
+  StructureBoxEdit,
+  StructureDebug,
+  StructureRerunResponse,
 } from "./types";
 
 export const DEFAULT_CORE_BASE_URL = "http://127.0.0.1:8765";
@@ -263,6 +266,64 @@ export async function recognizeCrop(
     return (await res.json()) as CropRecognizeResponse;
   } catch {
     throw new CoreApiError("局部识别响应不是合法 JSON", { kind: "parse" });
+  }
+}
+
+/**
+ * POST /v1/recognize/structure/rerun — re-run from an edited structure layer (#78).
+ */
+export async function recognizeStructureRerun(
+  file: File,
+  opts: {
+    fromLayer: "L1" | "L2" | "L3" | "L4" | "L5";
+    baseStructure: StructureDebug;
+    edits?: StructureBoxEdit[];
+    key?: string | null;
+    timeSignature?: string | null;
+    title?: string | null;
+    baseUrl?: string;
+    signal?: AbortSignal;
+  },
+): Promise<StructureRerunResponse> {
+  const baseUrl = opts.baseUrl ?? getCoreBaseUrl();
+  const form = new FormData();
+  form.append("file", file, file.name || "upload.png");
+  form.append("from_layer", opts.fromLayer);
+  form.append("base_structure", JSON.stringify(opts.baseStructure));
+  if (opts.edits?.length) {
+    form.append("edits", JSON.stringify(opts.edits));
+  }
+  if (opts.key) form.append("key", opts.key);
+  if (opts.timeSignature) form.append("time_signature", opts.timeSignature);
+  if (opts.title) form.append("title", opts.title);
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/recognize/structure/rerun`, {
+      method: "POST",
+      body: form,
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+
+  if (!res.ok) {
+    let detail = `结构层重识别失败：HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") detail = body.detail;
+      else if (body.detail != null) detail = JSON.stringify(body.detail);
+    } catch {
+      /* ignore */
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+
+  try {
+    return (await res.json()) as StructureRerunResponse;
+  } catch {
+    throw new CoreApiError("结构层重识别响应不是合法 JSON", { kind: "parse" });
   }
 }
 
