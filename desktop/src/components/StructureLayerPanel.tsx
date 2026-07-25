@@ -165,8 +165,9 @@ export function StructureLayerPanel({
           </label>
         </div>
         <p className="text-[10px] leading-relaxed text-slate-500">
-          开启后点选结构框，拖边角缩放 / 拖框移动。框的坐标以{" "}
-          <span className="text-slate-300">图像像素</span>为准（与重识别一致）。
+          开启后点选结构框会自动缩放到{" "}
+          <span className="text-slate-300">上一层区域</span>
+          （如 L4→所在 L3）并居中；可拖边角缩放 / 拖框移动。框坐标以图像像素为准。
           「添加区域」后在原图上拖出新框。
         </p>
         <div className="flex flex-wrap items-center gap-2">

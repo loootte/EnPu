@@ -66,9 +66,21 @@ type PanDrag = {
   originPanY: number;
 };
 
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 0.35;
 const MAX_ZOOM = 4;
+/** Auto-fit in edit mode may zoom closer than manual wheel max. */
+const MAX_AUTO_ZOOM = 12;
 const ZOOM_STEP = 1.15;
+/** Padding fraction when fitting parent layer box into viewport. */
+const FIT_PAD = 0.08;
+
+const PARENT_LAYER: Record<StructureLayerId, StructureLayerId | null> = {
+  L5: "L4",
+  L4: "L3",
+  L3: "L2",
+  L2: "L1",
+  L1: null,
+};
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
@@ -81,6 +93,91 @@ function normRect(x1: number, y1: number, x2: number, y2: number): CropRect {
     x2: Math.max(x1, x2),
     y2: Math.max(y1, y2),
   };
+}
+
+function itemId(it: StructureBox): string {
+  return it.id || `${it.layer}-${it.label}`;
+}
+
+/**
+ * Focus region for edit selection: parent layer box that contains the selection
+ * (e.g. L4 → surrounding L3). Falls back to the selected box itself.
+ */
+function focusBoxForSelection(
+  structure: StructureDebug,
+  selectedId: string,
+): BoundingBox | null {
+  const items = structure.items ?? [];
+  const selected = items.find((it) => itemId(it) === selectedId);
+  if (!selected) return null;
+
+  const parentLayer = PARENT_LAYER[selected.layer];
+  if (!parentLayer) {
+    // L1: prefer score region if selecting title/key; else self
+    if (selected.layer === "L1") {
+      const score = items.find(
+        (it) =>
+          it.layer === "L1" &&
+          (it.kind === "score" || it.label === "score" || it.id === "l1-score"),
+      );
+      if (
+        score &&
+        selected.kind !== "score" &&
+        selected.label !== "score" &&
+        selected.id !== "l1-score"
+      ) {
+        // Still zoom to the selected L1 band itself (title etc.)
+        return selected.box;
+      }
+    }
+    return selected.box;
+  }
+
+  const cx = (selected.box.x1 + selected.box.x2) / 2;
+  const cy = (selected.box.y1 + selected.box.y2) / 2;
+  let candidates = items.filter((it) => it.layer === parentLayer);
+
+  // L2→L1: prefer score region over title/key_time
+  if (parentLayer === "L1") {
+    const scores = candidates.filter(
+      (it) =>
+        it.kind === "score" || it.label === "score" || it.id === "l1-score",
+    );
+    if (scores.length) candidates = scores;
+  }
+
+  if (!candidates.length) return selected.box;
+
+  const containing = candidates.filter(
+    (c) =>
+      cx >= c.box.x1 - 2 &&
+      cx <= c.box.x2 + 2 &&
+      cy >= c.box.y1 - 2 &&
+      cy <= c.box.y2 + 2,
+  );
+  if (containing.length === 1) return containing[0].box;
+  if (containing.length > 1) {
+    // Smallest containing parent (tightest)
+    return containing.reduce((a, b) => {
+      const aa = (a.box.x2 - a.box.x1) * (a.box.y2 - a.box.y1);
+      const bb = (b.box.x2 - b.box.x1) * (b.box.y2 - b.box.y1);
+      return aa <= bb ? a : b;
+    }).box;
+  }
+
+  // Nearest by center distance
+  let best = candidates[0];
+  let bestD = Infinity;
+  for (const c of candidates) {
+    const bcx = (c.box.x1 + c.box.x2) / 2;
+    const bcy = (c.box.y1 + c.box.y2) / 2;
+    const d = (bcx - cx) ** 2 + (bcy - cy) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = c;
+    }
+  }
+  return best.box;
 }
 
 const LAYER_STYLE: Record<
@@ -369,6 +466,79 @@ export function ImagePreview({
     [natural.h, natural.w],
   );
 
+  // Keep latest structure for parent lookup without re-fitting on every drag
+  const structureRef = useRef(structure);
+  structureRef.current = structure;
+
+  /**
+   * Fit a natural-pixel box into the viewport and center it.
+   * Uses flex-centered image + transform-origin center:
+   *   pan = -(boxCenter - imageCenter) * zoom  (in layout px)
+   */
+  const fitNaturalBox = useCallback(
+    (box: BoundingBox) => {
+      const vp = viewportRef.current;
+      const img = imgRef.current;
+      if (!vp || !img || !natural.w || !natural.h) return;
+
+      const layoutW = img.offsetWidth || img.clientWidth || baseSize.w;
+      const layoutH = img.offsetHeight || img.clientHeight || baseSize.h;
+      if (layoutW <= 1 || layoutH <= 1) return;
+
+      const sx = layoutW / natural.w;
+      const sy = layoutH / natural.h;
+      const tw = Math.max(8, (box.x2 - box.x1) * sx);
+      const th = Math.max(8, (box.y2 - box.y1) * sy);
+      const tcx = ((box.x1 + box.x2) / 2) * sx;
+      const tcy = ((box.y1 + box.y2) / 2) * sy;
+
+      const vpW = vp.clientWidth;
+      const vpH = vp.clientHeight;
+      if (vpW <= 1 || vpH <= 1) return;
+
+      const availW = vpW * (1 - 2 * FIT_PAD);
+      const availH = vpH * (1 - 2 * FIT_PAD);
+      const z = clamp(
+        Math.min(availW / tw, availH / th),
+        MIN_ZOOM,
+        MAX_AUTO_ZOOM,
+      );
+
+      // Flex-centers the unscaled image; pan offsets scaled delta from image center
+      const panX = -(tcx - layoutW / 2) * z;
+      const panY = -(tcy - layoutH / 2) * z;
+
+      setZoom(z);
+      setPan({ x: panX, y: panY });
+    },
+    [baseSize.h, baseSize.w, natural.h, natural.w],
+  );
+
+  // #78 edit mode: on selection change only → zoom/pan to parent layer region
+  // (do not re-run when box is resized — structure updates on every drag)
+  useEffect(() => {
+    if (!structureEditMode || structureAddMode) return;
+    if (!selectedStructureId) return;
+    if (!natural.w || !natural.h) return;
+    const st = structureRef.current;
+    if (!st?.items?.length) return;
+
+    const focus = focusBoxForSelection(st, selectedStructureId);
+    if (!focus) return;
+
+    const id = requestAnimationFrame(() => {
+      fitNaturalBox(focus);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [
+    selectedStructureId,
+    structureEditMode,
+    structureAddMode,
+    natural.w,
+    natural.h,
+    fitNaturalBox,
+  ]);
+
   const zoomAt = useCallback(
     (nextZoom: number, clientX?: number, clientY?: number) => {
       const z = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
@@ -553,7 +723,14 @@ export function ImagePreview({
           >
             −
           </button>
-          <span className="min-w-[3rem] text-center tabular-nums text-slate-400">
+          <span
+            className="min-w-[3rem] text-center tabular-nums text-slate-400"
+            title={
+              structureEditMode
+                ? "编辑模式选中框时自动缩放到上一层区域"
+                : undefined
+            }
+          >
             {Math.round(zoom * 100)}%
           </span>
           <button

@@ -1003,7 +1003,7 @@ export function RecognizePage() {
                 {structureAddMode
                   ? " · 拖拽添加区域（图像像素）"
                   : structureEditMode
-                    ? " · 拖角缩放结构框"
+                    ? " · 点选框自动缩放到上一层并居中 · 拖角调框"
                     : " · 拖拽框选"}
               </p>
             )}
