@@ -148,6 +148,39 @@ export function RecognizePage() {
     useState<StructureLayerId>("L2");
   const [structureRerunning, setStructureRerunning] = useState(false);
   const [structureAddMode, setStructureAddMode] = useState(false);
+
+  // Edit mode: always show current edit layer; only that layer is selectable
+  useEffect(() => {
+    if (!structureEditMode) return;
+    setOverlayMode("structure");
+    setStructureLayers((prev) => {
+      const next = { ...prev, [structureFromLayer]: true };
+      // Also show parent layer dimmed for spatial context (L4 edit → show L3)
+      const parentOf: Record<StructureLayerId, StructureLayerId | null> = {
+        L5: "L4",
+        L4: "L3",
+        L3: "L2",
+        L2: "L1",
+        L1: null,
+      };
+      const p = parentOf[structureFromLayer];
+      if (p) next[p] = true;
+      return next;
+    });
+    // Drop selection if it is not on the active edit layer
+    setSelectedStructureId((cur) => {
+      if (!cur) return null;
+      const items = (structureDraft ?? result?.structure)?.items ?? [];
+      const it = items.find((x) => (x.id || `${x.layer}-${x.label}`) === cur);
+      if (!it || it.layer !== structureFromLayer) return null;
+      return cur;
+    });
+  }, [
+    structureEditMode,
+    structureFromLayer,
+    structureDraft,
+    result?.structure,
+  ]);
   /**
    * Full-page layout from last whole-image recognize (natural pixels).
    * Crop only returns ROI boxes — keep full map for dual-view (#45).
@@ -920,11 +953,25 @@ export function RecognizePage() {
             editMode={structureEditMode}
             onEditModeChange={(on) => {
               setStructureEditMode(on);
-              if (on) setOverlayMode("structure");
-              if (!on) setStructureAddMode(false);
+              if (on) {
+                setOverlayMode("structure");
+                setStructureLayers((prev) => ({
+                  ...prev,
+                  [structureFromLayer]: true,
+                }));
+              } else {
+                setStructureAddMode(false);
+                setSelectedStructureId(null);
+              }
             }}
             fromLayer={structureFromLayer}
-            onFromLayerChange={setStructureFromLayer}
+            onFromLayerChange={(L) => {
+              setStructureFromLayer(L);
+              setSelectedStructureId(null);
+              if (structureEditMode) {
+                setStructureLayers((prev) => ({ ...prev, [L]: true }));
+              }
+            }}
             dirty={structureDirty}
             selectedId={selectedStructureId}
             onRerun={() => void onStructureRerun()}
@@ -980,6 +1027,7 @@ export function RecognizePage() {
               structure={structureDraft ?? result?.structure}
               structureLayers={structureLayers}
               structureEditMode={structureEditMode}
+              structureEditLayer={structureFromLayer}
               structureAddMode={structureAddMode}
               structureAddLayer={structureFromLayer}
               selectedStructureId={selectedStructureId}

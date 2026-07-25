@@ -165,10 +165,9 @@ export function StructureLayerPanel({
           </label>
         </div>
         <p className="text-[10px] leading-relaxed text-slate-500">
-          开启后点选结构框会自动缩放到{" "}
-          <span className="text-slate-300">上一层区域</span>
-          （如 L4→所在 L3）并居中；可拖边角缩放 / 拖框移动。框坐标以图像像素为准。
-          「添加区域」后在原图上拖出新框。
+          编辑模式自动显示当前层（及上一层作参照）。
+          <span className="text-slate-300">只能选中当前层</span>
+          的框；点选后缩放到上一层区域并居中。可拖边角调框；「添加区域」在图上拖出新框。
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1 text-[11px] text-slate-400">
@@ -183,11 +182,14 @@ export function StructureLayerPanel({
             >
               {STRUCTURE_LAYERS.map((L) => (
                 <option key={L.id} value={L.id}>
-                  {L.id}
+                  {L.id} 编辑
                 </option>
               ))}
             </select>
           </label>
+          <span className="text-[10px] text-sky-300/90">
+            仅可选 {fromLayer}
+          </span>
           {selected ? (
             <span className="truncate text-[10px] text-amber-200/90">
               选中 {selected.layer} · {selected.label || selected.id}

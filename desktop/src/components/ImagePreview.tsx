@@ -43,6 +43,8 @@ export interface ImagePreviewProps {
   structureLayers?: Record<StructureLayerId, boolean> | null;
   /** #78: allow drag-resize of structure boxes */
   structureEditMode?: boolean;
+  /** #78: only boxes of this layer are selectable/editable */
+  structureEditLayer?: StructureLayerId;
   /** #78: drag on image to create a new region of addLayer */
   structureAddMode?: boolean;
   structureAddLayer?: StructureLayerId;
@@ -238,6 +240,7 @@ function StructureItemOverlay({
   onBoxChange,
   naturalW,
   naturalH,
+  dimmed,
 }: {
   item: StructureBox;
   scaleX: number;
@@ -249,6 +252,8 @@ function StructureItemOverlay({
   onBoxChange?: (id: string, box: BoundingBox) => void;
   naturalW: number;
   naturalH: number;
+  /** Other layers while editing: visible but not interactive */
+  dimmed?: boolean;
 }) {
   const st = LAYER_STYLE[item.layer];
   const showLabel = item.layer === "L1" || item.layer === "L2" || item.layer === "L5";
@@ -321,7 +326,9 @@ function StructureItemOverlay({
     <div
       className={`absolute border-2 ${st.border} ${st.bg} box-border ${
         editable ? "pointer-events-auto" : "pointer-events-none"
-      } ${selected ? "z-20" : "z-10"}`}
+      } ${selected ? "z-20" : dimmed ? "z-[5]" : "z-10"} ${
+        dimmed ? "opacity-35" : ""
+      }`}
       style={{
         left: item.box.x1 * scaleX,
         top: item.box.y1 * scaleY,
@@ -337,7 +344,11 @@ function StructureItemOverlay({
         item.pitch,
         item.duration,
         `像素 ${Math.round(item.box.x1)},${Math.round(item.box.y1)}–${Math.round(item.box.x2)},${Math.round(item.box.y2)}`,
-        editable ? "拖角缩放 · 拖框移动 · 以图像像素为准" : "",
+        editable
+          ? "拖角缩放 · 拖框移动 · 以图像像素为准"
+          : dimmed
+            ? "非当前编辑层（不可选）"
+            : "",
       ]
         .filter(Boolean)
         .join(" · ")}
@@ -389,6 +400,7 @@ export function ImagePreview({
   structure = null,
   structureLayers = null,
   structureEditMode = false,
+  structureEditLayer = "L2",
   structureAddMode = false,
   structureAddLayer = "L2",
   selectedStructureId = null,
@@ -843,7 +855,7 @@ export function ImagePreview({
                 );
               })
             : null}
-          {/* #58 structure L1–L5 overlays (#78 editable) */}
+          {/* #58 structure L1–L5 overlays (#78 editable; only current edit layer selectable) */}
           {structure?.items?.length && natural.w > 0
             ? structure.items.map((it) => {
                 const show =
@@ -852,6 +864,12 @@ export function ImagePreview({
                     : false;
                 if (!show) return null;
                 const sid = it.id || `${it.layer}-${it.label}`;
+                const isEditLayer =
+                  !structureEditMode || it.layer === structureEditLayer;
+                const canEdit =
+                  structureEditMode &&
+                  !structureAddMode &&
+                  it.layer === structureEditLayer;
                 return (
                   <StructureItemOverlay
                     key={sid}
@@ -859,12 +877,13 @@ export function ImagePreview({
                     scaleX={scaleX}
                     scaleY={scaleY}
                     zoom={zoom}
-                    editable={structureEditMode && !structureAddMode}
-                    selected={selectedStructureId === sid}
-                    onSelect={onSelectStructureId}
-                    onBoxChange={onStructureBoxChange}
+                    editable={canEdit}
+                    selected={canEdit && selectedStructureId === sid}
+                    onSelect={canEdit ? onSelectStructureId : undefined}
+                    onBoxChange={canEdit ? onStructureBoxChange : undefined}
                     naturalW={natural.w}
                     naturalH={natural.h}
+                    dimmed={structureEditMode && !isEditLayer}
                   />
                 );
               })
