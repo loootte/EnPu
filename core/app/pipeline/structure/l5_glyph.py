@@ -526,10 +526,14 @@ def _glyph_for_candidate(
             limit_x=min(img_w, x1 + max(8, int(1.2 * body_w))),
         )
 
-    duration, dur_from = _duration_from_geometry(
+    duration, dash_dots, dur_from = _duration_from_geometry(
         underlines=underlines,
         sustain_dashes=n_dashes,
     )
+    # Jianpu: dashes set length (and may imply dotted half for 2 dashes);
+    # right-side aug dots stack on top when not already implied by dashes.
+    if dash_dots > dots:
+        dots = dash_dots
 
     conf = 0.35
     if pitch or is_rest:
@@ -558,6 +562,7 @@ def _glyph_for_candidate(
             "sustain_dashes": n_dashes,
             "upper_octave_dots": upper_d,
             "lower_octave_dots": lower_d,
+            "quarter_beats": _quarter_beats(duration, min(2, dots)),
         },
     )
 
@@ -772,21 +777,39 @@ def _duration_from_geometry(
     *,
     underlines: int,
     sustain_dashes: int,
-) -> tuple[DurationName, str]:
-    """Map underlines (shorten) and sustain dashes (lengthen) to duration (#72).
+) -> tuple[DurationName, int, str]:
+    """Map underlines / sustain dashes to (duration, dots, source) (#72).
 
-    Priority: underlines first (eighth/sixteenth). Else dashes lengthen
-    quarter → half → whole (jianpu dash convention).
+    Jianpu convention (each ``-`` after the digit adds **one quarter beat**):
+      0 dashes → quarter (1 beat)
+      1 dash   → half (2 beats)
+      2 dashes → dotted half (3 beats) = half + 1 aug-dot
+      3 dashes → whole (4 beats)
+
+    Underlines shorten (priority over dashes when both present).
+    Aligns with ``parse._duration_from_following``.
     """
     if underlines >= 2:
-        return DurationName.sixteenth, "underline"
+        return DurationName.sixteenth, 0, "underline"
     if underlines == 1:
-        return DurationName.eighth, "underline"
-    if sustain_dashes >= 2:
-        return DurationName.whole, "sustain_dash"
+        return DurationName.eighth, 0, "underline"
+    if sustain_dashes >= 3:
+        return DurationName.whole, 0, "sustain_dash"
+    if sustain_dashes == 2:
+        # 3 quarter-beats: half + augmentation dot
+        return DurationName.half, 1, "sustain_dash"
     if sustain_dashes == 1:
-        return DurationName.half, "sustain_dash"
-    return DurationName.quarter, "default"
+        return DurationName.half, 0, "sustain_dash"
+    return DurationName.quarter, 0, "default"
+
+
+def _quarter_beats(duration: DurationName, dots: int) -> float:
+    base = _BEATS.get(duration, 1.0)
+    if dots == 1:
+        return base * 1.5
+    if dots >= 2:
+        return base * 1.75
+    return base
 
 
 def _count_underlines_below_body(
@@ -974,32 +997,57 @@ def _count_sustain_dashes(
     body_h: int,
     limit_x: int,
 ) -> int:
-    """Count horizontal sustain/tie strokes to the right of the digit (#72)."""
+    """Count horizontal sustain dashes to the right of the digit (#72).
+
+    Each separate dash is one quarter-beat extension (see ``_duration_from_geometry``).
+    Prefer **column runs** so ``- -`` (two short dashes) count as 2, not one blob.
+    """
     x0 = body_x1 + 1
-    x1 = min(limit_x, body_x1 + max(10, int(1.4 * body_w)))
-    y0 = body_y0 + int(0.2 * body_h)
-    y1 = body_y1 - int(0.15 * body_h)
+    x1 = min(limit_x, body_x1 + max(12, int(2.2 * body_w)))
+    y0 = body_y0 + int(0.25 * body_h)
+    y1 = body_y1 - int(0.2 * body_h)
     if x1 - x0 < 3 or y1 - y0 < 2:
         return 0
     roi = bw[y0:y1, x0:x1]
     if roi.size == 0:
         return 0
-    rh, rw = roi.shape[:2]
-    k_w = max(3, int(0.4 * body_w))
+    # Thin horizontal emphasis
+    k_w = max(2, int(0.25 * body_w))
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_w, 1))
     horiz = cv2.morphologyEx(roi, cv2.MORPH_OPEN, kernel, iterations=1)
-    contours, _ = cv2.findContours(horiz, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    n = 0
-    for cnt in contours:
-        _x, _y, cw, ch = cv2.boundingRect(cnt)
-        if cw < 0.35 * body_w:
-            continue
-        if ch > max(6, 0.4 * body_h):
-            continue
-        if cw / max(ch, 1) < 2.0:
-            continue
-        n += 1
-    return min(3, n)
+    col = (horiz > 0).sum(axis=0).astype(np.float32)
+    if col.max() <= 0:
+        return 0
+    thr = max(1.0, 0.35 * (y1 - y0))
+    active = col >= thr
+    # Count contiguous x-runs that look like dash segments
+    min_run = max(2, int(0.2 * body_w))
+    max_run = max(min_run + 1, int(1.2 * body_w))
+    runs: list[int] = []
+    in_run = False
+    a0 = 0
+    for i, a in enumerate(active):
+        if a and not in_run:
+            in_run = True
+            a0 = i
+        elif not a and in_run:
+            in_run = False
+            wrun = i - a0
+            if min_run <= wrun <= max_run * 2:
+                # Very long run may be two dashes fused — split by width
+                if wrun > max_run * 1.35:
+                    runs.append(max(2, int(round(wrun / max(max_run * 0.85, 1)))))
+                else:
+                    runs.append(1)
+    if in_run:
+        wrun = len(active) - a0
+        if min_run <= wrun:
+            if wrun > max_run * 1.35:
+                runs.append(max(2, int(round(wrun / max(max_run * 0.85, 1)))))
+            else:
+                runs.append(1)
+    n = sum(runs)
+    return min(3, int(n))
 
 
 def _octave_from_strips(

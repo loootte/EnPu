@@ -308,7 +308,7 @@ def test_l5_octave_aug_dot_and_sustain_geometry() -> None:
     g2 = _glyph_for_candidate(img2, bw2, nc2, engine=None, img_w=w, img_h=h)
     assert g2.octave <= -1, g2.octave
 
-    # Sustain dash alone → half duration
+    # One sustain dash → half (2 beats)
     img3 = np.full((h, w, 3), 255, dtype=np.uint8)
     img3[40:70, 15:40] = 0
     img3[52:56, 45:72] = 0
@@ -328,7 +328,44 @@ def test_l5_octave_aug_dot_and_sustain_geometry() -> None:
     )
     g3 = _glyph_for_candidate(img3, bw3, nc3, engine=None, img_w=w, img_h=h)
     assert g3.duration == DurationName.half
+    assert g3.dots == 0
     assert (g3.extra or {}).get("duration_from") == "sustain_dash"
+    assert abs(float((g3.extra or {}).get("quarter_beats") or 0) - 2.0) < 1e-6
+
+    # Two dashes `1 - -` → dotted half = 3 quarter beats (not whole)
+    nc4 = NoteCandidate(
+        rect=Rect(10, 35, 78, 75),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 15,
+            "body_x1": 40,
+            "body_y0": 40,
+            "body_y1": 70,
+            "sustain_dashes": 2,
+        },
+    )
+    g4 = _glyph_for_candidate(img3, bw3, nc4, engine=None, img_w=w, img_h=h)
+    assert g4.duration == DurationName.half
+    assert g4.dots == 1
+    assert abs(float((g4.extra or {}).get("quarter_beats") or 0) - 3.0) < 1e-6
+
+    # Three dashes → whole = 4 beats
+    nc5 = NoteCandidate(
+        rect=Rect(10, 35, 78, 75),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 15,
+            "body_x1": 40,
+            "body_y0": 40,
+            "body_y1": 70,
+            "sustain_dashes": 3,
+        },
+    )
+    g5 = _glyph_for_candidate(img3, bw3, nc5, engine=None, img_w=w, img_h=h)
+    assert g5.duration == DurationName.whole
+    assert g5.dots == 0
 
     # Assemble preserves octave / dots / tie
     g3.extra["tie"] = "start"
@@ -362,6 +399,26 @@ def test_l5_octave_aug_dot_and_sustain_geometry() -> None:
     assert n0.octave == g3.octave or True  # may be 0 on this glyph
     assert n0.duration == DurationName.half
     assert n0.tie is not None
+
+
+def test_l5_two_sustain_dashes_are_three_beats_not_whole() -> None:
+    """Jianpu `1 - -` = 3/4 (dotted half), not whole; meter uses dots (#72)."""
+    from app.pipeline.structure.l5_glyph import (
+        _duration_from_geometry,
+        _note_beats_glyph,
+        _quarter_beats,
+    )
+    from app.pipeline.structure.ir import NoteGlyph
+
+    dur, dots, src = _duration_from_geometry(underlines=0, sustain_dashes=2)
+    assert dur == DurationName.half
+    assert dots == 1
+    assert src == "sustain_dash"
+    assert abs(_quarter_beats(dur, dots) - 3.0) < 1e-6
+    g = NoteGlyph(pitch="1", duration=dur, dots=dots)
+    assert abs(_note_beats_glyph(g) - 3.0) < 1e-6
+    # Whole would be 4 — wrong for two dashes
+    assert _note_beats_glyph(NoteGlyph(pitch="1", duration=DurationName.whole)) == 4.0
 
 
 def test_l5_underlines_counted_below_digit_body() -> None:
