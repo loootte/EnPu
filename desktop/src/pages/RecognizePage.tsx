@@ -7,6 +7,10 @@ import {
 import { ResultPanel } from "../components/ResultPanel";
 import { StatusBanner } from "../components/StatusBanner";
 import {
+  StructureLayerPanel,
+  defaultStructureLayersEnabled,
+} from "../components/StructureLayerPanel";
+import {
   CoreApiError,
   getCoreBaseUrl,
   healthCheck,
@@ -50,6 +54,9 @@ export function RecognizePage() {
   /** Dual-view (#45): shared hover measure (1-based). */
   const [hoverMeasure, setHoverMeasure] = useState<number | null>(null);
   const [overlayMode, setOverlayMode] = useState<ImageOverlayMode>("boxes");
+  const [structureLayers, setStructureLayers] = useState(
+    defaultStructureLayersEnabled,
+  );
   /**
    * Full-page layout from last whole-image recognize (natural pixels).
    * Crop only returns ROI boxes — keep full map for dual-view (#45).
@@ -205,9 +212,16 @@ export function RecognizePage() {
       setLayoutRegions(res.regions ?? null);
       setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
       setCoreState("online");
+      if (res.structure?.items?.length) {
+        setOverlayMode("structure");
+      }
+      const structHint = res.structure?.items?.length
+        ? ` · 结构分层 ${res.structure.items.length} 框（可切换 L1–L5）`
+        : "";
       setInfo(
         `识别完成 · engine=${res.engine} · ${res.texts.length} 段文本 · ${res.meta.elapsed_ms} ms` +
           (res.score ? " · 可编辑 Score" : " · 未解析出 Score") +
+          structHint +
           " · 双视图可悬停联动 · 框选后局部重识别",
       );
       void refreshHealth();
@@ -546,9 +560,21 @@ export function RecognizePage() {
               原稿对照
             </h2>
             <span className="text-[11px] text-slate-500">
-              悬停同步小节 · 原图/叠图/小节格
+              {result?.structure
+                ? "结构叠图 L1–L5 · 悬停联动"
+                : "悬停同步小节 · 原图/叠图/小节格"}
             </span>
           </div>
+          <StructureLayerPanel
+            structure={result?.structure}
+            enabled={structureLayers}
+            onChange={(next) => {
+              setStructureLayers(next);
+              if (result?.structure?.items?.length) {
+                setOverlayMode("structure");
+              }
+            }}
+          />
           <ImagePreview
             src={previewUrl}
             filename={file?.name}
@@ -556,9 +582,6 @@ export function RecognizePage() {
             selection={selection}
             onSelectionChange={(r) => {
               setSelection(r);
-              if (r && nMeasures && imageSize.w) {
-                // Preview which measures will be affected
-              }
             }}
             boxes={result?.boxes ?? layoutBoxes}
             highlightSelection
@@ -567,6 +590,8 @@ export function RecognizePage() {
             overlayMode={overlayMode}
             onOverlayModeChange={setOverlayMode}
             onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
+            structure={result?.structure}
+            structureLayers={structureLayers}
           />
           {selection ? (
             <p className="text-[11px] text-slate-500">
@@ -580,7 +605,7 @@ export function RecognizePage() {
             </p>
           ) : (
             <p className="text-[11px] text-slate-600">
-              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 悬停原图联动右侧小节
+              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 结构模式看 L1–L5 叠图
             </p>
           )}
         </section>

@@ -146,6 +146,12 @@ def test_recognize_structure_mode_mock(monkeypatch: pytest.MonkeyPatch) -> None:
         assert "structure" in body["engine"]
         assert body["meta"]["parse_mode"] == "score"
         assert body.get("score") is not None
+        assert body.get("structure") is not None
+        assert body["structure"]["pipeline"] == "structure"
+        assert isinstance(body["structure"]["items"], list)
+        assert len(body["structure"]["items"]) >= 1
+        layers = {it["layer"] for it in body["structure"]["items"]}
+        assert "L1" in layers or "L2" in layers
         assert any(
             "pipeline=structure" in w or "L2" in w or "L3" in w
             for w in body["meta"].get("parse_warnings") or []

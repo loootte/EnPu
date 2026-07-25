@@ -3,9 +3,15 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BoundingBox, CropRect } from "../lib/types";
+import type {
+  BoundingBox,
+  CropRect,
+  StructureBox,
+  StructureDebug,
+} from "../lib/types";
+import type { StructureLayerId } from "./StructureLayerPanel";
 
-export type ImageOverlayMode = "off" | "boxes" | "measures";
+export type ImageOverlayMode = "off" | "boxes" | "measures" | "structure";
 
 export interface ImagePreviewProps {
   src: string | null;
@@ -24,6 +30,9 @@ export interface ImagePreviewProps {
   /** Hover image → measure index callback (0-based or null). */
   onHoverImage?: (point: { x: number; y: number } | null) => void;
   compact?: boolean;
+  /** #58 structure-first layer overlays */
+  structure?: StructureDebug | null;
+  structureLayers?: Record<StructureLayerId, boolean> | null;
 }
 
 type DragState = {
@@ -57,6 +66,73 @@ function normRect(x1: number, y1: number, x2: number, y2: number): CropRect {
   };
 }
 
+const LAYER_STYLE: Record<
+  StructureBox["layer"],
+  { border: string; bg: string; text: string }
+> = {
+  L1: {
+    border: "border-violet-400/80",
+    bg: "bg-violet-500/10",
+    text: "text-violet-100",
+  },
+  L2: {
+    border: "border-sky-400/80",
+    bg: "bg-sky-500/10",
+    text: "text-sky-100",
+  },
+  L3: {
+    border: "border-emerald-400/80",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-100",
+  },
+  L4: {
+    border: "border-cyan-300/90",
+    bg: "bg-cyan-400/15",
+    text: "text-cyan-50",
+  },
+  L5: {
+    border: "border-amber-300/90",
+    bg: "bg-amber-400/20",
+    text: "text-amber-50",
+  },
+};
+
+function StructureItemOverlay({
+  item,
+  scaleX,
+  scaleY,
+}: {
+  item: StructureBox;
+  scaleX: number;
+  scaleY: number;
+}) {
+  const st = LAYER_STYLE[item.layer];
+  const showLabel = item.layer === "L1" || item.layer === "L2" || item.layer === "L5";
+  const thick = item.layer === "L1" || item.layer === "L2" ? "border-2" : "border";
+  return (
+    <div
+      className={`pointer-events-none absolute ${thick} ${st.border} ${st.bg}`}
+      style={{
+        left: item.box.x1 * scaleX,
+        top: item.box.y1 * scaleY,
+        width: Math.max(1, (item.box.x2 - item.box.x1) * scaleX),
+        height: Math.max(1, (item.box.y2 - item.box.y1) * scaleY),
+      }}
+      title={[item.layer, item.label, item.pitch, item.duration]
+        .filter(Boolean)
+        .join(" · ")}
+    >
+      {showLabel && item.label ? (
+        <span
+          className={`absolute -top-0.5 left-0 max-w-full truncate px-0.5 text-[9px] leading-tight ${st.text} bg-black/55`}
+        >
+          {item.label}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function ImagePreview({
   src,
   filename,
@@ -71,6 +147,8 @@ export function ImagePreview({
   onOverlayModeChange,
   onHoverImage,
   compact = false,
+  structure = null,
+  structureLayers = null,
 }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -278,6 +356,9 @@ export function ImagePreview({
                   ["off", "原图"],
                   ["boxes", "叠图"],
                   ["measures", "小节"],
+                  ...(structure?.items?.length
+                    ? ([["structure", "结构"]] as const)
+                    : []),
                 ] as const
               ).map(([mode, label]) => (
                 <button
@@ -415,6 +496,41 @@ export function ImagePreview({
                   />
                 );
               })
+            : null}
+          {/* #58 structure L1–L5 overlays */}
+          {structure?.items?.length && natural.w > 0
+            ? structure.items.map((it) => {
+                const show =
+                  overlayMode === "structure"
+                    ? structureLayers?.[it.layer] !== false
+                    : false;
+                if (!show) return null;
+                return (
+                  <StructureItemOverlay
+                    key={it.id || `${it.layer}-${it.label}-${it.box.x1}`}
+                    item={it}
+                    scaleX={scaleX}
+                    scaleY={scaleY}
+                  />
+                );
+              })
+            : null}
+          {structure?.barlines?.length &&
+          natural.w > 0 &&
+          overlayMode === "structure" &&
+          structureLayers?.L3 !== false
+            ? structure.barlines.map((bl, i) => (
+                <div
+                  key={`bar-${i}-${bl.x}`}
+                  className="pointer-events-none absolute w-0.5 bg-rose-500/90 shadow-[0_0_4px_rgba(244,63,94,0.8)]"
+                  style={{
+                    left: bl.x * scaleX,
+                    top: bl.y1 * scaleY,
+                    height: Math.max(1, (bl.y2 - bl.y1) * scaleY),
+                  }}
+                  title={`barline S${bl.system + 1}`}
+                />
+              ))
             : null}
           {activeRect && natural.w > 0 ? (
             <div

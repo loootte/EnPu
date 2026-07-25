@@ -60,6 +60,34 @@ class RecognizeMeta(BaseModel):
     parse_warnings: list[str] = Field(default_factory=list)
 
 
+class StructureBox(BaseModel):
+    """One drawable element from a structure layer (#58 UI debug)."""
+
+    layer: Literal["L1", "L2", "L3", "L4", "L5"]
+    id: str = ""
+    label: str = ""
+    box: BoundingBox
+    kind: str = ""
+    # Optional glyph payload for L5
+    pitch: str | None = None
+    duration: str | None = None
+    underlines: int | None = None
+    octave: int | None = None
+    confidence: float | None = None
+
+
+class StructureDebug(BaseModel):
+    """Layered structure output for desktop overlay (#58)."""
+
+    pipeline: str = "structure"
+    summary: dict[str, Any] = Field(default_factory=dict)
+    items: list[StructureBox] = Field(default_factory=list)
+    barlines: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Vertical barline markers: {system, x, y1, y2}",
+    )
+
+
 class RecognizeResponse(BaseModel):
     """Stable response shape for desktop UI and future cloud clients."""
 
@@ -75,6 +103,10 @@ class RecognizeResponse(BaseModel):
     score: Score | None = Field(
         default=None,
         description="Structured EnPu Score v0.1 when parse succeeds (#10).",
+    )
+    structure: StructureDebug | None = Field(
+        default=None,
+        description="L1–L5 structure overlays when pipeline_mode=structure (#58).",
     )
     meta: RecognizeMeta = Field(default_factory=RecognizeMeta)
 

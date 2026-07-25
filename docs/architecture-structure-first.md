@@ -45,6 +45,18 @@ ENPU_PIPELINE_MODE=structure   # 结构优先
 ENPU_PIPELINE_MODE=legacy      # 默认：现有 OCR→parse
 ```
 
+### 桌面分层叠图（UI）
+
+结构模式识别成功后，响应含 `structure` 字段：
+
+| 字段 | 说明 |
+|------|------|
+| `structure.items[]` | 各层框：`layer` L1–L5、`label`、`box`、L5 另有 `pitch/duration/underlines` |
+| `structure.barlines[]` | 小节线竖线 `{system,x,y1,y2}` |
+| `structure.summary` | 谱行/小节/候选/音高数量等 |
+
+桌面左侧「结构分层叠图」可开关 L1–L5；预览模式选 **结构** 即可叠图查看。
+
 ## 4. 与现有路径关系
 
 ```text

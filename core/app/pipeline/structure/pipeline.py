@@ -15,7 +15,11 @@ import numpy as np
 from app.config import Settings
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
-from app.pipeline.structure.assemble import layout_debug_summary, page_layout_to_score
+from app.pipeline.structure.assemble import (
+    layout_debug_summary,
+    page_layout_to_score,
+    page_layout_to_structure_debug,
+)
 from app.pipeline.structure.ir import PageLayout, Rect, RegionRole
 from app.pipeline.structure.l1_page import detect_page_regions
 from app.pipeline.structure.l2_systems import detect_staff_systems
@@ -176,6 +180,8 @@ def run_structure_recognize(
         elapsed_ms,
     )
 
+    structure_debug = page_layout_to_structure_debug(layout)
+
     return RecognizeResponse(
         ok=True,
         engine=f"structure+{settings.recognize_engine}",
@@ -184,6 +190,7 @@ def run_structure_recognize(
         regions=regions_out,
         notes=notes,
         score=score,
+        structure=structure_debug,
         meta=RecognizeMeta(
             width=w,
             height=h,

@@ -1,8 +1,9 @@
-"""Assemble structure IR → EnPu Score JSON (#58)."""
+"""Assemble structure IR → EnPu Score JSON + UI debug overlays (#58)."""
 
 from __future__ import annotations
 
 from app.pipeline.structure.ir import PageLayout
+from app.schemas.recognize import BoundingBox, StructureBox, StructureDebug
 from app.schemas.score import (
     DurationName,
     Measure,
@@ -127,3 +128,93 @@ def layout_debug_summary(layout: PageLayout) -> dict:
         "title": layout.title,
         "warnings": list(layout.warnings)[:20],
     }
+
+
+def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
+    """Serialize L1–L5 boxes for desktop layered overlay."""
+    items: list[StructureBox] = []
+    barlines: list[dict] = []
+
+    for reg in layout.regions:
+        items.append(
+            StructureBox(
+                layer="L1",
+                id=f"l1-{reg.role.value}",
+                label=reg.role.value,
+                box=reg.rect.as_box(),
+                kind=reg.role.value,
+                confidence=reg.confidence,
+            )
+        )
+
+    for sys in layout.systems:
+        items.append(
+            StructureBox(
+                layer="L2",
+                id=f"l2-sys{sys.index}",
+                label=f"谱行 {sys.index + 1}",
+                box=sys.rect.as_box(),
+                kind="system",
+                confidence=sys.confidence,
+            )
+        )
+        for x in sys.barline_xs:
+            barlines.append(
+                {
+                    "system": sys.index,
+                    "x": x,
+                    "y1": sys.rect.y1,
+                    "y2": sys.rect.y2,
+                }
+            )
+        for meas in sys.measures:
+            items.append(
+                StructureBox(
+                    layer="L3",
+                    id=f"l3-s{sys.index}-m{meas.index}",
+                    label=f"S{sys.index + 1}·小节{meas.index + 1}",
+                    box=meas.rect.as_box(),
+                    kind="measure",
+                    confidence=meas.confidence,
+                )
+            )
+            for nc in meas.notes:
+                items.append(
+                    StructureBox(
+                        layer="L4",
+                        id=f"l4-s{sys.index}-m{meas.index}-n{nc.index}",
+                        label=f"n{nc.index + 1}",
+                        box=nc.rect.as_box(),
+                        kind="note_roi",
+                        confidence=nc.confidence,
+                    )
+                )
+                g = nc.glyph
+                if g is not None:
+                    dur = g.duration.value if hasattr(g.duration, "value") else str(g.duration)
+                    label = g.pitch or ("0" if g.is_rest else "?")
+                    if g.underlines:
+                        label = f"{label}_{g.underlines}"
+                    if g.octave:
+                        label = f"{label}@{g.octave:+d}"
+                    items.append(
+                        StructureBox(
+                            layer="L5",
+                            id=f"l5-s{sys.index}-m{meas.index}-n{nc.index}",
+                            label=label,
+                            box=nc.rect.as_box(),
+                            kind="glyph",
+                            pitch=g.pitch,
+                            duration=dur,
+                            underlines=g.underlines,
+                            octave=g.octave,
+                            confidence=g.confidence,
+                        )
+                    )
+
+    return StructureDebug(
+        pipeline="structure",
+        summary=layout_debug_summary(layout),
+        items=items,
+        barlines=barlines,
+    )
