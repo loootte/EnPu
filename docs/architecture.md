@@ -24,11 +24,35 @@ EnPu 将 **识别核心** 与 **桌面 UI** 解耦：
 
 ### 结构优先路径（#58，可选）
 
-默认 `ENPU_PIPELINE_MODE=legacy`。设为 `structure` 时：
+默认 `ENPU_PIPELINE_MODE=legacy`（整页 OCR → parse）。设为 `structure` 时采用**结构优先、OCR 托底**分层：
 
 ```text
-L1 版面 → L2 谱行 → L3 小节线/小节 → L4 音符 ROI → L5 局部 OCR+几何 → Score
+L1  页面级
+    ├── 标题
+    ├── 调号 / 拍号
+    └── 主谱面（score region）
+
+L2  主谱面
+    └── 谱行 systems（旋律数字 + 和弦 + 歌词绑定为同一逻辑行）
+
+L3  谱行
+    └── 小节 measures（小节线切分；Score 小节权威来源）
+
+L4  小节内
+    ├── 音符候选 ROI（pitch）
+    ├── 和弦 / 歌词候选（独立 kind）
+    └── 小节线（可视化）
+
+L5  音符节点
+    ├── 音高数字          ← 主要 OCR 位置（可有几何兜底）
+    ├── 时值线（下划线）
+    ├── 高低音点 / 附点 / 延音线（几何，持续完善）
+    └── → 组装 Score JSON
 ```
+
+原则：**L1–L4 以 OpenCV / 几何为主；L5 对局部 ROI 做音高 OCR 并绑定几何特征。**
+
+流水线：`preprocess → L1 → L2 → L3 → L4 → L5 → assemble Score`。
 
 详见 [architecture-structure-first.md](./architecture-structure-first.md)。
 

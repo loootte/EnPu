@@ -95,8 +95,11 @@ ENPU_RECOGNIZE_ENGINE=mock pytest -q
 | `ENPU_OCR_DENOISE` | `true` | 双边滤波去噪 |
 | `ENPU_MAX_UPLOAD_BYTES` | `20971520` | 最大上传 |
 | `ENPU_CORS_ORIGINS` | `*` | CORS |
+| `ENPU_PIPELINE_MODE` | `legacy` | `legacy`：整页 OCR→parse；`structure`：L1–L5 结构优先（#58） |
 
-## 流水线说明（#3）
+## 流水线说明
+
+### legacy（默认，#3 / #10）
 
 1. **decode** — OpenCV `imdecode`  
 2. **resize** — 长边超过 `ENPU_OCR_MAX_SIDE` 时缩小  
@@ -105,7 +108,15 @@ ENPU_RECOGNIZE_ENGINE=mock pytest -q
 5. **parse** — OCR → `Score` v0.1（音高/时值/小节；失败回退 hints / ocr_only）  
 6. **export** — `POST /v1/export` 将 Score 转为 MusicXML / MIDI（music21，#11）
 
-> 识别精度不是 Phase 0 目标；先打通链路。
+### structure（#58）
+
+`ENPU_PIPELINE_MODE=structure` 时：
+
+```text
+L1 版面 → L2 谱行 → L3 小节 → L4 音符 ROI → L5 局部 OCR+几何 → Score
+```
+
+代码：`core/app/pipeline/structure/`。详见仓库根 [README](../README.md) 与 [docs/architecture-structure-first.md](../docs/architecture-structure-first.md)。
 
 ## Sidecar 打包（可选，Issue #8）
 

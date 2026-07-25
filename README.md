@@ -39,6 +39,27 @@
 └─────────────────────────────┘
 ```
 
+### 结构优先识别（#58，可选）
+
+默认 `ENPU_PIPELINE_MODE=legacy`（整页 OCR → 规则拼装）。设为 **`structure`** 时走分层内核：
+
+```text
+L1  页面级     标题 / 调号 / 拍号 / 主谱面 ROI
+L2  主谱面     谱行（systems；pitch+和弦+歌词绑定为同一行）
+L3  谱行内     小节线 → 小节（measures）
+L4  小节内     音符 / 和弦 / 歌词候选 ROI（几何为主）
+L5  音符节点   音高数字 OCR（+几何兜底）+ 时值线 / 高低音点等几何
+               → 组装 Score JSON
+```
+
+| 原则 | 说明 |
+|------|------|
+| L1–L4 | **OpenCV / 几何 / 版面**为主，不依赖整页 OCR 文本顺序 |
+| L5 | **音高数字**以 OCR 为主，并与同节点几何特征绑定 |
+| 开关 | `ENPU_PIPELINE_MODE=structure` 或 `legacy` |
+
+桌面在结构模式下可叠图查看 L1–L5。完整说明见 [docs/architecture-structure-first.md](./docs/architecture-structure-first.md) · [docs/architecture.md](./docs/architecture.md)。
+
 ---
 
 ## 仓库结构
