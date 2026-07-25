@@ -200,6 +200,47 @@ def test_l3_segments_measures() -> None:
     assert any("L3" in w for w in warnings)
 
 
+def test_l3_no_outer_margin_measures() -> None:
+    """#66: do not treat left-of-first / right-of-last barline as measures."""
+    from app.pipeline.structure.ir import StaffSystem
+
+    h, w = 120, 400
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Staff band ink
+    img[40:90, 20:380] = 245
+    # Four tall barlines → 3 real measures between them
+    bar_xs = [60, 150, 240, 330]
+    for x in bar_xs:
+        img[38:92, x : x + 3] = 0
+    # Note blobs only between barlines
+    for x in (90, 180, 270):
+        img[55:75, x : x + 10] = 0
+
+    systems = [
+        StaffSystem(index=0, rect=Rect(10, 35, 390, 95), confidence=0.8),
+    ]
+    systems, warnings = segment_measures_on_systems(img, systems)
+    assert len(systems) == 1
+    measures = systems[0].measures
+    detected = systems[0].barline_xs
+    assert len(detected) >= 4, detected
+    # Must be between-barline only: n_bars-1 measures, not n_bars+1 (with outer pads)
+    assert len(measures) == len(detected) - 1, (
+        [(m.rect.x1, m.rect.x2) for m in measures],
+        detected,
+    )
+    first_bar, last_bar = detected[0], detected[-1]
+    for m in measures:
+        # Each measure sits between two barlines (no system-edge pads)
+        assert m.rect.x1 >= first_bar - 0.5, m.rect
+        assert m.rect.x2 <= last_bar + 0.5, m.rect
+        assert m.barline_x_left is not None and m.barline_x_right is not None
+    # No measure lives wholly in left margin (x < first bar) or right margin
+    assert not any(m.rect.x2 <= first_bar + 1 for m in measures)
+    assert not any(m.rect.x1 >= last_bar - 1 for m in measures)
+    assert any("between-barlines only" in w for w in warnings)
+
+
 def test_l4_note_candidates() -> None:
     img = _synthetic_score_bgr()
     regions, _ = detect_page_regions(img)
