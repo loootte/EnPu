@@ -161,8 +161,54 @@ def test_l2_binds_chord_lyric_into_pitch_system() -> None:
     assert any("#61" in w or "aux band" in w for w in warnings)
 
 
+def _synthetic_chord_above_pitch_lyric_bgr(w: int = 480, h: int = 460) -> np.ndarray:
+    """Two systems with chord *above* pitch and lyric below (#64 worship layout)."""
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+
+    def _digit_row(y0: int, band_h: int, glyph_h: int, n: int = 12, narrow: bool = True) -> None:
+        img[y0 : y0 + band_h, 30 : w - 30] = 240
+        step = (w - 80) // n
+        gw = max(6, glyph_h // 2 if narrow else int(glyph_h * 0.85))
+        for i in range(n):
+            x = 40 + i * step
+            gy0 = y0 + max(1, (band_h - glyph_h) // 2)
+            img[gy0 : gy0 + glyph_h, x : x + gw] = 0
+
+    # System 0: chord above + pitch + lyric
+    _digit_row(40, 22, 16, 10, narrow=False)  # chord (shorter / squarer)
+    _digit_row(80, 36, 30, 14, narrow=True)  # pitch (narrow digits)
+    _digit_row(130, 26, 20, 10, narrow=False)  # lyric
+    # System 1 (clear inter-system gap)
+    _digit_row(240, 22, 16, 10, narrow=False)
+    _digit_row(280, 36, 30, 14, narrow=True)
+    _digit_row(330, 26, 20, 10, narrow=False)
+    return img
+
+
+def test_l2_binds_chord_above_pitch() -> None:
+    """#64: chord symbols above melody must not merge with next system."""
+    img = _synthetic_chord_above_pitch_lyric_bgr()
+    score = Rect(0, 20, float(img.shape[1]), float(img.shape[0]))
+    systems, warnings = detect_staff_systems(img, score)
+    assert len(systems) == 2, [(s.rect.y1, s.rect.y2, s.extra) for s in systems]
+    # Systems must not vertically swallow each other
+    assert systems[0].rect.y2 <= systems[1].rect.y1 + 2
+    for s in systems:
+        assert s.extra.get("layout_mode") == "chord_above", s.extra
+        bands = s.extra.get("bands") or []
+        roles = [b["role"] for b in bands]
+        assert "pitch" in roles
+        assert int(s.extra.get("n_chord_bands") or 0) >= 1
+        # Chord band above pitch band
+        pitch_y0 = min(b["y0"] for b in bands if b["role"] == "pitch")
+        chord_y0 = min(b["y0"] for b in bands if b["role"] == "chord")
+        assert chord_y0 < pitch_y0, (roles, bands)
+    assert any("melody system" in w for w in warnings)
+    assert any("layout=chord_above" in w for w in warnings)
+
+
 def test_l2_m04_binds_lyrics_not_extra_systems() -> None:
-    """#61 acceptance: M04 → few melody systems with chord/lyric attached."""
+    """#61/#64 acceptance: M04 chord-below → few systems covering pitch+chord+lyric."""
     from pathlib import Path
 
     import cv2
@@ -183,10 +229,23 @@ def test_l2_m04_binds_lyrics_not_extra_systems() -> None:
         if (s.extra.get("n_chord_bands") or 0) + (s.extra.get("n_lyric_bands") or 0) >= 1
     )
     assert with_aux >= 4, [(s.extra, s.rect) for s in systems]
-    # Each system must include a pitch band
+    with_chord = 0
     for s in systems:
         assert s.extra.get("n_pitch_bands", 0) >= 1
+        assert s.extra.get("layout_mode") == "chord_below", s.extra
+        bands = s.extra.get("bands") or []
+        pitch = next(b for b in bands if b["role"] == "pitch")
+        chords = [b for b in bands if b["role"] == "chord"]
+        if not chords:
+            continue
+        with_chord += 1
+        for c in chords:
+            # M04: chord (副旋律) sits below pitch and inside system rect
+            assert c["y0"] >= pitch["y1"] - 2, (s.index, c, pitch)
+            assert c["y0"] >= s.rect.y1 - 2 and c["y1"] <= s.rect.y2 + 2
+    assert with_chord >= 4, with_chord
     assert any("melody system" in w and "#61" in w for w in warnings)
+    assert any("layout=chord_below" in w for w in warnings)
 
 
 def test_l2_scan_samples_not_one_giant_system() -> None:
