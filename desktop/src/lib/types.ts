@@ -89,6 +89,34 @@ export interface LayoutRegion {
   score?: number | null;
 }
 
+/** One drawable structure element from L1–L5 (#58). */
+export interface StructureBox {
+  layer: "L1" | "L2" | "L3" | "L4" | "L5";
+  id: string;
+  label: string;
+  box: BoundingBox;
+  kind?: string;
+  pitch?: string | null;
+  duration?: string | null;
+  underlines?: number | null;
+  octave?: number | null;
+  confidence?: number | null;
+}
+
+export interface StructureBarline {
+  system: number;
+  x: number;
+  y1: number;
+  y2: number;
+}
+
+export interface StructureDebug {
+  pipeline: string;
+  summary?: Record<string, unknown>;
+  items: StructureBox[];
+  barlines?: StructureBarline[];
+}
+
 export interface RecognizeResponse {
   ok: boolean;
   engine: string;
@@ -98,6 +126,8 @@ export interface RecognizeResponse {
   regions?: LayoutRegion[];
   notes: NoteHint[];
   score?: Score | null;
+  /** Present when ENPU_PIPELINE_MODE=structure (#58). */
+  structure?: StructureDebug | null;
   meta: RecognizeMeta;
 }
 
