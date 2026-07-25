@@ -149,13 +149,12 @@ export function RecognizePage() {
   const [structureRerunning, setStructureRerunning] = useState(false);
   const [structureAddMode, setStructureAddMode] = useState(false);
 
-  // Edit mode: always show current edit layer; only that layer is selectable
+  // Edit mode / layer change: show edit layer (+ parent); clear off-layer selection
   useEffect(() => {
     if (!structureEditMode) return;
     setOverlayMode("structure");
     setStructureLayers((prev) => {
       const next = { ...prev, [structureFromLayer]: true };
-      // Also show parent layer dimmed for spatial context (L4 edit → show L3)
       const parentOf: Record<StructureLayerId, StructureLayerId | null> = {
         L5: "L4",
         L4: "L3",
@@ -167,7 +166,6 @@ export function RecognizePage() {
       if (p) next[p] = true;
       return next;
     });
-    // Drop selection if it is not on the active edit layer
     setSelectedStructureId((cur) => {
       if (!cur) return null;
       const items = (structureDraft ?? result?.structure)?.items ?? [];
@@ -175,12 +173,9 @@ export function RecognizePage() {
       if (!it || it.layer !== structureFromLayer) return null;
       return cur;
     });
-  }, [
-    structureEditMode,
-    structureFromLayer,
-    structureDraft,
-    result?.structure,
-  ]);
+    // Only react to mode/layer changes — not every box drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [structureEditMode, structureFromLayer]);
   /**
    * Full-page layout from last whole-image recognize (natural pixels).
    * Crop only returns ROI boxes — keep full map for dual-view (#45).
