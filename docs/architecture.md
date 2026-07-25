@@ -22,6 +22,16 @@ EnPu 将 **识别核心** 与 **桌面 UI** 解耦：
  (OpenCV) (PaddleOCR) (规则/music21)
 ```
 
+### 结构优先路径（#58，可选）
+
+默认 `ENPU_PIPELINE_MODE=legacy`。设为 `structure` 时：
+
+```text
+L1 版面 → L2 谱行 → L3 小节线/小节 → L4 音符 ROI → L5 局部 OCR+几何 → Score
+```
+
+详见 [architecture-structure-first.md](./architecture-structure-first.md)。
+
 ## 2. 部署形态
 
 | 形态 | 说明 | 阶段 |

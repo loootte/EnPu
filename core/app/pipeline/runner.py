@@ -187,7 +187,21 @@ def run_recognize(
     filename: str | None = None,
     content_type: str | None = None,
 ) -> RecognizeResponse:
-    """Decode → preprocess → OCR → Score parse (with fallback)."""
+    """Decode → recognize. Dispatches legacy OCR-first vs structure-first (#58)."""
+    mode = (settings.pipeline_mode or "legacy").strip().lower()
+    if mode in {"structure", "structure_first", "l5"}:
+        from app.pipeline.structure import StructurePipelineError, run_structure_recognize
+
+        try:
+            return run_structure_recognize(
+                data,
+                settings=settings,
+                filename=filename,
+                content_type=content_type,
+            )
+        except StructurePipelineError as exc:
+            raise PipelineError(exc.message, status_code=exc.status_code) from exc
+
     started = time.perf_counter()
     try:
         image_bgr = decode_image_bytes(data)

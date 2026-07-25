@@ -6,7 +6,7 @@
 
 **仓库**：https://github.com/loootte/EnPu  
 **最后更新**：2026-07-25  
-**当前阶段**：#34/#35/#38 ✅；精度收尾 **#36** 真实评测集 + **#37** 高密度；产品体验 **#43** 已拆 **#45–#52**；目标 **v0.1.0**；云端 #13 可并行  
+**当前阶段**：#34/#35/#38 ✅；**#58 结构优先分层内核**（可选 `ENPU_PIPELINE_MODE=structure`）；精度 **#36/#37**；体验 **#45–#52**；目标 **v0.1.0**；云端 #13 可并行  
 
 ---
 
@@ -275,9 +275,10 @@
 ### 4.4 技术优先级（实现顺序建议）
 
 ```text
-P0  #34 ✅ 非谱行过滤  ──►  #35 ✅ 小节划分  ──►  #36 真实评测集（下一步）
-P0  校对体验：#45 双视图 与/或 #46 问题导航（可与 #36 并行）
-P1  #37 高密度时值     #38 ✅ CI 门槛
+P0  #58 结构优先分层内核（L1–L4 几何 → L5 OCR）── 精度主路径重构
+P0  #34 ✅ 非谱行过滤  ──►  #35 ✅ 小节划分  ──►  #36 真实评测集
+P0  校对体验：#45 双视图 与/或 #46 问题导航（可与结构管线并行）
+P1  #37 高密度时值 / #54 时值线     #38 ✅ CI 门槛
 P1  #49 框选精调 / #48 PDF 多页 MVP / #47 预处理工具箱
 P1  v0.1.0 tag（安装包 + 基线可引用）
 P2  #50 批量编辑 / #51 分层播放 / #52 工程快照（v0.2）
@@ -334,7 +335,8 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#13](https://github.com/loootte/EnPu/issues/13) | Docker 与本地/云端切换 | P3 | P1 | ⬜ 不阻塞 v0.1.0 |
 | [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集（≥15） | P4 | **P0** | ⬜ **下一步（精度）** |
 | [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | P1 | ⬜ |
-| [#43](https://github.com/loootte/EnPu/issues/43) | 产品/体验演进清单入 Roadmap | docs | P0 | 🔄 [PR #44](https://github.com/loootte/EnPu/pull/44) |
+| [#43](https://github.com/loootte/EnPu/issues/43) | 产品/体验演进清单入 Roadmap | docs | P0 | ✅ [PR #44](https://github.com/loootte/EnPu/pull/44) |
+| [#58](https://github.com/loootte/EnPu/issues/58) | 结构优先分层识别内核（L1–L5，先几何后 OCR） | P4 / core | **P0** | 🔄 脚手架 `pipeline_mode=structure` |
 | [#45](https://github.com/loootte/EnPu/issues/45) | 原稿对照双视图校对（P4-F） | P4 | **P0** | ⬜ v0.1 体验加分 |
 | [#46](https://github.com/loootte/EnPu/issues/46) | 错误标记与问题导航（P4-G） | P4 | **P0** | ⬜ v0.1 体验加分 |
 | [#47](https://github.com/loootte/EnPu/issues/47) | 图像预处理工具箱（P4-H） | P4 | P1 | ⬜ |

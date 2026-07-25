@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 20 * 1024 * 1024  # 20 MiB
     # mock | paddleocr
     recognize_engine: str = "paddleocr"
+    # legacy = OCR-first (current default); structure = L1–L5 geometry-first (#58)
+    pipeline_mode: str = "legacy"
 
     # OCR / preprocess
     ocr_lang: str = "ch"
