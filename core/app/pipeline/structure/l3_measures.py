@@ -1,4 +1,4 @@
-"""L3–L4: barlines + measure segmentation on each staff system (#58)."""
+"""L3–L4: barlines + measure segmentation on each staff system (#58 / #66)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,12 @@ def segment_measures_on_systems(
     *,
     min_measure_width: float = 24.0,
 ) -> tuple[list[StaffSystem], list[str]]:
-    """For each system, detect vertical barlines and split into measures."""
+    """For each system, detect vertical barlines and split into measures.
+
+    **#66 follow-up**: a measure is a span **between consecutive barlines**.
+    Do **not** invent measures from system left edge → first barline or
+    last barline → system right edge (page/staff margins).
+    """
     warnings: list[str] = []
     if image_bgr is None or image_bgr.size == 0:
         return systems, ["L3: empty image"]
@@ -31,38 +36,20 @@ def segment_measures_on_systems(
             y_range=(y0, y1),
             min_gap=max(18.0, sys.rect.width * 0.03),
         )
-        # Keep xs inside system x range with margin
+        # Keep xs inside system x range with margin (drop edge noise)
         x_lo, x_hi = sys.rect.x1, sys.rect.x2
         xs = [x for x in xs if x_lo + 8 < x < x_hi - 8]
-        xs = sorted(xs)
+        xs = _dedup_xs(sorted(xs), min_gap=min_measure_width * 0.5)
 
-        # Always include system edges as soft boundaries
-        edges = [x_lo + 4.0] + xs + [x_hi - 4.0]
-        # Dedup close edges
-        cleaned: list[float] = []
-        for x in edges:
-            if not cleaned or abs(x - cleaned[-1]) > min_measure_width * 0.5:
-                cleaned.append(x)
-            else:
-                cleaned[-1] = (cleaned[-1] + x) / 2.0
-
-        measures: list[MeasureLayout] = []
-        for i in range(len(cleaned) - 1):
-            left, right = cleaned[i], cleaned[i + 1]
-            if right - left < min_measure_width:
-                continue
-            measures.append(
-                MeasureLayout(
-                    index=len(measures),
-                    rect=Rect(left, y0, right, y1),
-                    barline_x_left=left if i > 0 else None,
-                    barline_x_right=right if i < len(cleaned) - 2 else None,
-                    confidence=0.65 if xs else 0.4,
-                )
-            )
+        measures = _measures_between_barlines(
+            xs,
+            y0=y0,
+            y1=y1,
+            min_measure_width=min_measure_width,
+        )
 
         if not measures:
-            # Fallback: single measure spanning system
+            # Fallback: single measure spanning system (no usable bar pair)
             measures = [
                 MeasureLayout(
                     index=0,
@@ -70,7 +57,15 @@ def segment_measures_on_systems(
                     confidence=0.3,
                 )
             ]
-            warnings.append(f"L3: system {sys.index} has no barlines; one measure")
+            if len(xs) < 2:
+                warnings.append(
+                    f"L3: system {sys.index} has {len(xs)} barline(s); "
+                    "one measure fallback (need ≥2 barlines for split)"
+                )
+            else:
+                warnings.append(
+                    f"L3: system {sys.index} bar pairs too narrow; one measure"
+                )
 
         sys2 = StaffSystem(
             index=sys.index,
@@ -83,10 +78,50 @@ def segment_measures_on_systems(
         out.append(sys2)
         warnings.append(
             f"L3: system {sys.index} → {len(measures)} measure(s), "
-            f"{len(xs)} barline(s)"
+            f"{len(xs)} barline(s) (between-barlines only)"
         )
 
     return out, warnings
+
+
+def _dedup_xs(xs: list[float], *, min_gap: float) -> list[float]:
+    if not xs:
+        return []
+    cleaned: list[float] = [xs[0]]
+    for x in xs[1:]:
+        if abs(x - cleaned[-1]) > min_gap:
+            cleaned.append(x)
+        else:
+            cleaned[-1] = (cleaned[-1] + x) / 2.0
+    return cleaned
+
+
+def _measures_between_barlines(
+    xs: list[float],
+    *,
+    y0: float,
+    y1: float,
+    min_measure_width: float,
+) -> list[MeasureLayout]:
+    """Build measures only between consecutive barlines (no outer margins)."""
+    if len(xs) < 2:
+        return []
+    measures: list[MeasureLayout] = []
+    for i in range(len(xs) - 1):
+        left, right = xs[i], xs[i + 1]
+        if right - left < min_measure_width:
+            continue
+        measures.append(
+            MeasureLayout(
+                index=len(measures),
+                rect=Rect(left, y0, right, y1),
+                barline_x_left=left,
+                barline_x_right=right,
+                confidence=0.7,
+                extra={"segment": "between_barlines"},
+            )
+        )
+    return measures
 
 
 def estimate_uniform_measures(

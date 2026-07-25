@@ -20,11 +20,21 @@ def page_layout_to_score(
     filename: str | None = None,
     engine: str | None = None,
 ) -> Score:
-    """Flatten systems/measures/notes into Score v0.1."""
+    """Flatten systems/measures/notes into Score v0.1.
+
+    **#66**: L3 geometry is the authority for measure boundaries.
+    Every L3 ``MeasureLayout`` becomes exactly one Score ``Measure`` in
+    system order (top→bottom) then left→right, including empty measures.
+    Notes without a filled glyph are omitted from that measure's note list
+    but do **not** drop the measure slot.
+    """
     measures: list[Measure] = []
-    mnum = 1
+    n_l3 = 0
+    n_empty = 0
     for sys in layout.systems:
         for ml in sys.measures:
+            n_l3 += 1
+            mnum = n_l3  # 1-based global index == Score.measures position
             notes: list[NoteEvent] = []
             for nc in ml.notes:
                 g = nc.glyph
@@ -44,6 +54,8 @@ def page_layout_to_score(
                                 "duration_from": g.extra.get(
                                     "duration_from", "default"
                                 ),
+                                "l3_system": sys.index,
+                                "l3_measure": ml.index,
                             },
                         )
                     )
@@ -62,12 +74,34 @@ def page_layout_to_score(
                                 "duration_from": g.extra.get(
                                     "duration_from", "default"
                                 ),
+                                "l3_system": sys.index,
+                                "l3_measure": ml.index,
                             },
                         )
                     )
-            if notes:
-                measures.append(Measure(number=mnum, notes=notes))
-                mnum += 1
+            if not notes:
+                n_empty += 1
+            measures.append(
+                Measure(
+                    number=mnum,
+                    notes=notes,
+                    extra={
+                        "source": "structure_l3",
+                        "system_index": sys.index,
+                        "measure_index_in_system": ml.index,
+                        "global_index": mnum - 1,
+                        "rect": {
+                            "x1": ml.rect.x1,
+                            "y1": ml.rect.y1,
+                            "x2": ml.rect.x2,
+                            "y2": ml.rect.y2,
+                        },
+                        "barline_x_left": ml.barline_x_left,
+                        "barline_x_right": ml.barline_x_right,
+                        "l3_confidence": ml.confidence,
+                    },
+                )
+            )
 
     if not measures:
         measures = [
@@ -80,6 +114,7 @@ def page_layout_to_score(
                         extra={"source": "structure_empty_placeholder"},
                     )
                 ],
+                extra={"source": "structure_empty_placeholder"},
             )
         ]
 
@@ -94,11 +129,16 @@ def page_layout_to_score(
             source_image=filename,
             engine=engine,
             created_by="enpu-structure-#58",
-            comments="Structure-first pipeline: L1–L4 geometry, L5 OCR pitch.",
+            comments=(
+                "Structure-first pipeline: L3 measures are Score authority (#66)."
+            ),
             extra={
                 "pipeline": "structure",
                 "n_systems": len(layout.systems),
                 "n_measures": len(measures),
+                "n_l3_measures": n_l3,
+                "n_empty_measures": n_empty,
+                "measure_source": "l3",
                 "warnings": list(layout.warnings),
             },
         ),
@@ -147,6 +187,7 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
             )
         )
 
+    global_m = 0  # 0-based; Score measure number = global_m + 1 (#66)
     for sys in layout.systems:
         items.append(
             StructureBox(
@@ -168,11 +209,12 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                 }
             )
         for meas in sys.measures:
+            global_m += 1
             items.append(
                 StructureBox(
                     layer="L3",
-                    id=f"l3-s{sys.index}-m{meas.index}",
-                    label=f"S{sys.index + 1}·小节{meas.index + 1}",
+                    id=f"l3-m{global_m}",
+                    label=f"m{global_m}",
                     box=meas.rect.as_box(),
                     kind="measure",
                     confidence=meas.confidence,
@@ -182,7 +224,7 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                 items.append(
                     StructureBox(
                         layer="L4",
-                        id=f"l4-s{sys.index}-m{meas.index}-n{nc.index}",
+                        id=f"l4-m{global_m}-n{nc.index}",
                         label=f"n{nc.index + 1}",
                         box=nc.rect.as_box(),
                         kind="note_roi",
@@ -200,7 +242,7 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                     items.append(
                         StructureBox(
                             layer="L5",
-                            id=f"l5-s{sys.index}-m{meas.index}-n{nc.index}",
+                            id=f"l5-m{global_m}-n{nc.index}",
                             label=label,
                             box=nc.rect.as_box(),
                             kind="glyph",

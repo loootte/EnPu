@@ -35,7 +35,7 @@ L5  音符节点   音高数字 OCR + 时值线/高低音点几何  ← OCR 主�
 | `l3_measures.py` | 小节线 + 小节切分（复用 `barlines.detect_barline_xs`） |
 | `l4_notes.py` | 小节内连通域 / 投影 → 音符候选 |
 | `l5_glyph.py` | 局部 ROI OCR + 下划线 / 八度点 |
-| `assemble.py` | IR → `Score` v0.1 |
+| `assemble.py` | IR → `Score` v0.1；**L3 小节 = Score 小节权威**（#66，含空小节） |
 | `pipeline.py` | `run_structure_recognize` 串联 |
 
 开关（环境变量）：

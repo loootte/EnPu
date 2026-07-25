@@ -200,6 +200,47 @@ def test_l3_segments_measures() -> None:
     assert any("L3" in w for w in warnings)
 
 
+def test_l3_no_outer_margin_measures() -> None:
+    """#66: do not treat left-of-first / right-of-last barline as measures."""
+    from app.pipeline.structure.ir import StaffSystem
+
+    h, w = 120, 400
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Staff band ink
+    img[40:90, 20:380] = 245
+    # Four tall barlines → 3 real measures between them
+    bar_xs = [60, 150, 240, 330]
+    for x in bar_xs:
+        img[38:92, x : x + 3] = 0
+    # Note blobs only between barlines
+    for x in (90, 180, 270):
+        img[55:75, x : x + 10] = 0
+
+    systems = [
+        StaffSystem(index=0, rect=Rect(10, 35, 390, 95), confidence=0.8),
+    ]
+    systems, warnings = segment_measures_on_systems(img, systems)
+    assert len(systems) == 1
+    measures = systems[0].measures
+    detected = systems[0].barline_xs
+    assert len(detected) >= 4, detected
+    # Must be between-barline only: n_bars-1 measures, not n_bars+1 (with outer pads)
+    assert len(measures) == len(detected) - 1, (
+        [(m.rect.x1, m.rect.x2) for m in measures],
+        detected,
+    )
+    first_bar, last_bar = detected[0], detected[-1]
+    for m in measures:
+        # Each measure sits between two barlines (no system-edge pads)
+        assert m.rect.x1 >= first_bar - 0.5, m.rect
+        assert m.rect.x2 <= last_bar + 0.5, m.rect
+        assert m.barline_x_left is not None and m.barline_x_right is not None
+    # No measure lives wholly in left margin (x < first bar) or right margin
+    assert not any(m.rect.x2 <= first_bar + 1 for m in measures)
+    assert not any(m.rect.x1 >= last_bar - 1 for m in measures)
+    assert any("between-barlines only" in w for w in warnings)
+
+
 def test_l4_note_candidates() -> None:
     img = _synthetic_score_bgr()
     regions, _ = detect_page_regions(img)
@@ -258,6 +299,134 @@ def test_assemble_score_from_ir() -> None:
     assert mel is not None
     assert len(mel.measures) == 1
     assert [n.pitch for n in mel.measures[0].notes] == ["1", "5"]
+
+
+def test_assemble_score_keeps_empty_l3_measures() -> None:
+    """#66: every L3 measure becomes a Score measure, even if no notes."""
+    layout = PageLayout(
+        width=200,
+        height=80,
+        key="C",
+        time_signature="4/4",
+        systems=[
+            StaffSystem(
+                index=0,
+                rect=Rect(0, 0, 200, 40),
+                measures=[
+                    MeasureLayout(
+                        index=0,
+                        rect=Rect(0, 0, 60, 40),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(5, 5, 20, 30),
+                                index=0,
+                                glyph=NoteGlyph(pitch="1"),
+                            )
+                        ],
+                    ),
+                    # Empty L3 slot (no OCR / no candidates)
+                    MeasureLayout(index=1, rect=Rect(60, 0, 120, 40), notes=[]),
+                    MeasureLayout(
+                        index=2,
+                        rect=Rect(120, 0, 200, 40),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(130, 5, 150, 30),
+                                index=0,
+                                glyph=NoteGlyph(pitch="5"),
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            StaffSystem(
+                index=1,
+                rect=Rect(0, 40, 200, 80),
+                measures=[
+                    MeasureLayout(
+                        index=0,
+                        rect=Rect(0, 40, 100, 80),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(10, 45, 30, 70),
+                                index=0,
+                                # glyph missing → still keep measure
+                                glyph=None,
+                            )
+                        ],
+                    ),
+                    MeasureLayout(
+                        index=1,
+                        rect=Rect(100, 40, 200, 80),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(110, 45, 130, 70),
+                                index=0,
+                                glyph=NoteGlyph(pitch="3"),
+                            )
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+    n_l3 = sum(len(s.measures) for s in layout.systems)
+    score = page_layout_to_score(layout, filename="align.png", engine="test")
+    mel = score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) == n_l3 == 5
+    # Global numbering 1..5 continuous
+    assert [m.number for m in mel.measures] == [1, 2, 3, 4, 5]
+    # Empty slots preserved (m2 empty notes, m4 glyph-less)
+    assert [n.pitch for n in mel.measures[0].notes] == ["1"]
+    assert mel.measures[1].notes == []
+    assert [n.pitch for n in mel.measures[2].notes] == ["5"]
+    assert mel.measures[3].notes == []
+    assert [n.pitch for n in mel.measures[4].notes] == ["3"]
+    # Provenance for dual-view / navigation
+    assert mel.measures[0].extra.get("source") == "structure_l3"
+    assert mel.measures[1].extra.get("system_index") == 0
+    assert mel.measures[1].extra.get("measure_index_in_system") == 1
+    assert mel.measures[3].extra.get("system_index") == 1
+    assert score.meta.extra.get("measure_source") == "l3"
+    assert score.meta.extra.get("n_l3_measures") == 5
+    assert score.meta.extra.get("n_empty_measures") == 2
+
+
+def test_structure_debug_l3_count_matches_score() -> None:
+    """#66: L3 overlay boxes count == Score measure count, labels m1.."""
+    from app.pipeline.structure.assemble import page_layout_to_structure_debug
+
+    layout = PageLayout(
+        width=100,
+        height=50,
+        systems=[
+            StaffSystem(
+                index=0,
+                rect=Rect(0, 0, 100, 50),
+                measures=[
+                    MeasureLayout(index=0, rect=Rect(0, 0, 50, 50), notes=[]),
+                    MeasureLayout(
+                        index=1,
+                        rect=Rect(50, 0, 100, 50),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(60, 10, 80, 40),
+                                index=0,
+                                glyph=NoteGlyph(pitch="2"),
+                            )
+                        ],
+                    ),
+                ],
+            )
+        ],
+    )
+    score = page_layout_to_score(layout)
+    dbg = page_layout_to_structure_debug(layout)
+    l3 = [it for it in dbg.items if it.layer == "L3"]
+    assert len(l3) == len(score.parts[0].measures) == 2
+    assert [it.label for it in l3] == ["m1", "m2"]
+    assert l3[0].box.x1 == 0.0 and l3[1].box.x1 == 50.0
 
 
 def test_recognize_structure_mode_mock(monkeypatch: pytest.MonkeyPatch) -> None:
