@@ -47,6 +47,62 @@ def test_l1_detects_score_region() -> None:
     assert score.rect.height > 50
 
 
+def test_l1_title_above_score_on_header_page() -> None:
+    """#60: title band has ink; score starts below title (not at first ink)."""
+    h, w = 400, 300
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Title-like tall glyphs near top
+    img[30:70, 40:260] = 20
+    # gap
+    # Staff rows (shorter digit-like blocks)
+    for y0 in (120, 170, 220, 270):
+        img[y0 : y0 + 28, 30:270] = 25
+        for x in range(40, 250, 22):
+            img[y0 + 4 : y0 + 22, x : x + 12] = 0
+
+    regions, warnings = detect_page_regions(img)
+    title = next(r for r in regions if r.role.value == "title")
+    score = next(r for r in regions if r.role.value == "score")
+    # Title covers the header ink (y~30-70)
+    assert title.rect.y2 > 60, title.rect
+    assert title.rect.height > 40
+    # Score starts at/after staff, not inside title body
+    assert score.rect.y1 >= 90, score.rect
+    assert score.rect.y1 >= title.rect.y2 - 2
+    # Title center has ink; score top is below title ink
+    assert title.rect.y1 <= 50 < title.rect.y2
+
+
+def test_l1_m04_title_not_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#60 acceptance: M04 title ROI contains header ink; score below title."""
+    from pathlib import Path
+
+    import cv2
+
+    p = Path(__file__).resolve().parents[2] / "samples" / "eval" / "manual" / "M04_manual.png"
+    if not p.is_file():
+        pytest.skip("M04 sample not present")
+    img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+    assert img is not None
+    h = img.shape[0]
+    regions, warnings = detect_page_regions(img)
+    title = next(r for r in regions if r.role.value == "title")
+    score = next(r for r in regions if r.role.value == "score")
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    ty0, ty1 = int(title.rect.y1), int(title.rect.y2)
+    title_ink = int((bw[ty0:ty1] > 0).sum())
+    # Title must not be an empty top strip
+    assert title.rect.height >= 0.05 * h
+    assert title_ink > 1000, f"title ink too low: {title_ink}"
+    # Known title band on M04 is ~y 177-252; title should cover ~y=200
+    assert title.rect.y1 <= 200 < title.rect.y2
+    assert score.rect.y1 >= title.rect.y2 - 5
+    # Score should not start at the title band (~180)
+    assert score.rect.y1 >= 250, score.rect
+    assert any("L1:" in w for w in warnings)
+
+
 def test_l2_detects_systems() -> None:
     img = _synthetic_score_bgr()
     regions, _ = detect_page_regions(img)
