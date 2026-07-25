@@ -31,7 +31,7 @@ L5  音符节点   音高数字 OCR + 时值线/高低音点几何  ← OCR 主�
 |------|------|
 | `core/app/pipeline/structure/ir.py` | 中间表示 PageLayout / StaffSystem / Measure / NoteCandidate / NoteGlyph |
 | `l1_page.py` | 水平投影划分页面区域 |
-| `l2_systems.py` | 谱行检测 |
+| `l2_systems.py` | 谱行检测：pitch 与 chord/lyric/underline 绑定为同一 system（#61） |
 | `l3_measures.py` | 小节线 + 小节切分（复用 `barlines.detect_barline_xs`） |
 | `l4_notes.py` | 小节内连通域 / 投影 → 音符候选 |
 | `l5_glyph.py` | 局部 ROI OCR + 下划线 / 八度点 |
