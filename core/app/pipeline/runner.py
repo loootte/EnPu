@@ -20,6 +20,7 @@ from app.pipeline.crop_merge import (
     normalize_crop_rect,
     offset_boxes,
 )
+from app.pipeline.duration import detect_underlines_for_items
 from app.pipeline.layout import classify_items, estimate_pitch_y_band, pitch_items
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
 from app.pipeline.parse import parse_ocr_to_score
@@ -128,10 +129,14 @@ def _run_on_bgr(
             len(y_bands or []),
         )
 
+    # #54: underline geometry on preprocessed image (same coords as OCR boxes)
+    underline_hits = detect_underlines_for_items(pre.ocr_bgr, list(ocr.items))
+
     parsed = parse_ocr_to_score(
         ocr_items,
         filename=filename,
         engine=ocr.engine,
+        underline_hits=underline_hits or None,
     )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     steps = list(preprocess_prefix or []) + list(pre.steps)
