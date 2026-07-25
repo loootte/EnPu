@@ -160,7 +160,7 @@ def test_multiline_does_not_merge_last_and_first_measure() -> None:
 
 
 def test_rebalance_overfull_measure_by_meter() -> None:
-    """Missing mid-line bars → overfull measure split by 4/4."""
+    """#54: 8 default quarters in 4/4 prefer eighths in one bar over two quarter bars."""
     items = [
         OcrItem(text="Time: 4/4", score=1.0, box=None),
         OcrItem(text="1 2 3 5 6 5 3 2", score=0.95, box=None),
@@ -169,5 +169,11 @@ def test_rebalance_overfull_measure_by_meter() -> None:
     assert result.score is not None
     mel = result.score.melody_part()
     assert mel is not None
-    assert len(mel.measures) >= 2
-    assert [n.pitch for n in mel.measures[0].notes if n.pitch] == ["1", "2", "3", "5"]
+    pitches = [n.pitch for m in mel.measures for n in m.notes if n.pitch]
+    assert pitches == ["1", "2", "3", "5", "6", "5", "3", "2"]
+    # Soft-fit: one bar of eighths (not two bars of four quarters)
+    assert len(mel.measures) == 1
+    assert len(mel.measures[0].notes) == 8
+    assert all(
+        n.duration.value in {"eighth", "sixteenth"} for n in mel.measures[0].notes
+    )

@@ -15,6 +15,15 @@ import re
 from dataclasses import dataclass, field
 from typing import Literal
 
+from app.pipeline.duration import (
+    annotate_digit_text_with_underlines,
+    fit_notes_to_capacity,
+    underlines_to_duration,
+)
+from app.pipeline.duration import (
+    UnderlineHit,
+    note_beats as _duration_note_beats,
+)
 from app.pipeline.layout import (
     classify_items,
     lyric_items,
@@ -53,9 +62,9 @@ _TEMPO_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Pitch / rest / bar / sustain / dots. Bar includes OCR confusions I/l when tokenized
-# carefully in _tokenizeize / _normalize_bars.
-_TOKEN_RE = re.compile(r"[1-7]|0|\||-+|\.+")
+# Pitch / rest / bar / sustain / dots / underlines (#54).
+# Underline `_` (OCR) shortens duration; dashes `-` lengthen.
+_TOKEN_RE = re.compile(r"[1-7]|0|\||-+|\.+|_+")
 
 _BEATS: dict[DurationName, float] = {
     DurationName.whole: 4.0,
@@ -113,10 +122,13 @@ def parse_ocr_to_score(
     filename: str | None = None,
     engine: str | None = None,
     title: str | None = None,
+    underline_hits: list[UnderlineHit] | None = None,
 ) -> ParseResult:
     """Best-effort Score construction from OCR items.
 
     Never raises for parse ambiguity — returns mode=ocr_only or hints instead.
+
+    ``underline_hits`` — optional CV underline counts per digit box (#54).
     """
     warnings: list[str] = []
 
@@ -147,8 +159,12 @@ def parse_ocr_to_score(
     ordered_meta = _reading_order(meta_its if meta_its else items)
     ordered_all = _reading_order(items)
 
-    # Pitch lines only from staff boxes
-    pitch_texts = _lines_from_items(ordered_staff, warnings)
+    # Pitch lines only from staff boxes (inject `_` from geometry underlines)
+    pitch_texts = _lines_from_items(
+        ordered_staff,
+        warnings,
+        underline_hits=underline_hits,
+    )
     pitch_texts = [_normalize_bars(t) for t in pitch_texts]
 
     # Key / time / tempo from meta + all (meta lines often lack boxes grouping)
@@ -200,9 +216,11 @@ def parse_ocr_to_score(
 
         # OCR often drops barlines and glues digits; re-slice by meter if needed.
         if not had_bar or (
-            len(measures) == 1 and len(measures[0].notes) > _beats_per_measure(time_sig)
+            len(measures) == 1
+            and len(measures[0].notes) > _beats_per_measure(time_sig)
         ):
             flat = [n for m in measures for n in m.notes]
+            flat = _preassign_stream_durations(flat, time_sig, warnings)
             measures = _split_notes_by_meter(flat, time_sig, warnings)
             if not had_bar:
                 warnings.append(
@@ -217,6 +235,13 @@ def parse_ocr_to_score(
                 warnings.append(
                     "rebalanced overfull measure(s) using time signature (#35)"
                 )
+
+        # #54: shrink default quarters → eighth/sixteenth so bars fit meter
+        measures, dur_fit = _fit_durations_in_measures(measures, time_sig)
+        if dur_fit:
+            warnings.append(
+                "fitted note durations to time signature (eighth/sixteenth soft-fit #54)"
+            )
 
         lyric_lines = [
             _normalize(t)
@@ -238,10 +263,10 @@ def parse_ocr_to_score(
             meta=ScoreMeta(
                 source_image=filename,
                 engine=engine,
-                created_by="enpu-parse-#10+#34+#35",
+                created_by="enpu-parse-#10+#34+#35+#54",
                 comments=(
                     "OCR parse with layout filter + multi-line/bar rebalance "
-                    "(#34/#35); durations heuristic."
+                    "(#34/#35) + duration underline/meter-fit (#54)."
                 ),
             ),
         )
@@ -289,7 +314,22 @@ def _reading_order(items: list[OcrItem]) -> list[OcrItem]:
     return sorted(items, key=key)
 
 
-def _lines_from_items(items: list[OcrItem], warnings: list[str]) -> list[str]:
+def _item_text_for_line(
+    item: OcrItem,
+    underline_hits: list[UnderlineHit] | None,
+) -> str:
+    raw = _normalize(item.text)
+    if not underline_hits or item.box is None:
+        return raw
+    return annotate_digit_text_with_underlines(raw, item.box, underline_hits)
+
+
+def _lines_from_items(
+    items: list[OcrItem],
+    warnings: list[str],
+    *,
+    underline_hits: list[UnderlineHit] | None = None,
+) -> list[str]:
     """Build text lines; insert ``|`` between same-row boxes (implicit bars)."""
     with_box = [i for i in items if i.box is not None and i.text.strip()]
     without = [i for i in items if i.box is None and i.text.strip()]
@@ -321,7 +361,7 @@ def _lines_from_items(items: list[OcrItem], warnings: list[str]) -> list[str]:
     for row in rows:
         row_sorted = sorted(row, key=lambda x: x.box.x1)  # type: ignore[union-attr]
         # If multiple jianpu-like fragments on one row, treat gaps as barlines
-        parts = [_normalize(r.text) for r in row_sorted]
+        parts = [_item_text_for_line(r, underline_hits) for r in row_sorted]
         jianpu_parts = [p for p in parts if _looks_like_jianpu_line(p) or _DIGIT_RE.search(p)]
         if len(jianpu_parts) >= 2 and all(
             _DIGIT_RE.search(p) and not re.search(r"[\u4e00-\u9fff]{3,}", p)
@@ -451,26 +491,33 @@ def _parse_jianpu_lines(lines: list[str], warnings: list[str]) -> list[Measure]:
                 i += 1
                 continue
             if tok == "0":
-                dur, dots, consumed = _duration_from_following(tokens, i + 1)
+                dur, dots, consumed, dur_from = _duration_from_following(tokens, i + 1)
                 current_notes.append(
                     NoteEvent(
                         is_rest=True,
                         duration=dur,
                         dots=dots,
-                        extra={"source": "ocr_parse", "token": tok},
+                        extra={
+                            "source": "ocr_parse",
+                            "token": tok,
+                            "duration_from": dur_from,
+                        },
                     )
                 )
                 i += 1 + consumed
                 continue
             if tok in "1234567":
-                dur, dots, consumed = _duration_from_following(tokens, i + 1)
+                dur, dots, consumed, dur_from = _duration_from_following(tokens, i + 1)
                 current_notes.append(
                     NoteEvent(
                         pitch=tok,
                         octave=0,
                         duration=dur,
                         dots=dots,
-                        extra={"source": "ocr_parse"},
+                        extra={
+                            "source": "ocr_parse",
+                            "duration_from": dur_from,
+                        },
                     )
                 )
                 i += 1 + consumed
@@ -495,6 +542,26 @@ def _measure_beats(measure: Measure) -> float:
     return sum(_note_beats(n) for n in measure.notes)
 
 
+def _fit_durations_in_measures(
+    measures: list[Measure],
+    time_sig: str,
+) -> tuple[list[Measure], bool]:
+    """Apply #54 soft duration fit per measure; renumber if unchanged structure."""
+    capacity = _beats_per_measure(time_sig)
+    if capacity <= 0 or not measures:
+        return measures, False
+    any_changed = False
+    out: list[Measure] = []
+    for meas in measures:
+        fitted, ch = fit_notes_to_capacity(list(meas.notes), capacity)
+        if ch:
+            any_changed = True
+        out.append(
+            Measure(number=meas.number, notes=fitted, extra=dict(meas.extra or {}))
+        )
+    return out, any_changed
+
+
 def _rebalance_overfull_measures(
     measures: list[Measure],
     time_sig: str,
@@ -502,7 +569,8 @@ def _rebalance_overfull_measures(
 ) -> tuple[list[Measure], bool]:
     """Split measures whose beat total exceeds the time signature capacity.
 
-    Does not merge underfull measures (keeps multi-line flushes intact).
+    Tries duration soft-fit (#54) first so eighths/sixteenths reduce inflation
+    before cutting the bar into more measures.
     """
     capacity = _beats_per_measure(time_sig)
     if capacity <= 0:
@@ -511,14 +579,22 @@ def _rebalance_overfull_measures(
     out: list[Measure] = []
     changed = False
     for meas in measures:
-        beats = _measure_beats(meas)
-        if beats <= capacity + eps or len(meas.notes) <= 1:
-            out.append(meas)
+        # Prefer shortening notes over splitting the measure
+        fitted, fit_ch = fit_notes_to_capacity(list(meas.notes), capacity, eps=eps)
+        if fit_ch:
+            changed = True
+        beats = sum(_note_beats(n) for n in fitted)
+        if beats <= capacity + eps or len(fitted) <= 1:
+            out.append(
+                Measure(number=meas.number, notes=fitted, extra=dict(meas.extra or {}))
+            )
             continue
         # Pack notes of this measure into sub-measures by meter
-        sub = _split_notes_by_meter(list(meas.notes), time_sig, warnings)
+        sub = _split_notes_by_meter(list(fitted), time_sig, warnings)
         if len(sub) <= 1:
-            out.append(meas)
+            out.append(
+                Measure(number=meas.number, notes=fitted, extra=dict(meas.extra or {}))
+            )
             continue
         changed = True
         out.extend(sub)
@@ -535,6 +611,8 @@ def _rebalance_overfull_measures(
 def _tokenize_jianpu(line: str) -> list[str]:
     """Tokenize a jianpu line; support glued digit runs ``123|55``."""
     line = line.replace("—", "-").replace("–", "-")
+    # OCR underlines sometimes as fullwidth underscore
+    line = line.replace("＿", "_").replace("—", "-")
     # Ensure bars are standalone
     line = re.sub(r"\|", " | ", line)
     tokens = _TOKEN_RE.findall(line)
@@ -543,19 +621,28 @@ def _tokenize_jianpu(line: str) -> list[str]:
     # Fallback: char-wise for pure glued strings
     out: list[str] = []
     for ch in line:
-        if ch in "12345670|.-":
+        if ch in "12345670|.-_":
             out.append(ch)
     return out
 
 
 def _duration_from_following(
     tokens: list[str], start: int
-) -> tuple[DurationName, int, int]:
+) -> tuple[DurationName, int, int, str]:
+    """Return (duration, dots, consumed, duration_from).
+
+    Priority: dashes (longer) override underlines; underlines shorten base.
+    """
     dashes = 0
     dots = 0
+    underlines = 0
     j = start
     while j < len(tokens):
         t = tokens[j]
+        if t.startswith("_") or t == "_":
+            underlines += t.count("_") if t.startswith("_") else 1
+            j += 1
+            continue
         if t.startswith("-") or t == "-":
             dashes += t.count("-") if t.startswith("-") else 1
             j += 1
@@ -566,25 +653,30 @@ def _duration_from_following(
             continue
         break
     dots = min(dots, 2)
+    consumed = j - start
+
     if dashes >= 3:
-        dur = DurationName.whole
-    elif dashes == 2:
-        dur = DurationName.half
-        dots = max(dots, 1)
-    elif dashes == 1:
-        dur = DurationName.half
-    else:
-        dur = DurationName.quarter
-    return dur, dots, j - start
+        return DurationName.whole, dots, consumed, "dash"
+    if dashes == 2:
+        return DurationName.half, max(dots, 1), consumed, "dash"
+    if dashes == 1:
+        return DurationName.half, dots, consumed, "dash"
+
+    if underlines >= 2:
+        return (
+            underlines_to_duration(underlines),
+            dots,
+            consumed,
+            "ocr_underscore",
+        )
+    if underlines == 1:
+        return DurationName.eighth, dots, consumed, "ocr_underscore"
+
+    return DurationName.quarter, dots, consumed, "default"
 
 
 def _note_beats(note: NoteEvent) -> float:
-    base = _BEATS.get(note.duration, 1.0)
-    if note.dots == 1:
-        return base * 1.5
-    if note.dots >= 2:
-        return base * 1.75
-    return base
+    return _duration_note_beats(note)
 
 
 def _beats_per_measure(time_sig: str) -> float:
@@ -665,6 +757,51 @@ def _attach_lyrics(
         )
 
 
+def _preassign_stream_durations(
+    notes: list[NoteEvent],
+    time_sig: str,
+    warnings: list[str],
+) -> list[NoteEvent]:
+    """Dense short runs (one bar of eighths) without underline OCR (#54).
+
+    Only when all default quarters would form **exactly one overfull bar**
+    that fits as eighths (e.g. 5–8 notes in 4/4). Longer streams keep quarters
+    and pack into multiple measures (existing no-barline behavior).
+    """
+    if not notes:
+        return notes
+    capacity = _beats_per_measure(time_sig)
+    if capacity <= 0:
+        return notes
+    defaults = [
+        n
+        for n in notes
+        if (n.extra or {}).get("duration_from", "default") == "default"
+        and n.duration == DurationName.quarter
+        and n.dots == 0
+    ]
+    if len(defaults) < len(notes) * 0.8:
+        return notes
+
+    n = len(notes)
+    # One bar of eighths: capacity < n*quarter but n*eighth <= capacity
+    if n * 1.0 <= capacity + 0.35:
+        return notes  # already fits as quarters
+    if n * 0.5 <= capacity + 0.35 and n * 1.0 > capacity + 0.35:
+        out = [x.model_copy(deep=True) for x in notes]
+        for note in out:
+            if (note.extra or {}).get("duration_from", "default") != "default":
+                continue
+            if note.duration == DurationName.quarter and note.dots == 0:
+                note.duration = DurationName.eighth
+                note.extra = {**(note.extra or {}), "duration_from": "meter_fit"}
+        warnings.append(
+            f"preassigned stream durations to eighth for {n} notes (#54)"
+        )
+        return out
+    return notes
+
+
 def _score_from_flat_pitches(
     pitches: list[str],
     *,
@@ -680,11 +817,15 @@ def _score_from_flat_pitches(
         NoteEvent(
             pitch=p,
             duration=DurationName.quarter,
-            extra={"source": "hint_fallback"},
+            extra={"source": "hint_fallback", "duration_from": "default"},
         )
         for p in pitches
     ]
+    notes = _preassign_stream_durations(notes, time_sig, warnings)
     measures = _split_notes_by_meter(notes, time_sig, warnings)
+    measures, fit = _fit_durations_in_measures(measures, time_sig)
+    if fit:
+        warnings.append("fitted flat-pitch measure durations (#54)")
     if not measures:
         warnings.append("flat pitch list empty after filter")
     return Score(
@@ -697,7 +838,7 @@ def _score_from_flat_pitches(
         meta=ScoreMeta(
             source_image=filename,
             engine=engine,
-            created_by="enpu-parse-mvp-#10",
+            created_by="enpu-parse-mvp-#10+#54",
             comments="Built from digit hints (no full jianpu line).",
         ),
     )
