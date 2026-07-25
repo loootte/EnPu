@@ -146,6 +146,11 @@ def estimate_measure_window(
     index, then splices in all crop measures (even if duration bugs split one
     bar into many). Never shifts the window toward the end of the score when
     ``n_crop`` is large — that caused "first measure → 小节 7" regressions.
+
+    Known limit (defer to #45 dual-view): large ROI covering the whole staff
+    (e.g. samples/001_poc_digits.png 10 bars → 15 after crop) still mis-hits
+    mid-score and inflates measure count; needs region↔measure mapping + better
+    replace span, not only a single hit index. See also duration over-split #54.
     """
     if n_base <= 0:
         return 0, 0
