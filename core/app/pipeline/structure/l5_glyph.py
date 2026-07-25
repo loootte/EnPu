@@ -40,8 +40,15 @@ def fill_note_glyphs(
     lang: str = "ch",
     use_angle_cls: bool = True,
     use_gpu: bool = False,
+    time_signature: str | None = None,
+    meter_soft_fit: bool = True,
 ) -> tuple[list[StaffSystem], list[str]]:
-    """Run L5 on each pitch note candidate ROI."""
+    """Run L5 on each pitch note candidate ROI.
+
+    Detects pitch (OCR/geometry), underlines, **octave dots**, **aug dots**,
+    **sustain dashes** (#72). When ``time_signature`` is set, runs **L5 meter
+    validation** (and optional soft-fit) on each measure.
+    """
     warnings: list[str] = []
     if image_bgr is None or image_bgr.size == 0:
         return systems, ["L5: empty image"]
@@ -64,12 +71,16 @@ def fill_note_glyphs(
     n_ocr = 0
     n_pitch = 0
     n_geom = 0
+    n_oct = 0
+    n_dots = 0
+    n_sustain = 0
     out_systems: list[StaffSystem] = []
 
     for sys in systems:
         new_measures = []
         for meas in sys.measures:
             new_notes: list[NoteCandidate] = []
+            pitch_list: list[NoteCandidate] = []
             for nc in meas.notes:
                 kind = (nc.extra or {}).get("kind", "pitch")
                 if kind != "pitch":
@@ -97,15 +108,25 @@ def fill_note_glyphs(
                     n_pitch += 1
                     if (glyph.extra or {}).get("pitch_from") == "geometry":
                         n_geom += 1
-                new_notes.append(
-                    NoteCandidate(
-                        rect=nc.rect,
-                        index=nc.index,
-                        glyph=glyph,
-                        confidence=glyph.confidence,
-                        extra=dict(nc.extra),
-                    )
+                if glyph.octave:
+                    n_oct += 1
+                if glyph.dots:
+                    n_dots += 1
+                if (glyph.extra or {}).get("sustain_dashes"):
+                    n_sustain += 1
+                filled = NoteCandidate(
+                    rect=nc.rect,
+                    index=nc.index,
+                    glyph=glyph,
+                    confidence=glyph.confidence,
+                    extra=dict(nc.extra),
                 )
+                new_notes.append(filled)
+                pitch_list.append(filled)
+
+            # Resolve ties between consecutive pitch notes with sustain geometry
+            _assign_ties(pitch_list)
+
             from app.pipeline.structure.ir import MeasureLayout
 
             new_measures.append(
@@ -132,9 +153,39 @@ def fill_note_glyphs(
 
     warnings.append(
         f"L5: {n_pitch} pitch(es) "
-        f"(ocr_text={n_ocr}, geometry_fallback={n_geom})"
+        f"(ocr_text={n_ocr}, geometry_fallback={n_geom}, "
+        f"octave≠0={n_oct}, aug_dots={n_dots}, sustain={n_sustain})"
     )
+
+    # L5-layer measure duration validation vs time signature (#72)
+    if time_signature:
+        out_systems, w_m = validate_measure_durations(
+            out_systems,
+            time_signature,
+            soft_fit=meter_soft_fit,
+        )
+        warnings.extend(w_m)
+
     return out_systems, warnings
+
+
+def _assign_ties(pitch_notes: list[NoteCandidate]) -> None:
+    """If note has sustain dash and a following pitch, mark tie start/stop (#72)."""
+    for i, n in enumerate(pitch_notes):
+        g = n.glyph
+        if g is None:
+            continue
+        dashes = int((g.extra or {}).get("sustain_dashes") or 0)
+        if dashes <= 0:
+            continue
+        # Prefer duration extension when no next note; tie when next pitch exists
+        if i + 1 < len(pitch_notes) and pitch_notes[i + 1].glyph is not None:
+            nxt = pitch_notes[i + 1].glyph
+            if nxt and (nxt.pitch or nxt.is_rest):
+                g.extra["tie"] = "start"
+                nxt.extra = dict(nxt.extra or {})
+                if nxt.extra.get("tie") != "start":
+                    nxt.extra["tie"] = "stop"
 
 
 def validate_measure_durations(
@@ -144,16 +195,15 @@ def validate_measure_durations(
     eps: float = 0.35,
     soft_fit: bool = True,
 ) -> tuple[list[StaffSystem], list[str]]:
-    """Check each measure's filled beats vs meter; optional soft-fit (#69).
+    """L5: check each measure's beats vs meter; optional soft-fit (#72).
 
-    Runs after L5 so underlines/dots are known. Writes
-    ``measure.extra['meter_*']`` and shortens default/underline quarters when
-    overfull so playback is closer to the bar capacity.
+    Writes ``measure.extra['meter_*']`` and may shorten default/underline
+    quarters when overfull. Counts **augmentation dots** into note beats.
     """
     warnings: list[str] = []
     capacity = _beats_capacity(time_signature)
     if capacity <= 0:
-        return systems, ["L4/L5 meter: invalid time signature"]
+        return systems, ["L5 meter: invalid time signature"]
 
     out: list[StaffSystem] = []
     n_over = 0
@@ -232,7 +282,7 @@ def validate_measure_durations(
         )
 
     warnings.append(
-        f"L4/L5 meter check ({time_signature}): "
+        f"L5 meter check ({time_signature}): "
         f"over={n_over} under={n_under} soft_fit={n_fit} capacity={capacity}"
     )
     return out, warnings
@@ -303,6 +353,7 @@ def _soft_fit_glyphs(
 
     def shrinkable(g: NoteGlyph) -> bool:
         src = (g.extra or {}).get("duration_from", "default")
+        # Do not shorten explicit sustain-dash half/whole notes
         return src in {"default", "underline", "meter_fit"}
 
     for g in new_gs:
@@ -429,9 +480,25 @@ def _glyph_for_candidate(
         underline_band_y1=extra.get("underline_band_y1"),
         img_h=img_h,
     )
-    # Prefer L4 precomputed underline count if geometry-based and higher confidence
     if extra.get("underline_count") is not None and underlines == 0:
         underlines = int(extra["underline_count"])
+
+    # #72: octave / aug dots / sustain from full-image zones around body
+    upper_d, lower_d = _count_octave_dots_zones(
+        bw,
+        body_x0=bx0,
+        body_x1=bx1,
+        body_y0=by0,
+        body_y1=by1,
+        body_w=body_w,
+        body_h=body_h,
+        note_y0=y0,
+        note_y1=y1,
+        img_w=img_w,
+        img_h=img_h,
+        underline_y0=extra.get("underline_band_y0"),
+    )
+    octave = int(max(-2, min(2, upper_d - lower_d)))
 
     dots = int(extra.get("aug_dots") or 0)
     if dots == 0:
@@ -442,24 +509,41 @@ def _glyph_for_candidate(
             body_y1=by1,
             body_w=body_w,
             body_h=body_h,
-            limit_x=min(img_w, x1 + max(4, int(0.5 * body_w))),
+            limit_x=min(img_w, x1 + max(4, int(0.6 * body_w))),
         )
 
-    top_y0 = max(0, by0 - max(4, int(0.35 * body_h)))
-    top_roi = bw[top_y0:by0, max(0, bx0 - 2) : min(img_w, bx1 + 2)]
-    bot_roi = bw[
-        by1 : min(img_h, by1 + max(3, int(0.2 * body_h))),
-        max(0, bx0 - 2) : min(img_w, bx1 + 2),
-    ]
-    octave = _octave_from_strips(top_roi, bot_roi, body_w=body_w, body_h=body_h)
-    duration = _duration_from_underlines(underlines)
+    n_dashes = int(extra.get("sustain_dashes") or 0)
+    if n_dashes == 0 and extra.get("has_sustain"):
+        n_dashes = 1
+    if n_dashes == 0:
+        n_dashes = _count_sustain_dashes(
+            bw,
+            body_x1=bx1,
+            body_y0=by0,
+            body_y1=by1,
+            body_w=body_w,
+            body_h=body_h,
+            limit_x=min(img_w, x1 + max(8, int(1.2 * body_w))),
+        )
+
+    duration, dash_dots, dur_from = _duration_from_geometry(
+        underlines=underlines,
+        sustain_dashes=n_dashes,
+    )
+    # Jianpu: dashes set length (and may imply dotted half for 2 dashes);
+    # right-side aug dots stack on top when not already implied by dashes.
+    if dash_dots > dots:
+        dots = dash_dots
 
     conf = 0.35
     if pitch or is_rest:
         conf = 0.78 if pitch_from == "ocr" else 0.55
         if ocr_score:
             conf = min(0.92, max(conf, float(ocr_score)))
-    conf = min(0.95, conf + 0.04 * underlines + 0.03 * dots)
+    conf = min(
+        0.95,
+        conf + 0.04 * underlines + 0.03 * dots + 0.03 * abs(octave) + 0.02 * n_dashes,
+    )
 
     return NoteGlyph(
         pitch=None if is_rest else pitch,
@@ -472,9 +556,13 @@ def _glyph_for_candidate(
         ocr_score=ocr_score,
         confidence=conf,
         extra={
-            "duration_from": "underline" if underlines else "default",
+            "duration_from": dur_from,
             "pitch_from": pitch_from,
-            "has_tie_or_sustain": bool(extra.get("has_sustain")),
+            "has_tie_or_sustain": n_dashes > 0,
+            "sustain_dashes": n_dashes,
+            "upper_octave_dots": upper_d,
+            "lower_octave_dots": lower_d,
+            "quarter_beats": _quarter_beats(duration, min(2, dots)),
         },
     )
 
@@ -685,6 +773,45 @@ def _duration_from_underlines(n: int) -> DurationName:
     return DurationName.quarter
 
 
+def _duration_from_geometry(
+    *,
+    underlines: int,
+    sustain_dashes: int,
+) -> tuple[DurationName, int, str]:
+    """Map underlines / sustain dashes to (duration, dots, source) (#72).
+
+    Jianpu convention (each ``-`` after the digit adds **one quarter beat**):
+      0 dashes → quarter (1 beat)
+      1 dash   → half (2 beats)
+      2 dashes → dotted half (3 beats) = half + 1 aug-dot
+      3 dashes → whole (4 beats)
+
+    Underlines shorten (priority over dashes when both present).
+    Aligns with ``parse._duration_from_following``.
+    """
+    if underlines >= 2:
+        return DurationName.sixteenth, 0, "underline"
+    if underlines == 1:
+        return DurationName.eighth, 0, "underline"
+    if sustain_dashes >= 3:
+        return DurationName.whole, 0, "sustain_dash"
+    if sustain_dashes == 2:
+        # 3 quarter-beats: half + augmentation dot
+        return DurationName.half, 1, "sustain_dash"
+    if sustain_dashes == 1:
+        return DurationName.half, 0, "sustain_dash"
+    return DurationName.quarter, 0, "default"
+
+
+def _quarter_beats(duration: DurationName, dots: int) -> float:
+    base = _BEATS.get(duration, 1.0)
+    if dots == 1:
+        return base * 1.5
+    if dots >= 2:
+        return base * 1.75
+    return base
+
+
 def _count_underlines_below_body(
     bw: np.ndarray,
     *,
@@ -765,6 +892,77 @@ def _count_underlines_below_body(
     return min(2, len(merged))
 
 
+def _count_round_blobs(
+    roi: np.ndarray,
+    *,
+    body_w: int,
+    body_h: int,
+    max_area_factor: float = 0.18,
+    max_aspect: float = 2.2,
+) -> int:
+    """Count small roundish components (octave / aug dots)."""
+    if roi is None or roi.size == 0:
+        return 0
+    contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    n = 0
+    max_a = max(10, max_area_factor * body_w * body_h)
+    min_a = 3
+    for cnt in contours:
+        _x, _y, cw, ch = cv2.boundingRect(cnt)
+        area = cw * ch
+        if area < min_a or area > max_a:
+            continue
+        if max(cw, ch) / max(min(cw, ch), 1) > max_aspect:
+            continue
+        # Reject long horizontal underlines mistaken as dots
+        if cw >= 0.55 * body_w and ch <= max(4, 0.2 * body_h):
+            continue
+        n += 1
+    return n
+
+
+def _count_octave_dots_zones(
+    bw: np.ndarray,
+    *,
+    body_x0: int,
+    body_x1: int,
+    body_y0: int,
+    body_y1: int,
+    body_w: int,
+    body_h: int,
+    note_y0: int,
+    note_y1: int,
+    img_w: int,
+    img_h: int,
+    underline_y0: float | None,
+) -> tuple[int, int]:
+    """Upper and lower octave dots in zones above/below digit body (#72)."""
+    pad_x = max(2, int(0.2 * body_w))
+    x0 = max(0, body_x0 - pad_x)
+    x1 = min(img_w, body_x1 + pad_x)
+
+    # Upper: from note top (or 0.7×h above body) down to body top
+    top0 = max(0, min(note_y0, body_y0 - max(6, int(0.7 * body_h))))
+    top1 = max(top0 + 1, body_y0)
+    top_roi = bw[top0:top1, x0:x1]
+    upper = _count_round_blobs(top_roi, body_w=body_w, body_h=body_h)
+
+    # Lower: just below body, stop before underline band (dots ≠ duration lines)
+    bot0 = body_y1
+    bot1 = min(img_h, body_y1 + max(6, int(0.5 * body_h)))
+    if underline_y0 is not None:
+        bot1 = min(bot1, max(bot0 + 2, int(underline_y0) - 1))
+    bot1 = min(bot1, note_y1)
+    bot_roi = bw[bot0:bot1, x0:x1] if bot1 > bot0 else None
+    lower = _count_round_blobs(
+        bot_roi if bot_roi is not None else np.zeros((1, 1), np.uint8),
+        body_w=body_w,
+        body_h=body_h,
+        max_area_factor=0.15,
+    )
+    return min(2, upper), min(2, lower)
+
+
 def _count_aug_dots(
     bw: np.ndarray,
     *,
@@ -777,26 +975,79 @@ def _count_aug_dots(
 ) -> int:
     """Count augmentation dots to the right of the digit body."""
     x0 = body_x1 + 1
-    x1 = min(limit_x, body_x1 + max(6, int(0.85 * body_w)))
-    y0 = body_y0 + int(0.15 * body_h)
-    y1 = body_y1 - int(0.1 * body_h)
+    x1 = min(limit_x, body_x1 + max(6, int(0.9 * body_w)))
+    y0 = body_y0 + int(0.1 * body_h)
+    y1 = body_y1 - int(0.05 * body_h)
     if x1 - x0 < 2 or y1 - y0 < 2:
+        return 0
+    roi = bw[y0:y1, x0:x1]
+    return min(
+        2,
+        _count_round_blobs(roi, body_w=body_w, body_h=body_h, max_area_factor=0.14),
+    )
+
+
+def _count_sustain_dashes(
+    bw: np.ndarray,
+    *,
+    body_x1: int,
+    body_y0: int,
+    body_y1: int,
+    body_w: int,
+    body_h: int,
+    limit_x: int,
+) -> int:
+    """Count horizontal sustain dashes to the right of the digit (#72).
+
+    Each separate dash is one quarter-beat extension (see ``_duration_from_geometry``).
+    Prefer **column runs** so ``- -`` (two short dashes) count as 2, not one blob.
+    """
+    x0 = body_x1 + 1
+    x1 = min(limit_x, body_x1 + max(12, int(2.2 * body_w)))
+    y0 = body_y0 + int(0.25 * body_h)
+    y1 = body_y1 - int(0.2 * body_h)
+    if x1 - x0 < 3 or y1 - y0 < 2:
         return 0
     roi = bw[y0:y1, x0:x1]
     if roi.size == 0:
         return 0
-    contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    n = 0
-    max_a = max(10, 0.12 * body_w * body_h)
-    for cnt in contours:
-        _x, _y, cw, ch = cv2.boundingRect(cnt)
-        area = cw * ch
-        if area < 3 or area > max_a:
-            continue
-        if max(cw, ch) / max(min(cw, ch), 1) > 2.0:
-            continue  # not a roundish dot
-        n += 1
-    return min(2, n)
+    # Thin horizontal emphasis
+    k_w = max(2, int(0.25 * body_w))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_w, 1))
+    horiz = cv2.morphologyEx(roi, cv2.MORPH_OPEN, kernel, iterations=1)
+    col = (horiz > 0).sum(axis=0).astype(np.float32)
+    if col.max() <= 0:
+        return 0
+    thr = max(1.0, 0.35 * (y1 - y0))
+    active = col >= thr
+    # Count contiguous x-runs that look like dash segments
+    min_run = max(2, int(0.2 * body_w))
+    max_run = max(min_run + 1, int(1.2 * body_w))
+    runs: list[int] = []
+    in_run = False
+    a0 = 0
+    for i, a in enumerate(active):
+        if a and not in_run:
+            in_run = True
+            a0 = i
+        elif not a and in_run:
+            in_run = False
+            wrun = i - a0
+            if min_run <= wrun <= max_run * 2:
+                # Very long run may be two dashes fused — split by width
+                if wrun > max_run * 1.35:
+                    runs.append(max(2, int(round(wrun / max(max_run * 0.85, 1)))))
+                else:
+                    runs.append(1)
+    if in_run:
+        wrun = len(active) - a0
+        if min_run <= wrun:
+            if wrun > max_run * 1.35:
+                runs.append(max(2, int(round(wrun / max(max_run * 0.85, 1)))))
+            else:
+                runs.append(1)
+    n = sum(runs)
+    return min(3, int(n))
 
 
 def _octave_from_strips(
@@ -806,25 +1057,10 @@ def _octave_from_strips(
     body_w: int,
     body_h: int,
 ) -> int:
-    def n_blobs(region: np.ndarray) -> int:
-        if region is None or region.size == 0:
-            return 0
-        contours, _ = cv2.findContours(
-            region, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-        n = 0
-        max_area = max(12, 0.2 * body_w * body_h)
-        for cnt in contours:
-            _x, _y, cw, ch = cv2.boundingRect(cnt)
-            area = cw * ch
-            if area < 4 or area > max_area:
-                continue
-            if max(cw, ch) / max(min(cw, ch), 1) > 2.2:
-                continue
-            n += 1
-        return n
-
-    return int(max(-2, min(2, n_blobs(top) - n_blobs(bot))))
+    """Legacy helper used by older tests."""
+    upper = _count_round_blobs(top, body_w=body_w, body_h=body_h)
+    lower = _count_round_blobs(bot, body_w=body_w, body_h=body_h)
+    return int(max(-2, min(2, upper - lower)))
 
 
 def _count_underlines(roi_bw: np.ndarray) -> int:

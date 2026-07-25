@@ -262,11 +262,19 @@ def _pitch_candidates_in_measure(
         filtered.append(r)
     final = filtered
 
-    # Expand final ROIs for L5: underlines below + 附点/延音线 to the right.
+    # Expand final ROIs for L5: upper octave dots + underlines + 附点/延音线.
     out: list[NoteCandidate] = []
     for i, r in enumerate(final):
         pad_x = max(2.0, 0.12 * r.width)
-        pad_top = max(3.0, 0.22 * r.height)
+        # #71/#72: high octave dots sit above the digit (~0.3–0.6× body height)
+        pad_top = max(6.0, 0.55 * r.height)
+        # Grow top further if small ink (octave dots) is present above body
+        top_ink = _top_ink_extent(bw, body=r, img_w=img_w, img_h=img_h)
+        if top_ink is not None:
+            pad_top = max(pad_top, float(r.y1 - top_ink) + 3.0)
+        # Cap: stay within measure / not into previous system (measure y1)
+        top = max(float(meas_rect.y1), r.y1 - pad_top)
+
         if underline_y is not None and underline_y[0] <= by1 + max(20.0, 0.9 * band_h):
             bot = float(underline_y[1] + 3)
         else:
@@ -274,13 +282,13 @@ def _pitch_candidates_in_measure(
         if pitch_y is not None:
             bot = min(bot, pitch_y[1] + max(18.0, 0.7 * (pitch_y[1] - pitch_y[0])))
         bot = min(bot, by1 + max(16.0, 0.65 * band_h))
+        bot = min(float(meas_rect.y2), bot)
 
         # Right ornaments: augmentation dots + sustain/tie dashes (延音线)
         right_limit = min(float(img_w), float(meas_rect.x2) - 1.0)
-        # Don't eat next note: stop at midpoint to next body if close
         if i + 1 < len(final):
             right_limit = min(right_limit, 0.5 * (r.x2 + final[i + 1].x1))
-        aug_dots, has_sustain, right_x = _detect_right_ornaments(
+        aug_dots, n_dashes, right_x = _detect_right_ornaments(
             bw,
             body=r,
             x_limit=right_limit,
@@ -290,7 +298,6 @@ def _pitch_candidates_in_measure(
         x2 = max(r.x2 + pad_x, right_x)
         x2 = min(float(img_w), x2)
 
-        # Pre-count underlines for meter checks even before L5
         u_count = _precount_underlines(
             bw,
             body=r,
@@ -300,7 +307,7 @@ def _pitch_candidates_in_measure(
 
         pr = Rect(
             max(0.0, r.x1 - pad_x),
-            max(0.0, r.y1 - pad_top),
+            max(0.0, top),
             x2,
             min(float(img_h), bot),
         )
@@ -321,12 +328,39 @@ def _pitch_candidates_in_measure(
                     "underline_band_y0": float(underline_y[0]) if underline_y else None,
                     "underline_band_y1": float(underline_y[1]) if underline_y else None,
                     "aug_dots": aug_dots,
-                    "has_sustain": has_sustain,
+                    "has_sustain": n_dashes > 0,
+                    "sustain_dashes": n_dashes,
                     "underline_count": u_count,
                 },
             )
         )
     return out
+
+
+def _top_ink_extent(
+    bw: np.ndarray,
+    *,
+    body: Rect,
+    img_w: int,
+    img_h: int,
+) -> float | None:
+    """Y of highest small ink above digit body (candidate upper octave dots)."""
+    bh = max(body.height, 8.0)
+    x0 = max(0, int(body.x1 - 0.15 * body.width))
+    x1 = min(img_w, int(body.x2 + 0.15 * body.width))
+    y1 = max(0, int(body.y1))
+    y0 = max(0, int(body.y1 - 0.85 * bh))
+    if y1 - y0 < 3 or x1 - x0 < 2:
+        return None
+    roi = bw[y0:y1, x0:x1]
+    if roi.size == 0 or (roi > 0).sum() < 4:
+        return None
+    row = (roi > 0).sum(axis=1)
+    thr = max(1.0, 0.08 * (x1 - x0))
+    ys = np.where(row >= thr)[0]
+    if ys.size == 0:
+        return None
+    return float(y0 + int(ys[0]))
 
 
 def _detect_right_ornaments(
@@ -336,29 +370,29 @@ def _detect_right_ornaments(
     x_limit: float,
     img_w: int,
     img_h: int,
-) -> tuple[int, bool, float]:
-    """Find 附点 (dots) and 延音线/延音横线 to the right of digit body.
+) -> tuple[int, int, float]:
+    """Find 附点 (dots) and 延音线 to the right of digit body.
 
-    Returns (aug_dots, has_sustain, expanded_x2).
+    Returns (aug_dots, n_sustain_dashes, expanded_x2).
     """
     bh = max(body.height, 8.0)
     bw_ = max(body.width, 6.0)
     x0 = int(body.x2 + 1)
     x1 = int(min(img_w, max(x_limit, body.x2 + 0.35 * bw_)))
     y0 = int(max(0, body.y1 - 0.1 * bh))
-    y1 = int(min(img_h, body.y2 + 0.2 * bh))
+    y1 = int(min(img_h, body.y2 + 0.25 * bh))
     if x1 - x0 < 2 or y1 - y0 < 2:
-        return 0, False, float(body.x2)
+        return 0, 0, float(body.x2)
 
     roi = bw[y0:y1, x0:x1]
     if roi.size == 0 or (roi > 0).sum() == 0:
-        return 0, False, float(body.x2)
+        return 0, 0, float(body.x2)
 
     contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     aug = 0
-    has_sustain = False
+    n_dashes = 0
     max_x = float(body.x2)
-    max_dot_a = max(8.0, 0.15 * bw_ * bh)
+    max_dot_a = max(8.0, 0.18 * bw_ * bh)
     for cnt in contours:
         x, y, cw, ch = cv2.boundingRect(cnt)
         area = cw * ch
@@ -367,19 +401,18 @@ def _detect_right_ornaments(
         gx2 = float(x0 + x + cw)
         aspect = cw / max(ch, 1)
         # Roundish small → augmentation dot
-        if area <= max_dot_a and aspect <= 2.0 and ch <= 0.45 * bh:
+        if area <= max_dot_a and aspect <= 2.0 and ch <= 0.5 * bh:
             aug += 1
             max_x = max(max_x, gx2 + 2)
             continue
-        # Wide thin horizontal → sustain dash / tie start
-        if aspect >= 2.2 and ch <= max(6, 0.35 * bh) and cw >= 0.35 * bw_:
-            has_sustain = True
+        # Wide thin horizontal → sustain dash / tie
+        if aspect >= 2.0 and ch <= max(7, 0.4 * bh) and cw >= 0.3 * bw_:
+            n_dashes += 1
             max_x = max(max_x, gx2 + 2)
             continue
-        # Small leftover ink still expand slightly
-        if gx2 <= body.x2 + 1.1 * bw_:
+        if gx2 <= body.x2 + 1.15 * bw_:
             max_x = max(max_x, gx2)
-    return min(2, aug), has_sustain, min(float(x_limit), max_x)
+    return min(2, aug), min(3, n_dashes), min(float(x_limit), max_x)
 
 
 def _precount_underlines(
