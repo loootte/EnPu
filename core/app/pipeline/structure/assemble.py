@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.pipeline.duration import fit_notes_to_capacity
 from app.pipeline.structure.ir import PageLayout
 from app.schemas.recognize import BoundingBox, StructureBox, StructureDebug
 from app.schemas.score import (
@@ -12,6 +13,14 @@ from app.schemas.score import (
     Score,
     ScoreMeta,
 )
+
+
+def _beats_capacity(time_sig: str) -> float:
+    try:
+        num, den = time_sig.split("/")
+        return int(num) * (4.0 / int(den))
+    except Exception:
+        return 4.0
 
 
 def page_layout_to_score(
@@ -31,6 +40,8 @@ def page_layout_to_score(
     measures: list[Measure] = []
     n_l3 = 0
     n_empty = 0
+    n_duration_fit = 0
+    capacity = _beats_capacity(layout.time_signature or "4/4")
     for sys in layout.systems:
         for ml in sys.measures:
             n_l3 += 1
@@ -79,6 +90,11 @@ def page_layout_to_score(
                             },
                         )
                     )
+            # #54: L3 keeps measure count; soft-fit durations so bar is not overfull
+            if notes and capacity > 0:
+                notes, fitted = fit_notes_to_capacity(notes, capacity)
+                if fitted:
+                    n_duration_fit += 1
             if not notes:
                 n_empty += 1
             measures.append(
@@ -130,7 +146,7 @@ def page_layout_to_score(
             engine=engine,
             created_by="enpu-structure-#58",
             comments=(
-                "Structure-first pipeline: L3 measures are Score authority (#66)."
+                "Structure-first pipeline: L3 measures (#66) + duration fit (#54)."
             ),
             extra={
                 "pipeline": "structure",
@@ -138,6 +154,7 @@ def page_layout_to_score(
                 "n_measures": len(measures),
                 "n_l3_measures": n_l3,
                 "n_empty_measures": n_empty,
+                "n_duration_fit_measures": n_duration_fit,
                 "measure_source": "l3",
                 "warnings": list(layout.warnings),
             },

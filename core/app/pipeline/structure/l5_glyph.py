@@ -196,36 +196,31 @@ def _parse_pitch_token(text: str) -> tuple[str | None, bool]:
 
 
 def _duration_from_underlines(n: int) -> DurationName:
-    if n >= 2:
-        return DurationName.sixteenth
-    if n == 1:
-        return DurationName.eighth
-    return DurationName.quarter
+    from app.pipeline.duration import underlines_to_duration
+
+    return underlines_to_duration(n)
 
 
 def _count_underlines(roi_bw: np.ndarray) -> int:
-    """Count horizontal strokes in the lower third of the note ROI."""
+    """Count horizontal strokes under the digit body (#54).
+
+    Uses the lower ~45% of the expanded ROI (L5 pads below the note).
+    """
+    from app.pipeline.duration import _count_horizontal_strokes
+
     if roi_bw.size == 0:
         return 0
     h, w = roi_bw.shape[:2]
-    strip = roi_bw[int(h * 0.55) : h, :]
+    # Prefer strip under the glyph body (avoid counting digit serifs as underlines)
+    y0 = int(h * 0.52)
+    strip = roi_bw[y0:h, :]
     if strip.size == 0:
         return 0
-    k_w = max(3, int(w * 0.35))
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_w, 1))
-    horiz = cv2.morphologyEx(strip, cv2.MORPH_OPEN, kernel, iterations=1)
-    row_sum = (horiz > 0).sum(axis=1)
-    thr = max(2, int(0.3 * w))
-    active = row_sum >= thr
-    count = 0
-    in_run = False
-    for a in active:
-        if a and not in_run:
-            in_run = True
-            count += 1
-        elif not a:
-            in_run = False
-    return min(2, count)
+    return _count_horizontal_strokes(
+        strip,
+        min_width_ratio=0.35,
+        max_underlines=2,
+    )
 
 
 def _count_octave_dots(roi_bw: np.ndarray) -> int:

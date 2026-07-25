@@ -393,6 +393,46 @@ def test_assemble_score_keeps_empty_l3_measures() -> None:
     assert score.meta.extra.get("n_empty_measures") == 2
 
 
+def test_structure_assemble_soft_fits_overfull_duration() -> None:
+    """#54 structure path: 8 default quarters in 4/4 become eighths, keep one L3 bar."""
+    layout = PageLayout(
+        width=200,
+        height=40,
+        time_signature="4/4",
+        systems=[
+            StaffSystem(
+                index=0,
+                rect=Rect(0, 0, 200, 40),
+                measures=[
+                    MeasureLayout(
+                        index=0,
+                        rect=Rect(0, 0, 200, 40),
+                        notes=[
+                            NoteCandidate(
+                                rect=Rect(10 + i * 20, 5, 25 + i * 20, 30),
+                                index=i,
+                                glyph=NoteGlyph(
+                                    pitch=str((i % 7) + 1),
+                                    duration=DurationName.quarter,
+                                    extra={"duration_from": "default"},
+                                ),
+                            )
+                            for i in range(8)
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+    score = page_layout_to_score(layout)
+    mel = score.melody_part()
+    assert mel is not None
+    assert len(mel.measures) == 1
+    assert len(mel.measures[0].notes) == 8
+    assert all(n.duration == DurationName.eighth for n in mel.measures[0].notes)
+    assert score.meta.extra.get("n_duration_fit_measures") == 1
+
+
 def test_structure_debug_l3_count_matches_score() -> None:
     """#66: L3 overlay boxes count == Score measure count, labels m1.."""
     from app.pipeline.structure.assemble import page_layout_to_structure_debug
