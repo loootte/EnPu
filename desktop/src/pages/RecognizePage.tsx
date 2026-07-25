@@ -757,16 +757,16 @@ export function RecognizePage() {
   const canCrop = Boolean(file && selection && !loading);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-3 px-3 py-3 sm:px-4 lg:px-5">
+      <header className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium tracking-[0.2em] text-indigo-300 uppercase">
             EnPu · Phase 2 / 4
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-white">
+          <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
             恩谱
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-0.5 text-sm text-slate-400">
             双视图校对 · 框选精调 · 编辑试听 · 导出
           </p>
         </div>
@@ -803,7 +803,7 @@ export function RecognizePage() {
         />
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <ImagePicker
           disabled={loading}
           onFile={onFile}
@@ -812,9 +812,6 @@ export function RecognizePage() {
             setInfo(null);
           }}
         />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={!file || loading}
@@ -898,10 +895,10 @@ export function RecognizePage() {
         />
       </div>
 
-      {/* Left tools + dual-view aligned 原稿 | 识别 (#45/#78) */}
-      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row lg:items-start">
-        {/* Tools column — does not push 原稿 below 识别谱 */}
-        <aside className="flex w-full shrink-0 flex-col gap-2 lg:sticky lg:top-2 lg:w-72 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+      {/* Left tools + dual-view aligned 原稿 | 识别 (#45/#78) — max work area */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row lg:items-stretch">
+        {/* Tools column — narrow so dual-view gets more width */}
+        <aside className="flex w-full shrink-0 flex-col gap-2 lg:sticky lg:top-2 lg:w-64 xl:w-72 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
           <PreprocessPanel
             options={preprocessOpts}
             onChange={setPreprocessOpts}
@@ -950,10 +947,10 @@ export function RecognizePage() {
           />
         </aside>
 
-        {/* Dual-view: tops aligned */}
-        <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
-          <section className="flex min-w-0 flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
+        {/* Dual-view: tops aligned, equal height work areas */}
+        <div className="grid min-w-0 min-h-0 flex-1 gap-3 lg:grid-cols-2 lg:gap-4">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex shrink-0 items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-slate-200">
                 原稿对照
               </h2>
@@ -1012,8 +1009,8 @@ export function RecognizePage() {
             )}
           </section>
 
-          <section className="flex min-w-0 flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex shrink-0 items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-slate-200">
                 识别结果 · 编辑
               </h2>
@@ -1041,7 +1038,7 @@ export function RecognizePage() {
         </div>
       </div>
 
-      <footer className="pb-4 text-center text-xs text-slate-500">
+      <footer className="shrink-0 py-1 text-center text-xs text-slate-500">
         双视图 #45 · 问题导航 #46 · 框选 #49 · core {baseUrl}
       </footer>
     </div>

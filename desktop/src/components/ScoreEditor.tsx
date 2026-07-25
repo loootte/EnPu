@@ -321,7 +321,7 @@ export function ScoreEditor({
       {/* Measures */}
       <div
         ref={listRef}
-        className="max-h-[360px] space-y-3 overflow-auto pr-1"
+        className="max-h-[min(640px,calc(100vh-16rem))] space-y-3 overflow-auto pr-1"
         onMouseLeave={() => onHoverMeasure?.(null)}
       >
         {!part ? (

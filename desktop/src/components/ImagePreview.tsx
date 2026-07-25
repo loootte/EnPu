@@ -486,7 +486,7 @@ export function ImagePreview({
 
   if (!src) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
+      <div className="flex min-h-[420px] h-[min(780px,calc(100vh-11rem))] items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
         尚未选择图片
       </div>
     );
@@ -502,12 +502,17 @@ export function ImagePreview({
           ? "cursor-crosshair"
           : "cursor-default";
 
-  const vh = compact ? "h-[min(360px,42vh)]" : "h-[min(420px,50vh)]";
-  const imgMax = compact ? "max-h-[340px]" : "max-h-[400px]";
+  // Prefer large work area for dual-view proofing (#78 layout)
+  const vh = compact
+    ? "h-[min(420px,48vh)]"
+    : "h-[min(780px,calc(100vh-11rem))] min-h-[420px]";
+  const imgMax = compact
+    ? "max-h-[400px]"
+    : "max-h-[min(760px,calc(100vh-12rem))]";
   const showBoxes = overlayMode === "boxes" && boxes && boxes.length > 0;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-3 py-2">
         <span className="truncate text-xs text-slate-400" title={filename ?? ""}>
           {filename || "原稿"}
@@ -579,7 +584,7 @@ export function ImagePreview({
       <div
         ref={viewportRef}
         className={[
-          "relative flex items-center justify-center overflow-hidden bg-slate-950/40 p-3",
+          "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-slate-950/40 p-2 sm:p-3",
           vh,
           cursorClass,
           "touch-none select-none",
@@ -602,7 +607,7 @@ export function ImagePreview({
             ref={imgRef}
             src={src}
             alt={filename ? `预览：${filename}` : "简谱预览"}
-            className={`${imgMax} max-w-full object-contain`}
+            className={`${imgMax} max-w-full w-auto object-contain`}
             draggable={false}
             onLoad={() => requestAnimationFrame(syncBaseSize)}
           />
