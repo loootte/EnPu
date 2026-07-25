@@ -6,6 +6,7 @@ import {
 } from "../components/ImagePreview";
 import { ResultPanel } from "../components/ResultPanel";
 import { StatusBanner } from "../components/StatusBanner";
+import { PreprocessPanel } from "../components/PreprocessPanel";
 import { ProblemNavPanel } from "../components/ProblemNavPanel";
 import {
   StructureLayerPanel,
@@ -19,6 +20,7 @@ import {
   CoreApiError,
   getCoreBaseUrl,
   healthCheck,
+  preprocessImage,
   recognizeCrop,
   recognizeImage,
 } from "../lib/api";
@@ -38,14 +40,25 @@ import type {
   CoreConnectionState,
   CropRect,
   HealthResponse,
+  PreprocessOptions,
   RecognizeResponse,
   Score,
 } from "../lib/types";
+import { defaultPreprocessOptions } from "../lib/types";
 
 export function RecognizePage() {
   const baseUrl = useMemo(() => getCoreBaseUrl(), []);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  /** Object URL for preprocess preview (#47); overrides file preview when set. */
+  const [preprocessPreviewUrl, setPreprocessPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [preprocessOpts, setPreprocessOpts] = useState<PreprocessOptions>(() =>
+    defaultPreprocessOptions(),
+  );
+  const [preprocessSteps, setPreprocessSteps] = useState<string[] | null>(null);
+  const [previewingPp, setPreviewingPp] = useState(false);
   const [result, setResult] = useState<RecognizeResponse | null>(null);
   const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,7 +100,7 @@ export function RecognizePage() {
   const loadingRef = useRef(false);
   loadingRef.current = loading;
 
-  // Object URL lifecycle for preview
+  // Object URL lifecycle for original file preview
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -97,6 +110,13 @@ export function RecognizePage() {
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  // Revoke preprocess preview URL on change/unmount
+  useEffect(() => {
+    return () => {
+      if (preprocessPreviewUrl) URL.revokeObjectURL(preprocessPreviewUrl);
+    };
+  }, [preprocessPreviewUrl]);
 
   const refreshHealth = useCallback(async () => {
     try {
@@ -122,6 +142,11 @@ export function RecognizePage() {
     setScore(null);
     setSelection(null);
     setHighlightMeasures(null);
+    if (preprocessPreviewUrl) {
+      URL.revokeObjectURL(preprocessPreviewUrl);
+      setPreprocessPreviewUrl(null);
+    }
+    setPreprocessSteps(null);
     setHoverMeasure(null);
     setLayoutBoxes(null);
     setLayoutRegions(null);
@@ -239,6 +264,42 @@ export function RecognizePage() {
     [allMeasureRects],
   );
 
+  const onPreprocessPreview = async () => {
+    if (!file || previewingPp || loading) return;
+    setPreviewingPp(true);
+    setError(null);
+    try {
+      const res = await preprocessImage(
+        file,
+        preprocessOpts,
+        preprocessOpts.use_selection_crop ? selection : null,
+        baseUrl,
+      );
+      const bin = atob(res.image_png_base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "image/png" });
+      const url = URL.createObjectURL(blob);
+      if (preprocessPreviewUrl) URL.revokeObjectURL(preprocessPreviewUrl);
+      setPreprocessPreviewUrl(url);
+      setPreprocessSteps(res.steps);
+      setInfo(
+        `预处理预览 · ${res.out_width}×${res.out_height} · ${res.elapsed_ms} ms · 识别将使用相同参数`,
+      );
+      setCoreState("online");
+    } catch (err) {
+      setError(
+        err instanceof CoreApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : String(err),
+      );
+    } finally {
+      setPreviewingPp(false);
+    }
+  };
+
   const onRecognize = async () => {
     if (!file || loading) return;
     setError(null);
@@ -250,7 +311,13 @@ export function RecognizePage() {
     setLayoutBoxes(null);
     setLayoutRegions(null);
     try {
-      const res = await recognizeImage(file, baseUrl);
+      const res = await recognizeImage(
+        file,
+        baseUrl,
+        undefined,
+        preprocessOpts,
+        preprocessOpts.use_selection_crop ? selection : null,
+      );
       setResult(res);
       setLayoutBoxes(res.boxes ?? null);
       setLayoutRegions(res.regions ?? null);
@@ -262,10 +329,15 @@ export function RecognizePage() {
       const structHint = res.structure?.items?.length
         ? ` · 结构分层 ${res.structure.items.length} 框（可切换 L1–L5）`
         : "";
+      const ppHint =
+        res.meta.preprocess_steps && res.meta.preprocess_steps.length > 2
+          ? ` · 预处理 ${res.meta.preprocess_steps.length} 步`
+          : "";
       setInfo(
         `识别完成 · engine=${res.engine} · ${res.texts.length} 段文本 · ${res.meta.elapsed_ms} ms` +
           (res.score ? " · 可编辑 Score" : " · 未解析出 Score") +
           structHint +
+          ppHint +
           " · 双视图可悬停联动 · 框选后局部重识别",
       );
       void refreshHealth();
@@ -615,6 +687,15 @@ export function RecognizePage() {
                 : "悬停同步小节 · 原图/叠图/小节格"}
             </span>
           </div>
+          <PreprocessPanel
+            options={preprocessOpts}
+            onChange={setPreprocessOpts}
+            onPreview={() => void onPreprocessPreview()}
+            previewing={previewingPp}
+            disabled={!file || loading}
+            hasSelection={Boolean(selection)}
+            steps={preprocessSteps}
+          />
           <StructureLayerPanel
             structure={result?.structure}
             enabled={structureLayers}
@@ -637,7 +718,7 @@ export function RecognizePage() {
             }}
           />
           <ImagePreview
-            src={previewUrl}
+            src={preprocessPreviewUrl || previewUrl}
             filename={file?.name}
             selectionEnabled={Boolean(file)}
             selection={selection}

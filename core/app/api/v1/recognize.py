@@ -10,6 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from app.config import get_settings
 from app.pipeline import PipelineError, run_recognize, run_recognize_crop
+from app.pipeline.preprocess import options_from_form
 from app.schemas.recognize import CropRecognizeResponse, RecognizeResponse
 from app.schemas.score import Score
 
@@ -88,6 +89,19 @@ def _parse_base_score(raw: str | None) -> Score | None:
         ) from exc
 
 
+def _form_bool(v: str | bool | None, default: bool | None = None) -> bool | None:
+    if v is None:
+        return default
+    if isinstance(v, bool):
+        return v
+    s = str(v).strip().lower()
+    if s in {"1", "true", "yes", "on"}:
+        return True
+    if s in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
 @router.post(
     "/recognize",
     response_model=RecognizeResponse,
@@ -95,14 +109,43 @@ def _parse_base_score(raw: str | None) -> Score | None:
 )
 async def recognize(
     file: Annotated[UploadFile, File(description="简谱图片 png/jpg")],
+    denoise: Annotated[str | None, Form()] = None,
+    deskew: Annotated[str | None, Form()] = None,
+    clahe: Annotated[str | None, Form()] = None,
+    shadow_remove: Annotated[str | None, Form()] = None,
+    adaptive_binary: Annotated[str | None, Form()] = None,
+    brightness: Annotated[float | None, Form()] = None,
+    contrast: Annotated[float | None, Form()] = None,
+    max_side: Annotated[int | None, Form()] = None,
+    crop_x1: Annotated[float | None, Form()] = None,
+    crop_y1: Annotated[float | None, Form()] = None,
+    crop_x2: Annotated[float | None, Form()] = None,
+    crop_y2: Annotated[float | None, Form()] = None,
 ) -> RecognizeResponse:
     """Accept a score image and run the recognition pipeline.
 
     Default engine is PaddleOCR (issue #3). Set ``ENPU_RECOGNIZE_ENGINE=mock``
     for offline/UI wiring without heavy models.
+
+    Optional form fields enable the **preprocess toolbox** (#47), same as
+    ``POST /v1/preprocess``.
     """
     settings = get_settings()
     data, filename, content_type = await _read_image_upload(file)
+    opts = options_from_form(
+        max_side=max_side if max_side is not None else settings.ocr_max_side,
+        denoise=_form_bool(denoise, settings.ocr_denoise),
+        deskew=_form_bool(deskew, False),
+        clahe=_form_bool(clahe, False),
+        shadow_remove=_form_bool(shadow_remove, False),
+        adaptive_binary=_form_bool(adaptive_binary, False),
+        brightness=brightness,
+        contrast=contrast,
+        crop_x1=crop_x1,
+        crop_y1=crop_y1,
+        crop_x2=crop_x2,
+        crop_y2=crop_y2,
+    )
 
     try:
         # OCR is CPU-heavy; do not block the event loop.
@@ -112,6 +155,7 @@ async def recognize(
             settings=settings,
             filename=filename,
             content_type=content_type,
+            preprocess_options=opts,
         )
     except PipelineError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc

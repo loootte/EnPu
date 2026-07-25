@@ -78,6 +78,31 @@
 | `meta.preprocess_steps` | OpenCV 预处理步骤 |
 | `meta.mock` | 是否 mock 引擎 |
 
+可选 **预处理表单字段**（#47，与 `/v1/preprocess` 相同）：`denoise` `deskew` `clahe` `shadow_remove` `adaptive_binary` `brightness` `contrast` `max_side` `crop_x1`…`crop_y2`。
+
+---
+
+## POST `/v1/preprocess`（#47）
+
+仅运行 OpenCV 预处理工具箱，返回 PNG 预览（base64），**不跑 OCR**。
+
+**Content-Type**：`multipart/form-data`
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `file` | file | 必填 | png / jpg |
+| `denoise` | bool | true | 双边滤波去噪 |
+| `deskew` | bool | false | 自动倾斜矫正 |
+| `clahe` | bool | false | CLAHE 局部对比度 |
+| `shadow_remove` | bool | false | 阴影/光照不均抑制 |
+| `adaptive_binary` | bool | false | 自适应二值化 |
+| `brightness` | float | 0 | -80..80 |
+| `contrast` | float | 1 | 0.4..2.5 |
+| `max_side` | int | 配置 | 最长边缩放 |
+| `crop_x1`…`crop_y2` | float | — | 原图像素裁切框 |
+
+**响应** `200`：`steps`、`image_png_base64`、`out_width`/`out_height`、`options`。
+
 ---
 
 ## POST `/v1/recognize/crop`（#49）

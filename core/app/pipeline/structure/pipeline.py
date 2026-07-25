@@ -14,7 +14,12 @@ import numpy as np
 
 from app.config import Settings
 from app.pipeline.ocr import OcrEngineError, get_ocr_engine
-from app.pipeline.preprocess import ImageDecodeError, decode_image_bytes, preprocess_for_ocr
+from app.pipeline.preprocess import (
+    ImageDecodeError,
+    PreprocessOptions,
+    decode_image_bytes,
+    preprocess_for_ocr,
+)
 from app.pipeline.structure.assemble import (
     layout_debug_summary,
     page_layout_to_score,
@@ -56,6 +61,7 @@ def run_structure_recognize(
     settings: Settings,
     filename: str | None = None,
     content_type: str | None = None,
+    preprocess_options: PreprocessOptions | None = None,
 ) -> RecognizeResponse:
     """Structure-first recognition (ENPU_PIPELINE_MODE=structure)."""
     started = time.perf_counter()
@@ -64,20 +70,36 @@ def run_structure_recognize(
     except ImageDecodeError as exc:
         raise StructurePipelineError(str(exc), status_code=400) from exc
 
-    # Light preprocess for geometry (keep original for coordinate space)
+    opts = preprocess_options or PreprocessOptions(
+        max_side=settings.ocr_max_side,
+        denoise=settings.ocr_denoise,
+    )
     try:
         pre = preprocess_for_ocr(
             image_bgr,
-            max_side=settings.ocr_max_side,
-            denoise=settings.ocr_denoise,
+            max_side=opts.max_side,
+            denoise=opts.denoise,
+            options=opts,
         )
     except ImageDecodeError as exc:
         raise StructurePipelineError(str(exc), status_code=400) from exc
 
-    # Work in original image coordinates for IR; geometry uses original
-    work = image_bgr
+    # #47: when deskew/crop/enhance applied, run L1–L5 in processed space
+    # (UI should display the same preprocessed preview for dual-view alignment).
+    geometric = (
+        opts.deskew
+        or opts.has_crop()
+        or opts.clahe
+        or opts.shadow_remove
+        or opts.adaptive_binary
+        or abs(opts.brightness) > 0.5
+        or abs(opts.contrast - 1.0) > 0.02
+    )
+    work = pre.ocr_bgr if geometric else image_bgr
     h, w = work.shape[:2]
     warnings: list[str] = ["pipeline=structure (#58)"]
+    if geometric:
+        warnings.append(f"preprocess_toolbox: {' → '.join(pre.steps)}")
 
     # --- L1
     regions, w1 = detect_page_regions(work)
