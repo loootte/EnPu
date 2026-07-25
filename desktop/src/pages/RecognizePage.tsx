@@ -122,7 +122,13 @@ export function RecognizePage() {
 
   const nMeasures = score?.parts?.[0]?.measures?.length ?? 0;
 
-  /** Spatial map: pitch regions only (skip title / key-time / lyrics). */
+  const noteCounts = useMemo(() => {
+    const measures = score?.parts?.[0]?.measures;
+    if (!measures?.length) return null;
+    return measures.map((m) => Math.max(1, m.notes?.length ?? 1));
+  }, [score?.parts]);
+
+  /** Spatial map: pitch regions, row tiles continuous in X (no dead zones). */
   const allMeasureRects = useMemo((): CropRect[] => {
     if (!nMeasures || !imageSize.w || !imageSize.h) return [];
     return buildMeasureRects(
@@ -131,8 +137,16 @@ export function RecognizePage() {
       imageSize.h,
       layoutBoxes,
       layoutRegions,
+      noteCounts,
     );
-  }, [imageSize.h, imageSize.w, layoutBoxes, layoutRegions, nMeasures]);
+  }, [
+    imageSize.h,
+    imageSize.w,
+    layoutBoxes,
+    layoutRegions,
+    nMeasures,
+    noteCounts,
+  ]);
 
   const selectionPreviewRange = useMemo(() => {
     if (!selection || !nMeasures || !imageSize.w) return null;
@@ -233,12 +247,17 @@ export function RecognizePage() {
           measureFrom = 1;
           measureTo = n;
         } else {
+          const counts =
+            base?.parts?.[0]?.measures?.map((m) =>
+              Math.max(1, m.notes?.length ?? 1),
+            ) ?? null;
           const rects = buildMeasureRects(
             n,
             metaW,
             metaH,
             layoutBoxes,
             layoutRegions,
+            counts,
           );
           const range = rectToMeasureRange(sel, rects);
           measureFrom = range.from;

@@ -1,8 +1,14 @@
 /**
  * Measure ↔ image region mapping for dual-view (#45).
  *
- * Prefer **pitch** OCR boxes (reading-order partition). Title / key-time / lyrics
- * must not occupy measure slots (M04: title→m1, meta→m2, first bar→m3 offset).
+ * Strategy:
+ * 1. Use pitch (or non-meta) OCR boxes only
+ * 2. Cluster into staff **rows** by Y
+ * 3. Tile each row into continuous measure slots by X (no gaps)
+ *    — equal width, or weighted by note counts when provided
+ *
+ * Avoids: global equal-chunk of boxes (M04 mid-bar dead zones; whole-row
+ * unions; score m3 → blank image).
  */
 
 import type { BoundingBox, CropRect, LayoutRegion } from "./types";
@@ -17,7 +23,6 @@ export function boxesForMeasureMap(
       .filter((r) => r.kind === "pitch" && r.box)
       .map((r) => r.box);
     if (pitch.length > 0) return pitch;
-    // Soft fallback: exclude title/meta/footer/lyrics/annotation
     const staffish = regions
       .filter(
         (r) =>
@@ -51,21 +56,6 @@ function boxCenter(b: BoundingBox): { x: number; y: number } {
   return { x: (b.x1 + b.x2) / 2, y: (b.y1 + b.y2) / 2 };
 }
 
-function unionBoxes(boxes: BoundingBox[]): CropRect | null {
-  if (!boxes.length) return null;
-  let x1 = Infinity;
-  let y1 = Infinity;
-  let x2 = -Infinity;
-  let y2 = -Infinity;
-  for (const b of boxes) {
-    x1 = Math.min(x1, b.x1);
-    y1 = Math.min(y1, b.y1);
-    x2 = Math.max(x2, b.x2);
-    y2 = Math.max(y2, b.y2);
-  }
-  return { x1, y1, x2, y2 };
-}
-
 function rectsIntersect(a: CropRect, b: CropRect, pad = 2): boolean {
   return !(
     a.x2 < b.x1 - pad ||
@@ -75,14 +65,15 @@ function rectsIntersect(a: CropRect, b: CropRect, pad = 2): boolean {
   );
 }
 
-function sortBoxesReadingOrder(boxes: BoundingBox[]): BoundingBox[] {
-  // Cluster by row (y), then left→right within row.
-  if (boxes.length <= 1) return [...boxes];
+/** Cluster boxes into staff rows (top→bottom), each row L→R. */
+export function clusterBoxRows(boxes: BoundingBox[]): BoundingBox[][] {
+  if (boxes.length === 0) return [];
   const centers = boxes.map((b) => ({ b, ...boxCenter(b) }));
   const heights = boxes.map((b) => Math.max(4, b.y2 - b.y1));
   const medH =
     [...heights].sort((a, c) => a - c)[Math.floor(heights.length / 2)] ?? 20;
-  const rowTol = Math.max(12, medH * 0.65);
+  // Slightly looser than before so one staff line stays one row
+  const rowTol = Math.max(14, medH * 0.85);
 
   centers.sort((a, c) => a.y - c.y || a.x - c.x);
   const rows: { y: number; items: typeof centers }[] = [];
@@ -96,19 +87,26 @@ function sortBoxesReadingOrder(boxes: BoundingBox[]): BoundingBox[] {
     }
   }
   rows.sort((a, c) => a.y - c.y);
-  const out: BoundingBox[] = [];
-  for (const row of rows) {
+  return rows.map((row) => {
     row.items.sort((a, c) => a.x - c.x);
-    for (const it of row.items) out.push(it.b);
-  }
-  return out;
+    return row.items.map((it) => it.b);
+  });
+}
+
+/** How many measures to put on each row (as even as possible). */
+function measuresPerRowPlan(nMeasures: number, nRows: number): number[] {
+  if (nRows <= 0) return [];
+  if (nMeasures <= 0) return Array(nRows).fill(0);
+  const base = Math.floor(nMeasures / nRows);
+  const rem = nMeasures % nRows;
+  // Prefer fuller early rows (top of page)
+  return Array.from({ length: nRows }, (_, i) => base + (i < rem ? 1 : 0));
 }
 
 /**
- * Partition OCR boxes into one rect per measure (reading order).
- * Falls back to uniform page grid when boxes are missing.
+ * Build continuous measure hit-rects.
  *
- * Prefer ``regions`` (pitch-only). Do not pass unfiltered page boxes.
+ * @param noteCounts optional per-measure note counts (weights slot widths)
  */
 export function buildMeasureRects(
   nMeasures: number,
@@ -116,6 +114,7 @@ export function buildMeasureRects(
   imageH: number,
   boxes?: BoundingBox[] | null,
   regions?: LayoutRegion[] | null,
+  noteCounts?: number[] | null,
 ): CropRect[] {
   const n = Math.max(0, nMeasures);
   if (n === 0) return [];
@@ -124,51 +123,91 @@ export function buildMeasureRects(
     (b) => b.x2 > b.x1 && b.y2 > b.y1 && Number.isFinite(b.x1),
   );
 
-  if (usable.length > 0) {
-    const ordered = sortBoxesReadingOrder(usable);
-    // If fewer boxes than measures, pad by splitting last / equal groups.
-    const rects: CropRect[] = [];
-    if (ordered.length >= n) {
-      // Chunk boxes into n contiguous groups (ceil sizes).
-      for (let i = 0; i < n; i += 1) {
-        const start = Math.floor((i * ordered.length) / n);
-        const end = Math.floor(((i + 1) * ordered.length) / n);
-        const chunk = ordered.slice(start, Math.max(start + 1, end));
-        const u = unionBoxes(chunk);
-        if (u) rects.push(u);
-        else rects.push(measureIndexToRectGrid(i, n, imageW, imageH));
-      }
-      return rects;
-    }
-    // Fewer boxes: assign each box then fill remaining with grid near last box.
-    for (let i = 0; i < n; i += 1) {
-      if (i < ordered.length) {
-        const u = unionBoxes([ordered[i]!]);
-        rects.push(u ?? measureIndexToRectGrid(i, n, imageW, imageH));
-      } else {
-        const prev = rects[rects.length - 1];
-        if (prev) {
-          const w = prev.x2 - prev.x1;
-          rects.push({
-            x1: prev.x2,
-            y1: prev.y1,
-            x2: prev.x2 + Math.max(8, w),
-            y2: prev.y2,
-          });
-        } else {
-          rects.push(measureIndexToRectGrid(i, n, imageW, imageH));
-        }
-      }
-    }
-    return rects;
+  if (usable.length === 0) {
+    return Array.from({ length: n }, (_, i) =>
+      measureIndexToRectGrid(i, n, imageW, imageH),
+    );
   }
 
-  return Array.from({ length: n }, (_, i) =>
-    measureIndexToRectGrid(i, n, imageW, imageH),
-  );
+  const rows = clusterBoxRows(usable);
+  if (rows.length === 0) {
+    return Array.from({ length: n }, (_, i) =>
+      measureIndexToRectGrid(i, n, imageW, imageH),
+    );
+  }
+
+  // Shared staff horizontal span (align columns across systems)
+  let staffX1 = Infinity;
+  let staffX2 = -Infinity;
+  for (const b of usable) {
+    staffX1 = Math.min(staffX1, b.x1);
+    staffX2 = Math.max(staffX2, b.x2);
+  }
+  // Slight horizontal pad so edge notes still hit
+  const padX = Math.max(4, (staffX2 - staffX1) * 0.02);
+  staffX1 = Math.max(0, staffX1 - padX);
+  staffX2 = Math.min(imageW || staffX2 + padX, staffX2 + padX);
+  const staffW = Math.max(8, staffX2 - staffX1);
+
+  const plan = measuresPerRowPlan(n, rows.length);
+  const rects: CropRect[] = [];
+  let mi = 0;
+
+  for (let ri = 0; ri < rows.length; ri += 1) {
+    const count = plan[ri] ?? 0;
+    if (count <= 0) continue;
+    const rowBoxes = rows[ri]!;
+    let y1 = Infinity;
+    let y2 = -Infinity;
+    for (const b of rowBoxes) {
+      y1 = Math.min(y1, b.y1);
+      y2 = Math.max(y2, b.y2);
+    }
+    // Vertical pad so hover between underlines still hits the row
+    const padY = Math.max(6, (y2 - y1) * 0.35);
+    y1 = Math.max(0, y1 - padY);
+    y2 = y2 + padY;
+
+    const weights: number[] = [];
+    for (let j = 0; j < count; j += 1) {
+      const c = noteCounts?.[mi + j];
+      weights.push(c != null && c > 0 ? c : 1);
+    }
+    const wSum = weights.reduce((a, b) => a + b, 0) || count;
+
+    let x = staffX1;
+    for (let j = 0; j < count; j += 1) {
+      const frac = weights[j]! / wSum;
+      const slotW =
+        j === count - 1 ? staffX2 - x : Math.max(4, staffW * frac);
+      const x2 = j === count - 1 ? staffX2 : x + slotW;
+      rects.push({ x1: x, y1, x2, y2 });
+      x = x2;
+      mi += 1;
+    }
+  }
+
+  // If clustering produced fewer slots than n (shouldn't), pad with grid
+  while (rects.length < n) {
+    const i = rects.length;
+    const prev = rects[i - 1];
+    if (prev) {
+      const w = Math.max(8, prev.x2 - prev.x1);
+      rects.push({
+        x1: prev.x1,
+        y1: prev.y2 + 4,
+        x2: prev.x1 + w,
+        y2: prev.y2 + 4 + (prev.y2 - prev.y1),
+      });
+    } else {
+      rects.push(measureIndexToRectGrid(i, n, imageW, imageH));
+    }
+  }
+
+  return rects.slice(0, n);
 }
 
-/** Uniform grid fallback (weak on tall multi-system pages). */
+/** Uniform grid fallback. */
 export function measureIndexToRectGrid(
   index: number,
   nMeasures: number,
@@ -182,7 +221,6 @@ export function measureIndexToRectGrid(
   const nRows = Math.max(1, Math.ceil(n / mpl));
   const row = Math.floor(i / mpl);
   const col = i % mpl;
-  // Staff band: ignore top title / bottom margin more aggressively on tall pages.
   const topFrac = imageH > imageW * 1.2 ? 0.14 : 0.1;
   const botFrac = imageH > imageW * 1.2 ? 0.08 : 0.06;
   const mx = imageW * 0.05;
@@ -197,7 +235,6 @@ export function measureIndexToRectGrid(
   return { x1, y1, x2: x1 + cellW, y2: y1 + cellH };
 }
 
-/** @deprecated use buildMeasureRects / measureIndexToRectGrid */
 export function measureIndexToRect(
   index: number,
   nMeasures: number,
@@ -215,15 +252,14 @@ export function measureIndexToRect(
 }
 
 /**
- * Map image point → 0-based measure index, or null if outside staff measures
- * (title / key-time / empty margin should not light up a measure).
+ * Map image point → 0-based measure index, or null if far from staff tiles.
  */
 export function pointToMeasureIndex(
   x: number,
   y: number,
   measureRects: CropRect[],
-  /** Soft snap distance in image pixels (0 = only strict inside). */
-  snapPx = 24,
+  /** Soft snap (tiles should already be continuous within a row). */
+  snapPx = 12,
 ): number | null {
   if (!measureRects.length) return null;
   for (let i = 0; i < measureRects.length; i += 1) {
@@ -235,7 +271,6 @@ export function pointToMeasureIndex(
   let bestD = snapPx * snapPx;
   for (let i = 0; i < measureRects.length; i += 1) {
     const r = measureRects[i]!;
-    // Distance to rect (0 if inside expanded box)
     const dx = x < r.x1 ? r.x1 - x : x > r.x2 ? x - r.x2 : 0;
     const dy = y < r.y1 ? r.y1 - y : y > r.y2 ? y - r.y2 : 0;
     const d = dx * dx + dy * dy;
@@ -247,7 +282,6 @@ export function pointToMeasureIndex(
   return best;
 }
 
-/** Crop rect → 1-based inclusive measure range via spatial intersection. */
 export function rectToMeasureRange(
   rect: CropRect,
   measureRects: CropRect[],
@@ -262,7 +296,7 @@ export function rectToMeasureRange(
       (rect.x1 + rect.x2) / 2,
       (rect.y1 + rect.y2) / 2,
       measureRects,
-      48,
+      40,
     );
     if (a == null) return { from: 1, to: 1 };
     return { from: a + 1, to: a + 1 };
@@ -270,7 +304,6 @@ export function rectToMeasureRange(
   return { from: hits[0]! + 1, to: hits[hits.length - 1]! + 1 };
 }
 
-/** Large staff ROI heuristic (mirrors core is_large_staff_roi). */
 export function isLargeStaffRoi(
   rect: CropRect,
   imageW: number,
@@ -289,7 +322,6 @@ export function isLargeStaffRoi(
   return false;
 }
 
-/** Active measure numbers (1-based) → their spatial rects for yellow overlay. */
 export function rectsForMeasures(
   measureNumbers: number[],
   measureRects: CropRect[],
