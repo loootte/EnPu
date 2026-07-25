@@ -40,6 +40,10 @@ class _Band:
         return max(1, self.y1 - self.y0)
 
     @property
+    def cy(self) -> float:
+        return 0.5 * (self.y0 + self.y1)
+
+    @property
     def pitchness(self) -> float:
         """How pitch-row-like: taller mid-glyphs + staff score."""
         return float(self.med_ch) * 0.6 + float(self.staff_score) * 40.0 + float(self.height) * 0.25
@@ -85,14 +89,30 @@ def detect_staff_systems(
             )
         ], warnings
 
+    # Adaptive binarization path for noisy scans (#64): re-threshold if Otsu is noisy
+    ink_ratio = float((bw > 0).mean())
+    if ink_ratio > 0.28 or ink_ratio < 0.02:
+        bw = cv2.adaptiveThreshold(
+            gray,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV,
+            31,
+            12,
+        )
+        row_ink = (bw > 0).sum(axis=1).astype(np.float32)
+        warnings.append("L2: adaptive threshold for scan-like ink density (#64)")
+
     # Light smooth; keep pitch / chord / lyric as separate bands
     k = 5
     smooth = np.convolve(row_ink, np.ones(k) / k, mode="same")
-    thr = max(float(smooth.max()) * 0.12, rw * 0.015)
+    # Slightly higher relative thr to separate stacked rows on dense scans
+    thr = max(float(smooth.max()) * 0.14, rw * 0.012)
     active = smooth >= thr
     raw_runs = _active_runs(active)
     raw_runs = [(a, b) for a, b in raw_runs if b - a >= max(3, min_row_height // 3)]
-    merged_runs = _merge_close_runs(raw_runs, max_gap=min_row_gap)
+    # Keep bands separate: only glue very tight underlines (smaller than before)
+    merged_runs = _merge_close_runs(raw_runs, max_gap=min(min_row_gap, 6))
 
     bands: list[_Band] = []
     for a, b in merged_runs:
@@ -127,8 +147,14 @@ def detect_staff_systems(
 
     content_hs = [b.height for b in bands if b.role != "underline"]
     med_content_h = float(np.median(content_hs)) if content_hs else 32.0
-    # Intra-system: underline ~10px, chord ~45px under pitch; inter-system often >90px
-    max_intra_gap = max(48.0, max_attach_gap_factor * med_content_h)
+    # Intra: pitch→chord/lyric. Inter: between systems (usually larger).
+    # Use gap quantiles so M04 (~100px inter) and compact scans both work (#64).
+    gaps = [
+        float(bands[i + 1].y0 - bands[i].y1)
+        for i in range(len(bands) - 1)
+        if bands[i].role != "underline" or bands[i + 1].role != "underline"
+    ]
+    max_intra_gap = _adaptive_max_intra_gap(gaps, med_content_h, max_attach_gap_factor)
 
     systems = _cluster_and_bind(
         bands,
@@ -136,6 +162,7 @@ def detect_staff_systems(
         x1=float(x1),
         page_h=h,
         max_intra_gap=max_intra_gap,
+        med_content_h=med_content_h,
     )
 
     if not systems:
@@ -242,35 +269,59 @@ def _classify_band(
         return "underline"
 
     # Content band: digits / chord labels / lyrics (disambiguate later)
+    # Scan/print scales vary — allow smaller med_ch for pitch on compact pages (#64)
     if n_digitish >= 3 and 12 <= height <= 80:
-        # Prefer "pitch" only for taller mid-glyphs; shorter → secondary
-        if med_ch >= 28.0 and height >= 30 and staff_score >= 0.35:
+        if med_ch >= 22.0 and height >= 16 and staff_score >= 0.35 and n_digitish >= 5:
             return "pitch"
-        if med_ch >= 26.0 and height >= 32 and n_digitish >= 6:
+        if med_ch >= 26.0 and height >= 28 and staff_score >= 0.35:
+            return "pitch"
+        if med_ch >= 24.0 and height >= 20 and n_digitish >= 8:
             return "pitch"
         return "secondary"
     if n_comps >= 6 and 12 <= height <= 60:
         return "secondary"
-    if staff_score >= 0.35 and 16 <= height <= 80:
-        return "pitch" if med_ch >= 26 else "secondary"
+    if staff_score >= 0.35 and 14 <= height <= 80:
+        return "pitch" if med_ch >= 20 else "secondary"
 
     if height < 14:
         return "underline"
     return "noise"
 
 
-def _cluster_and_bind(
+def _adaptive_max_intra_gap(
+    gaps: list[float],
+    med_content_h: float,
+    max_attach_gap_factor: float,
+) -> float:
+    """Choose attach budget: above pitch→chord, below inter-system gaps.
+
+    M04 needs ~50–80px to keep chord under pitch; compact scans need
+    subdivision of over-tall clusters rather than a tiny gap alone (#64).
+    """
+    base = max(48.0, max_attach_gap_factor * med_content_h)
+    if not gaps:
+        return base
+    gs = np.array([g for g in gaps if g >= 0], dtype=np.float32)
+    if gs.size == 0:
+        return base
+    p40 = float(np.percentile(gs, 40))
+    p75 = float(np.percentile(gs, 75))
+    # Floor: enough for pitch → chord (~1.5–2 staff heights)
+    adaptive = max(p40 * 1.5, 1.85 * med_content_h, 48.0)
+    # If clearly bimodal, stay under large inter-system gap
+    if p75 > p40 * 1.9 and p75 > 60:
+        adaptive = min(adaptive, 0.72 * p75)
+    return float(np.clip(adaptive, 48.0, max(base, 110.0)))
+
+
+def _gap_split_clusters(
     bands: list[_Band],
     *,
-    x0: float,
-    x1: float,
-    page_h: int,
     max_intra_gap: float,
-) -> list[StaffSystem]:
-    """Split on large gaps; each cluster becomes at most one StaffSystem."""
+) -> list[list[_Band]]:
+    """Split band list on large vertical gaps."""
     if not bands:
         return []
-
     clusters: list[list[_Band]] = []
     cur: list[_Band] = [bands[0]]
     for b in bands[1:]:
@@ -281,18 +332,116 @@ def _cluster_and_bind(
         else:
             cur.append(b)
     clusters.append(cur)
+    return clusters
+
+
+def _subdivide_tall_cluster(
+    cluster: list[_Band],
+    *,
+    med_content_h: float,
+    max_intra_gap: float,
+) -> list[list[_Band]]:
+    """If a gap-cluster is taller than ~2 systems, split on pitch-like peaks (#64)."""
+    if len(cluster) < 2:
+        return [cluster]
+    y0 = min(b.y0 for b in cluster)
+    y1 = max(b.y1 for b in cluster)
+    # One system ≈ pitch + chord + lyric (+ pads) — taller stacks are multi-system
+    max_sys_h = max(100.0, 6.2 * med_content_h)
+    if (y1 - y0) <= max_sys_h * 1.25:
+        return [cluster]
+
+    # Pitch peaks: local max of med_ch among content bands, spaced apart
+    content = [(i, b) for i, b in enumerate(cluster) if b.role != "underline"]
+    if len(content) < 2:
+        return [cluster]
+
+    scores = [
+        (i, b.med_ch * 0.7 + b.n_digitish * 0.8 + b.staff_score * 20 + b.height * 0.2)
+        for i, b in content
+    ]
+    max_s = max(s for _, s in scores)
+    thr = max_s * 0.72
+    peaks = [i for i, s in scores if s >= thr]
+    # Local max filter (prefer upper when close)
+    min_sep = max(28.0, 2.0 * med_content_h)
+    peaks_sorted = sorted(peaks, key=lambda i: cluster[i].y0)
+    anchors: list[int] = []
+    for i in peaks_sorted:
+        if not anchors:
+            anchors.append(i)
+            continue
+        prev = anchors[-1]
+        if cluster[i].y0 - cluster[prev].y0 >= min_sep:
+            anchors.append(i)
+        else:
+            # Keep stronger / taller med_ch
+            if cluster[i].med_ch > cluster[prev].med_ch * 1.05:
+                anchors[-1] = i
+
+    if len(anchors) <= 1:
+        return [cluster]
+
+    out: list[list[_Band]] = []
+    for k, ai in enumerate(anchors):
+        left = ai
+        # underlines glued above pitch
+        while left > 0 and cluster[left - 1].role == "underline":
+            if cluster[ai].y0 - cluster[left - 1].y1 <= max(8.0, 0.35 * med_content_h):
+                left -= 1
+            else:
+                break
+        right = anchors[k + 1] if k + 1 < len(anchors) else len(cluster)
+        sub = cluster[left:right]
+        # Trim by attach budget under this pitch
+        pitch_b = cluster[ai]
+        trimmed: list[_Band] = []
+        for b in sub:
+            if b.y0 <= pitch_b.y1 or b is pitch_b:
+                trimmed.append(b)
+                continue
+            ref = trimmed[-1] if trimmed else pitch_b
+            if b.y0 - ref.y1 <= max_intra_gap:
+                trimmed.append(b)
+            else:
+                break
+        if trimmed:
+            out.append(trimmed)
+    return out if out else [cluster]
+
+
+def _cluster_and_bind(
+    bands: list[_Band],
+    *,
+    x0: float,
+    x1: float,
+    page_h: int,
+    max_intra_gap: float,
+    med_content_h: float,
+) -> list[StaffSystem]:
+    """Gap-split systems; subdivide over-tall clusters by pitch peaks (#61/#64)."""
+    if not bands:
+        return []
+
+    raw_clusters = _gap_split_clusters(bands, max_intra_gap=max_intra_gap)
+    clusters: list[list[_Band]] = []
+    for cl in raw_clusters:
+        clusters.extend(
+            _subdivide_tall_cluster(
+                cl,
+                med_content_h=med_content_h,
+                max_intra_gap=max_intra_gap,
+            )
+        )
 
     systems: list[StaffSystem] = []
     for cluster in clusters:
         labeled = _label_cluster_roles(cluster)
-        # Skip pure-underline / no-content clusters
         if not any(b.role == "pitch" for b in labeled) and not any(
             b.role in {"chord", "lyric", "secondary"} for b in labeled
         ):
-            # Only underlines — skip
             if all(b.role == "underline" for b in labeled):
                 continue
-        # Promote lone secondary cluster to pitch (no parent above)
         if not any(b.role == "pitch" for b in labeled):
             content = [b for b in labeled if b.role != "underline"]
             if content:

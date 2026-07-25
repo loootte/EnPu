@@ -189,6 +189,63 @@ def test_l2_m04_binds_lyrics_not_extra_systems() -> None:
     assert any("melody system" in w and "#61" in w for w in warnings)
 
 
+def test_l2_scan_samples_not_one_giant_system() -> None:
+    """#64: scan-like pages must not collapse all rows into one StaffSystem."""
+    from pathlib import Path
+
+    import cv2
+
+    root = Path(__file__).resolve().parents[2]
+    samples = [
+        root / "samples" / "eval" / "images" / "E11_scan_c_4_4_grace_demo.png",
+        root / "samples" / "eval" / "images" / "E12_scan_g_4_4_ascending.png",
+        root / "samples" / "002_scan_like.png",
+    ]
+    checked = 0
+    for p in samples:
+        if not p.is_file():
+            continue
+        img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+        regions, _ = detect_page_regions(img)
+        score = next(r for r in regions if r.role.value == "score")
+        systems, _ = detect_staff_systems(img, score.rect)
+        assert len(systems) >= 2, (p.name, len(systems))
+        for s in systems:
+            assert s.rect.height < 0.85 * score.rect.height, (p.name, s.rect, score.rect)
+        checked += 1
+    if checked < 2:
+        pytest.skip("scan samples not present")
+
+
+def test_l1_scan_title_above_score() -> None:
+    """#64: scan samples keep a title band above score start."""
+    from pathlib import Path
+
+    import cv2
+
+    root = Path(__file__).resolve().parents[2]
+    samples = [
+        root / "samples" / "eval" / "images" / "E11_scan_c_4_4_grace_demo.png",
+        root / "samples" / "eval" / "images" / "E13_scan_f_3_4_waltz.png",
+        root / "samples" / "002_scan_like.png",
+    ]
+    n = 0
+    for p in samples:
+        if not p.is_file():
+            continue
+        img = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
+        h = img.shape[0]
+        regions, _ = detect_page_regions(img)
+        title = next(r for r in regions if r.role.value == "title")
+        score = next(r for r in regions if r.role.value == "score")
+        assert title.rect.y2 <= score.rect.y1 + 2, (p.name, title.rect, score.rect)
+        assert score.rect.y1 >= max(8, 0.03 * h), (p.name, score.rect)
+        assert score.rect.y1 > title.rect.y1
+        n += 1
+    if n < 2:
+        pytest.skip("scan samples not present")
+
+
 def test_l3_segments_measures() -> None:
     img = _synthetic_score_bgr()
     regions, _ = detect_page_regions(img)

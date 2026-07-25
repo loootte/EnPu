@@ -31,6 +31,18 @@ def detect_page_regions(
     h, w = image_bgr.shape[:2]
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
     _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Scan-like pages: Otsu often floods; switch to adaptive (#64)
+    ink_ratio = float((bw > 0).mean())
+    if ink_ratio > 0.30 or ink_ratio < 0.015:
+        bw = cv2.adaptiveThreshold(
+            gray,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV,
+            35,
+            11,
+        )
+        warnings.append("L1: adaptive threshold for scan-like page (#64)")
 
     row_ink = (bw > 0).sum(axis=1).astype(np.float32)
     if row_ink.max() <= 0:
@@ -50,8 +62,16 @@ def detect_page_regions(
     kernel = np.ones(k, dtype=np.float32) / float(k)
     smooth = np.convolve(row_ink, kernel, mode="same")
 
-    thr = max(float(smooth.max()) * 0.10, w * 0.008)
-    active = smooth >= thr
+    # Local adaptive thr: fraction of local max in sliding window (helps uneven scans)
+    thr_global = max(float(smooth.max()) * 0.10, w * 0.008)
+    win = max(31, int(h * 0.08) | 1)
+    if win % 2 == 0:
+        win += 1
+    # 1D max filter via morphology on a column image
+    col = smooth.reshape(-1, 1).astype(np.float32)
+    local_max = cv2.dilate(col, np.ones((win, 1), np.uint8)).ravel()
+    thr_local = np.maximum(local_max * 0.22, thr_global * 0.5)
+    active = smooth >= thr_local
     runs = _active_runs(active)
     # Drop tiny noise runs
     min_run = max(4, int(h * 0.003))
@@ -226,13 +246,23 @@ def _analyze_run(
 
 
 def _is_title_band(r: dict, *, h: int, med_staff_h: float) -> bool:
-    """Title: upper page, often taller than a single staff row."""
-    if r["y0"] > 0.22 * h:
+    """Title: upper page, often taller than a single staff row.
+
+    Scans (#64): titles may be shorter than print M04; use position + fewer
+    digitish comps + larger median glyph when possible.
+    """
+    if r["y0"] > 0.28 * h:
         return False
-    tall = r["height"] >= max(40.0, 1.35 * med_staff_h)
-    # Header title can also be a dense wide band of larger glyphs
-    big_glyphs = r["med_ch"] >= max(28.0, 1.15 * med_staff_h) and r["n_comps"] >= 8
-    return bool(tall or big_glyphs)
+    tall = r["height"] >= max(28.0, 1.25 * med_staff_h)
+    big_glyphs = r["med_ch"] >= max(24.0, 1.1 * med_staff_h) and r["n_comps"] >= 6
+    # Top strip with moderate comps but not staff-dense
+    top_sparse = (
+        r["y0"] < 0.12 * h
+        and r["n_digitish"] <= 8
+        and r["staff_score"] < 0.5
+        and r["height"] >= max(18.0, 0.7 * med_staff_h)
+    )
+    return bool(tall or big_glyphs or top_sparse)
 
 
 def _is_staff_band(r: dict, *, med_staff_h: float) -> bool:
@@ -259,16 +289,24 @@ def _find_score_start(analyzed: list[dict], *, h: int, med_staff_h: float) -> in
     for i in staff_idxs:
         r = analyzed[i]
         # Skip staff-like false positive on title (tall + digitish CJK)
-        if r["is_title_band"] and r["y0"] < 0.14 * h:
+        if r["is_title_band"] and r["y0"] < 0.16 * h:
             continue
         # Prefer bands that have nearby following staff bands (real systems)
         followers = [
             analyzed[j]
             for j in staff_idxs
-            if j > i and analyzed[j]["y0"] - r["y1"] < 3.5 * med_staff_h
+            if j > i and analyzed[j]["y0"] - r["y1"] < 4.5 * med_staff_h
         ]
-        if followers or r["y0"] >= 0.10 * h:
+        # Multi-staff cluster is strong evidence of score body (#64 scans)
+        if len(followers) >= 1:
             return int(r["y0"])
+        if r["y0"] >= 0.10 * h and not r["is_title_band"]:
+            return int(r["y0"])
+
+    # If all early staff candidates look title-like, take first staff after 12%
+    for i in staff_idxs:
+        if analyzed[i]["y0"] >= 0.12 * h:
+            return int(analyzed[i]["y0"])
 
     return int(analyzed[staff_idxs[0]]["y0"])
 
