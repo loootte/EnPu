@@ -43,12 +43,14 @@ def detect_note_candidates(
     for sys in systems:
         band_ranges = _band_y_ranges(sys)
         pitch_y = band_ranges.get("pitch")
+        underline_y = band_ranges.get("underline")
         new_measures: list[MeasureLayout] = []
         for meas in sys.measures:
             pitch_notes = _pitch_candidates_in_measure(
                 bw,
                 meas.rect,
                 pitch_y=pitch_y,
+                underline_y=underline_y,
                 system_rect=sys.rect,
                 min_area=min_area,
                 max_aspect=max_aspect,
@@ -180,6 +182,7 @@ def _pitch_candidates_in_measure(
     meas_rect: Rect,
     *,
     pitch_y: tuple[float, float] | None,
+    underline_y: tuple[float, float] | None,
     system_rect: Rect,
     min_area: int,
     max_aspect: float,
@@ -259,42 +262,46 @@ def _pitch_candidates_in_measure(
         filtered.append(r)
     final = filtered
 
-    # Expand final ROIs for L5 (underline below + octave dots above) without
-    # expanding so far that chord/lyric bands enter the box.
-    chord_top = None
-    # system_rect.y2 is full system; use body bottom + limited pad
+    # Expand final ROIs for L5: include duration underline band under digit,
+    # but stop well above chord/lyric.
     out: list[NoteCandidate] = []
     for i, r in enumerate(final):
         pad_x = max(2.0, 0.12 * r.width)
         pad_top = max(3.0, 0.22 * r.height)
-        pad_bot = max(4.0, 0.45 * r.height)  # duration underlines under digit
-        # Cap bottom so we do not reach typical chord band (~pitch+1.5*h)
-        max_bot = r.y2 + max(14.0, 0.7 * r.height)
+        # Prefer L2 underline band bottom when present (true duration lines)
+        if underline_y is not None and underline_y[0] <= by1 + max(20.0, 0.9 * band_h):
+            bot = float(underline_y[1] + 3)
+        else:
+            bot = r.y2 + max(10.0, 0.55 * r.height)
+        # Hard cap: not past mid-gap to typical chord (~1.5× pitch height below)
         if pitch_y is not None:
-            max_bot = min(max_bot, pitch_y[1] + max(12.0, 0.55 * (pitch_y[1] - pitch_y[0])))
+            bot = min(bot, pitch_y[1] + max(18.0, 0.7 * (pitch_y[1] - pitch_y[0])))
+        bot = min(bot, by1 + max(16.0, 0.65 * band_h))
         pr = Rect(
             max(0.0, r.x1 - pad_x),
             max(0.0, r.y1 - pad_top),
             min(float(img_w), r.x2 + pad_x),
-            min(float(img_h), min(max_bot, r.y2 + pad_bot)),
+            min(float(img_h), bot),
         )
-        # Never deeper than mid-gap toward chord (if system tall)
-        if system_rect.height > 2.5 * band_h:
-            pr = Rect(
-                pr.x1,
-                pr.y1,
-                pr.x2,
-                min(pr.y2, by1 + max(10.0, 0.5 * band_h)),
-            )
         out.append(
             NoteCandidate(
                 rect=pr,
                 index=i,
                 confidence=0.65,
-                extra={"kind": "pitch", "layer": "L4"},
+                extra={
+                    "kind": "pitch",
+                    "layer": "L4",
+                    "body_y0": float(r.y1),
+                    "body_y1": float(r.y2),
+                    "body_x0": float(r.x1),
+                    "body_x1": float(r.x2),
+                    "pitch_band_y0": float(by0),
+                    "pitch_band_y1": float(by1),
+                    "underline_band_y0": float(underline_y[0]) if underline_y else None,
+                    "underline_band_y1": float(underline_y[1]) if underline_y else None,
+                },
             )
         )
-    _ = chord_top
     return out
 
 

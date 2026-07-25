@@ -200,6 +200,48 @@ def test_l3_segments_measures() -> None:
     assert any("L3" in w for w in warnings)
 
 
+def test_l5_underlines_counted_below_digit_body() -> None:
+    """Duration strokes below the digit → eighth; no stroke → quarter (#69 follow-up)."""
+    import cv2
+
+    from app.pipeline.structure.ir import NoteCandidate
+    from app.pipeline.structure.l5_glyph import _glyph_for_candidate
+
+    h, w = 80, 40
+    img = np.full((h, w, 3), 255, dtype=np.uint8)
+    # Digit body
+    img[20:45, 10:30] = 0
+    # One underline under digit
+    img[52:55, 10:30] = 0
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    nc = NoteCandidate(
+        rect=Rect(8, 18, 32, 58),
+        index=0,
+        extra={
+            "kind": "pitch",
+            "body_x0": 10,
+            "body_x1": 30,
+            "body_y0": 20,
+            "body_y1": 45,
+            "underline_band_y0": 52,
+            "underline_band_y1": 55,
+        },
+    )
+    g = _glyph_for_candidate(img, bw, nc, engine=None, img_w=w, img_h=h)
+    assert g.underlines == 1
+    assert g.duration == DurationName.eighth
+
+    # No underline → quarter (digit strokes must not count)
+    img2 = np.full((h, w, 3), 255, dtype=np.uint8)
+    img2[20:45, 10:30] = 0
+    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    _, bw2 = cv2.threshold(gray2, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    g2 = _glyph_for_candidate(img2, bw2, nc, engine=None, img_w=w, img_h=h)
+    assert g2.underlines == 0
+    assert g2.duration == DurationName.quarter
+
+
 def test_l4_pitch_rois_stay_in_pitch_band() -> None:
     """#69: pitch L4 boxes must not swallow chord/lyric vertical stack."""
     from app.pipeline.structure.ir import StaffSystem
