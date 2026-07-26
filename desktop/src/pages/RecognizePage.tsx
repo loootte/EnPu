@@ -18,7 +18,12 @@ import {
   problemsFromScore,
 } from "../lib/problems";
 import {
+  AppMenuBar,
+  type MenuAction,
+} from "../components/AppMenuBar";
+import {
   CoreApiError,
+  exportScore,
   getCoreBaseUrl,
   healthCheck,
   preprocessImage,
@@ -27,6 +32,14 @@ import {
   recognizeStructureRerun,
 } from "../lib/api";
 import {
+  buildProject,
+  dataUrlToFile,
+  fileToDataUrl,
+  loadProjectFromFile,
+  PROJECT_ACCEPT,
+  saveProjectFile,
+} from "../lib/projectIo";
+import {
   buildMeasureRects,
   measureRectsFromStructure,
   isLargeStaffRoi,
@@ -34,8 +47,9 @@ import {
   rectToMeasureRange,
 } from "../lib/measureLayout";
 import {
+  downloadText,
   emptyScore,
-  parseProjectJson,
+  safeFilename,
   scoreFromRecognize,
 } from "../lib/scoreUtils";
 import type {
@@ -334,6 +348,10 @@ export function RecognizePage() {
     import("../lib/types").LayoutRegion[] | null
   >(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [projectName, setProjectName] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   // Keep latest score for keyboard crop without stale closures.
   const scoreRef = useRef<Score | null>(null);
   scoreRef.current = score;
@@ -343,6 +361,8 @@ export function RecognizePage() {
   selectionRef.current = selection;
   const loadingRef = useRef(false);
   loadingRef.current = loading;
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
 
   // Object URL lifecycle for original file preview
   useEffect(() => {
@@ -379,6 +399,11 @@ export function RecognizePage() {
     return () => window.clearInterval(id);
   }, [refreshHealth]);
 
+  const onScoreChange = useCallback((s: Score) => {
+    setScore(s);
+    setDirty(true);
+  }, []);
+
   const onFile = (f: File) => {
     setError(null);
     setInfo(null);
@@ -386,6 +411,10 @@ export function RecognizePage() {
     setScore(null);
     setSelection(null);
     setHighlightMeasures(null);
+    setStructureDraft(null);
+    setStructureEditMode(false);
+    setProjectName(null);
+    setDirty(false);
     if (preprocessPreviewUrl) {
       URL.revokeObjectURL(preprocessPreviewUrl);
       setPreprocessPreviewUrl(null);
@@ -395,8 +424,201 @@ export function RecognizePage() {
     setLayoutBoxes(null);
     setLayoutRegions(null);
     setFile(f);
+    void fileToDataUrl(f)
+      .then((url) => setImageDataUrl(url))
+      .catch(() => setImageDataUrl(null));
     setInfo(`已选择：${f.name}（${Math.round(f.size / 1024)} KB）`);
   };
+
+  const onSaveProject = useCallback(async () => {
+    const sc = scoreRef.current;
+    if (!sc) {
+      setError("没有可保存的谱面，请先识别或新建谱");
+      return;
+    }
+    try {
+      let dataUrl = imageDataUrl;
+      if (!dataUrl && fileRef.current) {
+        dataUrl = await fileToDataUrl(fileRef.current);
+        setImageDataUrl(dataUrl);
+      }
+      const proj = buildProject({
+        score: sc,
+        sourceImageName: fileRef.current?.name ?? sc.meta?.source_image ?? null,
+        sourceImageDataUrl: dataUrl,
+        structure: structureDraft ?? result?.structure ?? null,
+        boxes: result?.boxes ?? layoutBoxes,
+        regions: result?.regions ?? layoutRegions,
+        engine: result?.engine ?? health?.engine ?? null,
+      });
+      const name = saveProjectFile(proj, projectName ?? proj.title);
+      setProjectName(name);
+      setDirty(false);
+      setInfo(
+        `已保存工程：${name}` +
+          (dataUrl ? "（含原图与结构层）" : "（仅谱面，未嵌入原图）"),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存工程失败");
+    }
+  }, [
+    health?.engine,
+    imageDataUrl,
+    layoutBoxes,
+    layoutRegions,
+    projectName,
+    result?.boxes,
+    result?.engine,
+    result?.regions,
+    result?.structure,
+    structureDraft,
+  ]);
+
+  const onOpenProjectFile = useCallback(async (f: File) => {
+    setError(null);
+    setInfo(null);
+    try {
+      const proj = await loadProjectFromFile(f);
+      setScore(proj.score);
+      setProjectName(f.name);
+      setDirty(false);
+      setSelection(null);
+      setHighlightMeasures(null);
+      setHoverMeasure(null);
+      setStructureEditMode(false);
+      setSelectedStructureId(null);
+
+      if (proj.structure) {
+        setStructureDraft(structuredClone(proj.structure));
+        setResult({
+          ok: true,
+          engine: proj.meta?.engine || "project",
+          texts: [],
+          boxes: proj.boxes ?? [],
+          regions: proj.regions ?? [],
+          notes: [],
+          score: proj.score,
+          structure: proj.structure,
+          meta: {
+            width: 0,
+            height: 0,
+            elapsed_ms: 0,
+            filename: proj.source_image ?? f.name,
+            mock: false,
+            parse_mode: "score",
+            parse_warnings: ["从工程文件恢复"],
+          },
+        });
+        setLayoutBoxes(proj.boxes ?? null);
+        setLayoutRegions(proj.regions ?? null);
+        setOverlayMode("structure");
+      } else {
+        setResult(null);
+        setStructureDraft(null);
+        setLayoutBoxes(proj.boxes ?? null);
+        setLayoutRegions(proj.regions ?? null);
+      }
+
+      if (proj.source_image_data_url) {
+        setImageDataUrl(proj.source_image_data_url);
+        const restored = await dataUrlToFile(
+          proj.source_image_data_url,
+          proj.source_image || "restored.png",
+        );
+        setFile(restored);
+      } else {
+        setFile(null);
+        setImageDataUrl(null);
+      }
+
+      setInfo(
+        `已打开工程：${f.name}` +
+          (proj.title ? ` · ${proj.title}` : "") +
+          (proj.structure ? " · 已恢复结构叠图" : "") +
+          (proj.source_image_data_url ? " · 已恢复原图" : " · 无嵌入原图"),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "无法打开工程文件");
+    }
+  }, []);
+
+  const onExportScoreJson = useCallback(() => {
+    const sc = scoreRef.current;
+    if (!sc) {
+      setError("没有可导出的谱面");
+      return;
+    }
+    const name = safeFilename(sc.title || "enpu-score", ".json");
+    downloadText(JSON.stringify(sc, null, 2), name, "application/json");
+    setInfo(`已导出 Score JSON：${name}`);
+  }, []);
+
+  const onExportBinary = useCallback(
+    async (format: "musicxml" | "midi") => {
+      const sc = scoreRef.current;
+      if (!sc) {
+        setError("没有可导出的谱面");
+        return;
+      }
+      try {
+        const res = await exportScore(sc, format, baseUrl);
+        const { downloadBase64 } = await import("../lib/scoreUtils");
+        downloadBase64(res.content_base64, res.filename, res.media_type);
+        setInfo(`已导出 ${format.toUpperCase()}：${res.filename}`);
+        setCoreState("online");
+      } catch (err) {
+        setError(
+          err instanceof CoreApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : String(err),
+        );
+      }
+    },
+    [baseUrl],
+  );
+
+  const onNewScore = useCallback(() => {
+    if (dirtyRef.current) {
+      const ok = window.confirm("当前工程有未保存更改，确定新建空白谱？");
+      if (!ok) return;
+    }
+    setScore(emptyScore("未命名"));
+    setResult(null);
+    setFile(null);
+    setImageDataUrl(null);
+    setSelection(null);
+    setHighlightMeasures(null);
+    setHoverMeasure(null);
+    setLayoutBoxes(null);
+    setLayoutRegions(null);
+    setStructureDraft(null);
+    setProjectName(null);
+    setDirty(true);
+    setInfo("已新建空白 Score，可直接编辑后保存工程");
+  }, []);
+
+  const onClearWorkspace = useCallback(() => {
+    if (dirtyRef.current) {
+      const ok = window.confirm("当前工程有未保存更改，确定清空工作区？");
+      if (!ok) return;
+    }
+    setFile(null);
+    setResult(null);
+    setScore(null);
+    setImageDataUrl(null);
+    setSelection(null);
+    setHighlightMeasures(null);
+    setHoverMeasure(null);
+    setLayoutBoxes(null);
+    setLayoutRegions(null);
+    setStructureDraft(null);
+    setProjectName(null);
+    setDirty(false);
+    setError(null);
+    setInfo(null);
+  }, []);
 
   const imageSize = useMemo(() => {
     // Prefer meta (original pixels after box unscale); 0 until recognize.
@@ -544,8 +766,9 @@ export function RecognizePage() {
     }
   };
 
-  const onRecognize = async () => {
-    if (!file || loading) return;
+  const onRecognize = useCallback(async () => {
+    const f = fileRef.current;
+    if (!f || loadingRef.current) return;
     setError(null);
     setInfo(null);
     setLoading(true);
@@ -556,21 +779,22 @@ export function RecognizePage() {
     setLayoutRegions(null);
     try {
       const res = await recognizeImage(
-        file,
+        f,
         baseUrl,
         undefined,
         preprocessOpts,
-        preprocessOpts.use_selection_crop ? selection : null,
+        preprocessOpts.use_selection_crop ? selectionRef.current : null,
       );
       setResult(res);
       setLayoutBoxes(res.boxes ?? null);
       setLayoutRegions(res.regions ?? null);
-      setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
+      setScore(scoreFromRecognize(res.score, res.meta.filename || f.name));
       setStructureDraft(
         res.structure ? structuredClone(res.structure) : null,
       );
       setSelectedStructureId(null);
       setStructureEditMode(false);
+      setDirty(true);
       setCoreState("online");
       if (res.structure?.items?.length) {
         setOverlayMode("structure");
@@ -604,7 +828,7 @@ export function RecognizePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [baseUrl, preprocessOpts, refreshHealth]);
 
   const onCropRecognize = useCallback(async () => {
     const f = fileRef.current;
@@ -731,6 +955,7 @@ export function RecognizePage() {
         }),
       };
     });
+    setDirty(true);
   }, []);
 
   const onResetStructureEdits = useCallback(() => {
@@ -888,7 +1113,64 @@ export function RecognizePage() {
     structureRerunning,
   ]);
 
-  // Esc clear selection; Ctrl+Shift+R crop re-recognize
+  const onMenuAction = useCallback(
+    (action: MenuAction) => {
+      switch (action) {
+        case "file.openImage":
+          imageInputRef.current?.click();
+          break;
+        case "file.openProject":
+          projectInputRef.current?.click();
+          break;
+        case "file.saveProject":
+          void onSaveProject();
+          break;
+        case "file.newScore":
+          onNewScore();
+          break;
+        case "file.clear":
+          onClearWorkspace();
+          break;
+        case "recognize.run":
+          void onRecognize();
+          break;
+        case "recognize.crop":
+          void onCropRecognize();
+          break;
+        case "export.json":
+          onExportScoreJson();
+          break;
+        case "export.musicxml":
+          void onExportBinary("musicxml");
+          break;
+        case "export.midi":
+          void onExportBinary("midi");
+          break;
+        case "view.refreshHealth":
+          void refreshHealth();
+          break;
+        case "help.about":
+          setInfo(
+            "恩谱 EnPu — 简谱结构识别与校对。工程文件 .enpu.json 可保存谱面、结构叠图与原图。",
+          );
+          break;
+        default:
+          break;
+      }
+    },
+    [
+      onClearWorkspace,
+      onCropRecognize,
+      onExportBinary,
+      onExportScoreJson,
+      onNewScore,
+      onRecognize,
+      onSaveProject,
+      refreshHealth,
+    ],
+  );
+
+  // Global shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
@@ -898,37 +1180,39 @@ export function RecognizePage() {
         setSelectedStructureId(null);
         return;
       }
-      if (e.key === "R" && e.ctrlKey && e.shiftKey) {
+      if (e.ctrlKey && e.shiftKey && (e.key === "R" || e.key === "r")) {
         e.preventDefault();
         void onCropRecognize();
+        return;
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === "O" || e.key === "o")) {
+        e.preventDefault();
+        projectInputRef.current?.click();
+        return;
+      }
+      if (e.ctrlKey && !e.shiftKey && (e.key === "o" || e.key === "O")) {
+        e.preventDefault();
+        imageInputRef.current?.click();
+        return;
+      }
+      if (e.ctrlKey && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        void onSaveProject();
+        return;
+      }
+      if (e.ctrlKey && (e.key === "n" || e.key === "N")) {
+        e.preventDefault();
+        onNewScore();
+        return;
+      }
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        void onRecognize();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCropRecognize]);
-
-  const onOpenProject = async (f: File) => {
-    setError(null);
-    setInfo(null);
-    try {
-      const text = await f.text();
-      const raw = JSON.parse(text) as unknown;
-      const proj = parseProjectJson(raw);
-      setScore(proj.score);
-      setResult(null);
-      setFile(null);
-      setSelection(null);
-      setHighlightMeasures(null);
-      setHoverMeasure(null);
-      setLayoutBoxes(null);
-      setLayoutRegions(null);
-      setInfo(`已打开工程：${f.name}${proj.title ? ` · ${proj.title}` : ""}`);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "无法打开工程文件",
-      );
-    }
-  };
+  }, [onCropRecognize, onNewScore, onRecognize, onSaveProject]);
 
   const onMessage = (kind: "info" | "error", message: string) => {
     if (kind === "error") {
@@ -940,13 +1224,6 @@ export function RecognizePage() {
     }
   };
 
-  const coreBadge =
-    coreState === "online"
-      ? "bg-emerald-500/20 text-emerald-200"
-      : coreState === "offline"
-        ? "bg-rose-500/20 text-rose-200"
-        : "bg-slate-500/20 text-slate-300";
-
   const coreLabel =
     coreState === "online"
       ? `核心在线${health?.engine ? ` · ${health.engine}` : ""}`
@@ -957,34 +1234,53 @@ export function RecognizePage() {
   const canCrop = Boolean(file && selection && !loading);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-3 px-3 py-3 sm:px-4 lg:px-5">
-      <header className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-medium tracking-[0.2em] text-indigo-300 uppercase">
-            EnPu · Phase 2 / 4
-          </p>
-          <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            恩谱
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-400">
-            双视图校对 · 框选精调 · 编辑试听 · 导出
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${coreBadge}`}
-            title={baseUrl}
-          >
+    <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-0">
+      <AppMenuBar
+        disabled={loading}
+        canRecognize={Boolean(file) && !loading}
+        canCrop={canCrop}
+        canSave={Boolean(score)}
+        canExportBinary={Boolean(score) && coreState === "online"}
+        coreOnline={coreState === "online"}
+        coreLabel={coreLabel}
+        dirty={dirty}
+        projectName={projectName}
+        onAction={onMenuAction}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 py-3 sm:px-4 lg:px-5">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-slate-400">
+          双视图校对 · 结构改框 · 工程保存 ·{" "}
+          <span className="text-slate-500" title={baseUrl}>
             {coreLabel}
           </span>
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => void refreshHealth()}
-            className="rounded-lg border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
+            disabled={!file || loading}
+            onClick={() => void onRecognize()}
+            className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-400 disabled:opacity-40"
           >
-            刷新状态
+            {loading ? "识别中…" : "开始识别"}
           </button>
-          <span className="text-[11px] text-slate-500">{baseUrl}</span>
+          <button
+            type="button"
+            disabled={!canCrop}
+            onClick={() => void onCropRecognize()}
+            className="rounded-lg border border-amber-400/40 bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-100 hover:bg-amber-500/30 disabled:opacity-40"
+          >
+            局部重识别
+          </button>
+          <button
+            type="button"
+            disabled={!score || loading}
+            onClick={() => void onSaveProject()}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/5 disabled:opacity-40"
+          >
+            保存工程{dirty ? " *" : ""}
+          </button>
         </div>
       </header>
 
@@ -1003,6 +1299,30 @@ export function RecognizePage() {
         />
       ) : null}
 
+      {/* Hidden file inputs for menu */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,.png,.jpg,.jpeg"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) onFile(f);
+        }}
+      />
+      <input
+        ref={projectInputRef}
+        type="file"
+        accept={PROJECT_ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) void onOpenProjectFile(f);
+        }}
+      />
+
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <ImagePicker
           disabled={loading}
@@ -1012,87 +1332,16 @@ export function RecognizePage() {
             setInfo(null);
           }}
         />
-        <button
-          type="button"
-          disabled={!file || loading}
-          onClick={() => void onRecognize()}
-          className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {loading ? "识别中…" : "开始识别"}
-        </button>
-        <button
-          type="button"
-          disabled={!canCrop}
-          onClick={() => void onCropRecognize()}
-          className="rounded-lg border border-amber-400/40 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-40"
-          title="对矩形选区重新识别并合并进当前 Score（Ctrl+Shift+R）"
-        >
-          {loading ? "局部识别中…" : "局部重识别"}
-        </button>
-        <button
-          type="button"
-          disabled={loading || !selection}
-          onClick={() => setSelection(null)}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40"
-        >
-          清除选区
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => projectInputRef.current?.click()}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
-        >
-          打开工程
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => {
-            setScore(emptyScore("未命名"));
-            setResult(null);
-            setFile(null);
-            setSelection(null);
-            setHighlightMeasures(null);
-            setHoverMeasure(null);
-            setLayoutBoxes(null);
-            setLayoutRegions(null);
-            setInfo("已新建空白 Score，可直接编辑后导出");
-          }}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5"
-        >
-          新建谱
-        </button>
-        <button
-          type="button"
-          disabled={loading || (!file && !result && !score && !error)}
-          onClick={() => {
-            setFile(null);
-            setResult(null);
-            setScore(null);
-            setSelection(null);
-            setHighlightMeasures(null);
-            setHoverMeasure(null);
-            setLayoutBoxes(null);
-            setLayoutRegions(null);
-            setError(null);
-            setInfo(null);
-          }}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40"
-        >
-          清空
-        </button>
-        <input
-          ref={projectInputRef}
-          type="file"
-          accept=".json,.enpu.json,application/json"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = "";
-            if (f) void onOpenProject(f);
-          }}
-        />
+        {selection ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => setSelection(null)}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-40"
+          >
+            清除选区
+          </button>
+        ) : null}
       </div>
 
       {/* Left tools + dual-view aligned 原稿 | 识别 (#45/#78) — max work area */}
@@ -1241,21 +1490,23 @@ export function RecognizePage() {
               result={result}
               loading={loading}
               score={score}
-              onScoreChange={setScore}
+              onScoreChange={onScoreChange}
               coreOnline={coreState === "online"}
               onMessage={onMessage}
               highlightMeasures={editorHighlights}
               hoverMeasure={hoverMeasure}
               onHoverMeasure={setHoverMeasure}
               focusMeasure={focusMeasure ?? hoverMeasure}
+              onSaveProject={() => void onSaveProject()}
             />
           </section>
         </div>
       </div>
 
-      <footer className="shrink-0 py-1 text-center text-xs text-slate-500">
-        双视图 #45 · 问题导航 #46 · 框选 #49 · core {baseUrl}
+      <footer className="shrink-0 border-t border-white/5 px-3 py-1.5 text-center text-xs text-slate-500">
+        文件菜单保存/打开工程 · 双视图 #45 · 结构改框 #78 · core {baseUrl}
       </footer>
+      </div>
     </div>
   );
 }

@@ -37,6 +37,8 @@ interface ScoreEditorProps {
   onHoverMeasure?: (measureNumber: number | null) => void;
   /** Scroll this 1-based measure into view when set. */
   focusMeasure?: number | null;
+  /** Prefer parent full project save when provided. */
+  onSaveProject?: () => void;
 }
 
 function updateNote(
@@ -72,6 +74,7 @@ export function ScoreEditor({
   hoverMeasure = null,
   onHoverMeasure,
   focusMeasure = null,
+  onSaveProject,
 }: ScoreEditorProps) {
   const highlightSet = new Set(highlightMeasures ?? []);
   const problemSet = useMemo(() => {
@@ -182,6 +185,11 @@ export function ScoreEditor({
   };
 
   const saveProject = () => {
+    if (onSaveProject) {
+      onSaveProject();
+      return;
+    }
+    // Fallback: score-only project (no embedded image/structure)
     const proj = toProject(score, sourceImage);
     const name = safeFilename(score.title || "enpu-project", ".enpu.json");
     downloadText(JSON.stringify(proj, null, 2), name, "application/json");

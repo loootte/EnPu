@@ -247,15 +247,38 @@ export interface PreprocessResponse {
   elapsed_ms: number;
 }
 
-/** Lightweight EnPu project file (Phase 2 MVP). */
+/**
+ * EnPu project file (.enpu.json).
+ * v0.1: score + optional source_image name
+ * v0.2: + embedded image, structure overlays, session notes
+ */
 export interface EnPuProject {
-  project_version: "0.1";
+  project_version: "0.1" | "0.2" | string;
   kind: "enpu-project";
   title?: string;
   score: Score;
+  /** Original image file name (display / re-open hint). */
   source_image?: string | null;
+  /**
+   * Optional embedded image as data URL (`data:image/png;base64,...`)
+   * so 打开工程 can restore the dual-view original.
+   */
+  source_image_data_url?: string | null;
+  /** Structure L1–L5 overlay from last recognition (#58/#78). */
+  structure?: StructureDebug | null;
+  /** OCR boxes from last recognition (optional dual-view). */
+  boxes?: BoundingBox[] | null;
+  regions?: LayoutRegion[] | null;
   updated_at?: string;
+  created_at?: string;
   notes?: string;
+  /** App / pipeline metadata */
+  meta?: {
+    engine?: string | null;
+    pipeline_mode?: string | null;
+    enpu_desktop?: string;
+    extra?: Record<string, unknown>;
+  };
 }
 
 export type CoreConnectionState = "unknown" | "online" | "offline";

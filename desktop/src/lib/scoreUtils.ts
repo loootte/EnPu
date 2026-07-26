@@ -70,11 +70,13 @@ export function defaultNote(): ScoreNote {
 
 export function toProject(score: Score, sourceImage?: string | null): EnPuProject {
   return {
-    project_version: "0.1",
+    project_version: "0.2",
     kind: "enpu-project",
     title: score.title || "untitled",
     score: cloneScore(score),
     source_image: sourceImage ?? score.meta?.source_image ?? null,
+    source_image_data_url: null,
+    structure: null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -84,15 +86,49 @@ export function parseProjectJson(raw: unknown): EnPuProject {
     throw new Error("工程文件不是对象");
   }
   const o = raw as Record<string, unknown>;
-  // Accept full Score as project for convenience
+  // Accept full EnPu project
   if (o.kind === "enpu-project" && o.score && typeof o.score === "object") {
-    return o as unknown as EnPuProject;
+    const score = o.score as Score;
+    return {
+      project_version:
+        typeof o.project_version === "string" ? o.project_version : "0.1",
+      kind: "enpu-project",
+      title:
+        typeof o.title === "string"
+          ? o.title
+          : score.title || "untitled",
+      score: cloneScore(score),
+      source_image:
+        typeof o.source_image === "string" ? o.source_image : null,
+      source_image_data_url:
+        typeof o.source_image_data_url === "string"
+          ? o.source_image_data_url
+          : null,
+      structure:
+        o.structure && typeof o.structure === "object"
+          ? (o.structure as EnPuProject["structure"])
+          : null,
+      boxes: Array.isArray(o.boxes) ? (o.boxes as EnPuProject["boxes"]) : null,
+      regions: Array.isArray(o.regions)
+        ? (o.regions as EnPuProject["regions"])
+        : null,
+      updated_at:
+        typeof o.updated_at === "string" ? o.updated_at : undefined,
+      created_at:
+        typeof o.created_at === "string" ? o.created_at : undefined,
+      notes: typeof o.notes === "string" ? o.notes : undefined,
+      meta:
+        o.meta && typeof o.meta === "object"
+          ? (o.meta as EnPuProject["meta"])
+          : undefined,
+    };
   }
+  // Accept bare Score JSON as project for convenience
   if (o.schema_version && o.parts) {
     const score = o as unknown as Score;
     return toProject(score);
   }
-  throw new Error("无法识别的工程/Score JSON");
+  throw new Error("无法识别的工程/Score JSON（需要 enpu-project 或 Score v0.1）");
 }
 
 /** Jianpu degree → MIDI (C major movable-do; key letter shifts tonic). */

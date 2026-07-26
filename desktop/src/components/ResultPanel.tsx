@@ -17,6 +17,7 @@ interface ResultPanelProps {
   hoverMeasure?: number | null;
   onHoverMeasure?: (n: number | null) => void;
   focusMeasure?: number | null;
+  onSaveProject?: () => void;
 }
 
 export function ResultPanel({
@@ -30,6 +31,7 @@ export function ResultPanel({
   hoverMeasure = null,
   onHoverMeasure,
   focusMeasure = null,
+  onSaveProject,
 }: ResultPanelProps) {
   const [tab, setTab] = useState<Tab>("edit");
 
@@ -114,6 +116,7 @@ export function ResultPanel({
                 hoverMeasure={hoverMeasure}
                 onHoverMeasure={onHoverMeasure}
                 focusMeasure={focusMeasure}
+                onSaveProject={onSaveProject}
               />
             ) : (
               <p className="text-sm text-slate-500">
