@@ -178,10 +178,9 @@ def page_layout_from_structure(
                 },
             )
         )
+    # Reading order: systems top→bottom, measures left→right by geometric center
+    sort_systems_and_measures_by_center(systems)
     for sys in systems:
-        sys.measures.sort(key=lambda m: (m.rect.x1, m.rect.y1))
-        for i, m in enumerate(sys.measures):
-            m.index = i
         # Reconstruct barline xs from measure edges
         xs: list[float] = []
         for m in sys.measures:
@@ -356,6 +355,37 @@ def _find_measure(
                 best_d = d
                 best = m
     return best
+
+
+def sort_systems_and_measures_by_center(systems: list[StaffSystem]) -> None:
+    """Sort systems and measures by geometric center for score reading order (#78).
+
+    - Systems: top → bottom (cy), then left → right (cx)
+    - Measures within a system: left → right (cx), then top → bottom (cy)
+
+    Reassigns ``system.index`` and ``measure.index`` after sorting so Score /
+    L3 global order matches the original jianpu layout after user box edits.
+    """
+    systems.sort(key=lambda s: (s.rect.cy, s.rect.cx))
+    for si, sys in enumerate(systems):
+        sys.index = si
+        sys.measures.sort(key=lambda m: (m.rect.cx, m.rect.cy))
+        for mi, m in enumerate(sys.measures):
+            m.index = mi
+            # global_m is 1-based reading order; recomputed by caller if needed
+            extra = dict(m.extra or {})
+            extra["sorted_by_center"] = True
+            m.extra = extra
+
+
+def reindex_global_measure_numbers(systems: list[StaffSystem]) -> int:
+    """Set extra['global_m'] to 1-based reading order after geometry sort."""
+    g = 0
+    for sys in systems:
+        for m in sys.measures:
+            g += 1
+            m.extra = {**(m.extra or {}), "global_m": g}
+    return g
 
 
 def clear_below_layer(layout: PageLayout, from_layer: StructureLayer) -> PageLayout:

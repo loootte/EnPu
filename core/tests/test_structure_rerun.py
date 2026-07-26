@@ -180,6 +180,107 @@ def test_structure_rerun_l3_keeps_systems(monkeypatch: pytest.MonkeyPatch) -> No
     config_mod.get_settings.cache_clear()
 
 
+def test_sort_measures_by_geometric_center() -> None:
+    """L3 boxes out of order are sorted left→right by center for score order."""
+    from app.pipeline.structure.ir import MeasureLayout, Rect, StaffSystem
+    from app.pipeline.structure.rebuild import (
+        reindex_global_measure_numbers,
+        sort_systems_and_measures_by_center,
+    )
+
+    systems = [
+        StaffSystem(
+            index=0,
+            rect=Rect(0, 100, 400, 180),
+            measures=[
+                # Intentionally reverse x order
+                MeasureLayout(index=0, rect=Rect(200, 110, 350, 170), extra={"id": "right"}),
+                MeasureLayout(index=1, rect=Rect(20, 110, 180, 170), extra={"id": "left"}),
+            ],
+        ),
+        StaffSystem(
+            index=1,
+            rect=Rect(0, 10, 400, 80),  # above first — should become index 0
+            measures=[
+                MeasureLayout(index=0, rect=Rect(50, 20, 150, 70), extra={"id": "top"}),
+            ],
+        ),
+    ]
+    sort_systems_and_measures_by_center(systems)
+    n = reindex_global_measure_numbers(systems)
+    assert n == 3
+    assert systems[0].extra.get("id") is None  # systems don't carry id here
+    assert systems[0].rect.cy < systems[1].rect.cy
+    assert systems[0].measures[0].extra["id"] == "top"
+    assert systems[0].measures[0].extra["global_m"] == 1
+    assert systems[1].measures[0].extra["id"] == "left"
+    assert systems[1].measures[0].extra["global_m"] == 2
+    assert systems[1].measures[1].extra["id"] == "right"
+    assert systems[1].measures[1].extra["global_m"] == 3
+
+
+def test_structure_rerun_l3_sorts_measure_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    """L3 rerun reorders user measure boxes by center before L4/L5."""
+    import app.config as config_mod
+    from app.pipeline.structure.pipeline import run_structure_rerun
+    from app.schemas.recognize import BoundingBox, StructureBox, StructureDebug
+
+    monkeypatch.setenv("ENPU_RECOGNIZE_ENGINE", "mock")
+    config_mod.get_settings.cache_clear()
+    settings = config_mod.get_settings()
+
+    # Two measures swapped in list order but left/right geometry clear
+    st = StructureDebug(
+        pipeline="structure",
+        summary={"key": "C", "time_signature": "4/4"},
+        items=[
+            StructureBox(
+                layer="L1",
+                id="l1-score",
+                label="score",
+                kind="score",
+                box=BoundingBox(x1=0, y1=0, x2=400, y2=200),
+            ),
+            StructureBox(
+                layer="L2",
+                id="l2-sys0",
+                label="谱行 1",
+                kind="system",
+                box=BoundingBox(x1=10, y1=40, x2=390, y2=120),
+            ),
+            StructureBox(
+                layer="L3",
+                id="l3-m1",
+                label="m1",
+                kind="measure",
+                box=BoundingBox(x1=200, y1=50, x2=370, y2=110),  # right
+            ),
+            StructureBox(
+                layer="L3",
+                id="l3-m2",
+                label="m2",
+                kind="measure",
+                box=BoundingBox(x1=20, y1=50, x2=180, y2=110),  # left
+            ),
+        ],
+    )
+    res = run_structure_rerun(
+        _synthetic_png(),
+        settings=settings,
+        from_layer="L3",
+        base_structure=st,
+        edits=[],
+        filename="t.png",
+    )
+    assert res.ok
+    l3 = [i for i in res.structure.items if i.layer == "L3"]
+    assert len(l3) >= 2
+    # Reading order: left measure first (smaller cx)
+    assert l3[0].box.x1 < l3[1].box.x1
+    assert any("geometric center" in w for w in res.meta.parse_warnings)
+    config_mod.get_settings.cache_clear()
+
+
 def test_structure_rerun_l2_requires_systems(monkeypatch: pytest.MonkeyPatch) -> None:
     """L2 rerun without L2 boxes must not silently re-detect; it errors."""
     import app.config as config_mod
