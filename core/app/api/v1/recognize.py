@@ -11,7 +11,13 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from app.config import get_settings
 from app.pipeline import PipelineError, run_recognize, run_recognize_crop
 from app.pipeline.preprocess import options_from_form
-from app.schemas.recognize import CropRecognizeResponse, RecognizeResponse
+from app.pipeline.structure import StructurePipelineError, run_structure_rerun
+from app.schemas.recognize import (
+    CropRecognizeResponse,
+    RecognizeResponse,
+    StructureDebug,
+    StructureRerunResponse,
+)
 from app.schemas.score import Score
 
 router = APIRouter(tags=["recognize"])
@@ -215,3 +221,118 @@ async def recognize_crop(
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
     return result
+
+
+def _parse_structure_debug(raw: str | None) -> StructureDebug:
+    if raw is None or not str(raw).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="base_structure JSON is required for structure rerun (#78).",
+        )
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"base_structure is not valid JSON: {exc}",
+        ) from exc
+    try:
+        return StructureDebug.model_validate(payload)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"base_structure failed StructureDebug validation: {exc}",
+        ) from exc
+
+
+def _parse_structure_edits(raw: str | None) -> list[dict]:
+    if raw is None or not str(raw).strip():
+        return []
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"edits is not valid JSON: {exc}",
+        ) from exc
+    if not isinstance(payload, list):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="edits must be a JSON array of {id, layer?, box}.",
+        )
+    return payload
+
+
+@router.post(
+    "/recognize/structure/rerun",
+    response_model=StructureRerunResponse,
+    summary="Re-run structure layers from a user-edited layer downward (#78)",
+)
+async def recognize_structure_rerun(
+    file: Annotated[UploadFile, File(description="与首次识别相同的简谱原图 png/jpg")],
+    from_layer: Annotated[
+        str,
+        Form(description="起始层 L1|L2|L3|L4|L5；重跑该层及下层，保留上层"),
+    ],
+    base_structure: Annotated[
+        str,
+        Form(description="当前 structure JSON（RecognizeResponse.structure）"),
+    ],
+    edits: Annotated[
+        str | None,
+        Form(
+            description=(
+                "可选：用户改框 JSON 数组 "
+                '[{ "id": "l2-sys0", "box": {x1,y1,x2,y2} }, ...]'
+            )
+        ),
+    ] = None,
+    key: Annotated[str | None, Form(description="可选：覆盖调号")] = None,
+    time_signature: Annotated[
+        str | None, Form(description="可选：覆盖拍号，如 4/4")
+    ] = None,
+    title: Annotated[str | None, Form(description="可选：覆盖标题")] = None,
+) -> StructureRerunResponse:
+    """Structure-first local re-recognize after the user adjusts layer boxes.
+
+    * **from_layer=L2** — keep L1; use (edited) system rects; re-run L3–L5
+    * **from_layer=L3** — keep L1–L2; use measure rects; re-run L4–L5
+    * **from_layer=L4** — keep L1–L3; use note ROIs; re-run L5
+    * **from_layer=L5** — re-fill glyphs on existing candidates
+    * **from_layer=L1** — use page regions; re-run L2–L5
+    """
+    settings = get_settings()
+    data, filename, content_type = await _read_image_upload(file)
+    structure = _parse_structure_debug(base_structure)
+    edit_list = _parse_structure_edits(edits)
+    layer = (from_layer or "").strip().upper()
+    if layer not in {"L1", "L2", "L3", "L4", "L5"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"from_layer must be L1–L5 (got {from_layer!r})",
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            run_structure_rerun,
+            data,
+            settings=settings,
+            from_layer=layer,  # type: ignore[arg-type]
+            base_structure=structure,
+            edits=edit_list,
+            filename=filename,
+            content_type=content_type,
+            key=key,
+            time_signature=time_signature,
+            title=title,
+        )
+    except StructurePipelineError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+    except PipelineError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+    return StructureRerunResponse(
+        **result.model_dump(),
+        from_layer=layer,  # type: ignore[arg-type]
+        edited_item_count=len(edit_list),
+    )

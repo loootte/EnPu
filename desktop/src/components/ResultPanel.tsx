@@ -35,7 +35,7 @@ export function ResultPanel({
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50">
+      <div className="flex min-h-[420px] h-[min(780px,calc(100vh-11rem))] items-center justify-center rounded-xl border border-white/10 bg-slate-950/50">
         <div className="flex items-center gap-3 text-sm text-indigo-200">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-indigo-300 border-t-transparent" />
           识别中…
@@ -46,7 +46,7 @@ export function ResultPanel({
 
   if (!result && !score) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
+      <div className="flex min-h-[420px] h-[min(780px,calc(100vh-11rem))] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
         <p>识别结果将显示在这里</p>
         <p className="text-xs text-slate-600">
           也可打开 .enpu.json / Score JSON 工程
@@ -63,8 +63,8 @@ export function ResultPanel({
   ];
 
   return (
-    <div className="flex min-h-64 flex-col rounded-xl border border-white/10 bg-slate-950/50">
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-3 py-2">
+    <div className="flex min-h-[420px] h-[min(780px,calc(100vh-11rem))] flex-col rounded-xl border border-white/10 bg-slate-950/50">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/5 px-3 py-2">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -100,7 +100,7 @@ export function ResultPanel({
         </div>
       </div>
 
-      <div className="max-h-[520px] flex-1 overflow-auto p-3">
+      <div className="min-h-0 flex-1 overflow-auto p-3">
         {tab === "edit" && (
           <>
             {score ? (

@@ -95,6 +95,15 @@ ENPU_PIPELINE_MODE=legacy      # 默认：现有 OCR→parse
 
 预览模式选 **结构**，左侧可开关 L1–L5。
 
+### 用户改框 + 局部重跑（#78）
+
+| 项 | 说明 |
+|----|------|
+| UI | 结构面板「编辑模式」：点选 L1–L5 框，拖边角缩放 / 拖框移动 |
+| API | `POST /v1/recognize/structure/rerun`：`from_layer` + `base_structure` + 可选 `edits` |
+| 语义 | 从 `from_layer` 起重跑该层及下层；上层框与结果保留 |
+| 实现 | `structure/rebuild.py` 从 structure 反序列化 IR；`run_structure_rerun` 按层分支 |
+
 ## 5. 与现有路径关系
 
 ```text
@@ -118,6 +127,7 @@ POST /v1/recognize
 | L2 pitch+chord+lyric 绑定 | #61 |
 | L3↔Score 小节对齐 | #66 |
 | L4 pitch 带 ROI / 和弦歌词分离 | #69 |
+| 用户改任意层框 + 从该层重跑下层 | #78 |
 | L4 高音点区域进 ROI | #71（部分：L4 上扩 pad，见 #72 实现） |
 | L5 高/低音点、附点、延音线 + 小节时值校验 | #72 |
 | 扫描件 L1 标题/L2 行区过大 | #64（自适应阈值 + 间隙/峰分割） |

@@ -147,6 +147,22 @@ class CropRecognizeResponse(RecognizeResponse):
     merge: CropMergeInfo | None = None
 
 
+class StructureBoxEdit(BaseModel):
+    """One user-edited structure box (#78). Prefer ``id`` from prior structure.items."""
+
+    id: str = ""
+    layer: Literal["L1", "L2", "L3", "L4", "L5"] | None = None
+    label: str = ""
+    box: BoundingBox
+
+
+class StructureRerunResponse(RecognizeResponse):
+    """Structure layer re-recognize from a chosen layer downward (#78)."""
+
+    from_layer: Literal["L1", "L2", "L3", "L4", "L5"]
+    edited_item_count: int = 0
+
+
 class HealthResponse(BaseModel):
     status: str = "ok"
     version: str | None = None

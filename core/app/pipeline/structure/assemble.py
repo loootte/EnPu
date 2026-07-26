@@ -247,6 +247,7 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
             )
         for meas in sys.measures:
             global_m += 1
+            # global_m follows system/measure iteration after geometry sort (#78)
             items.append(
                 StructureBox(
                     layer="L3",
@@ -280,33 +281,52 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                     )
                 )
                 g = nc.glyph
-                if g is not None and kind == "pitch":
-                    dur = g.duration.value if hasattr(g.duration, "value") else str(g.duration)
-                    label = g.pitch or ("0" if g.is_rest else "?")
-                    if g.underlines:
-                        label = f"{label}_{g.underlines}"
-                    if g.dots:
-                        label = f"{label}{'.' * min(2, g.dots)}"
-                    if g.octave:
-                        label = f"{label}@{g.octave:+d}"
-                    if (g.extra or {}).get("sustain_dashes"):
-                        label = f"{label}-"
-                    if (g.extra or {}).get("pitch_from") == "geometry":
-                        label = f"{label}~"
-                    items.append(
-                        StructureBox(
-                            layer="L5",
-                            id=f"l5-m{global_m}-n{nc.index}",
-                            label=label,
-                            box=nc.rect.as_box(),
-                            kind="glyph",
-                            pitch=g.pitch,
-                            duration=dur,
-                            underlines=g.underlines,
-                            octave=g.octave,
-                            confidence=g.confidence,
+                if kind == "pitch":
+                    # L5 box always equals L4 note ROI (user-edited L4 must cover L5)
+                    l5_box = nc.rect.as_box()
+                    if g is not None:
+                        dur = (
+                            g.duration.value
+                            if hasattr(g.duration, "value")
+                            else str(g.duration)
                         )
-                    )
+                        label = g.pitch or ("0" if g.is_rest else "?")
+                        if g.underlines:
+                            label = f"{label}_{g.underlines}"
+                        if g.dots:
+                            label = f"{label}{'.' * min(2, g.dots)}"
+                        if g.octave:
+                            label = f"{label}@{g.octave:+d}"
+                        if (g.extra or {}).get("sustain_dashes"):
+                            label = f"{label}-"
+                        if (g.extra or {}).get("pitch_from") == "geometry":
+                            label = f"{label}~"
+                        items.append(
+                            StructureBox(
+                                layer="L5",
+                                id=f"l5-m{global_m}-n{nc.index}",
+                                label=label,
+                                box=l5_box,
+                                kind="glyph",
+                                pitch=g.pitch,
+                                duration=dur,
+                                underlines=g.underlines,
+                                octave=g.octave,
+                                confidence=g.confidence,
+                            )
+                        )
+                    else:
+                        # Still emit L5 slot aligned to L4 after L4-edit rerun
+                        items.append(
+                            StructureBox(
+                                layer="L5",
+                                id=f"l5-m{global_m}-n{nc.index}",
+                                label="?",
+                                box=l5_box,
+                                kind="glyph",
+                                confidence=nc.confidence,
+                            )
+                        )
 
     return StructureDebug(
         pipeline="structure",

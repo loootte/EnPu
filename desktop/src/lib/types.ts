@@ -178,6 +178,20 @@ export interface CropRecognizeResponse extends RecognizeResponse {
   merge?: CropMergeInfo | null;
 }
 
+/** User-edited structure box for layer re-run (#78). */
+export interface StructureBoxEdit {
+  id: string;
+  layer?: StructureBox["layer"];
+  label?: string;
+  box: BoundingBox;
+}
+
+/** POST /v1/recognize/structure/rerun (#78). */
+export interface StructureRerunResponse extends RecognizeResponse {
+  from_layer: StructureBox["layer"];
+  edited_item_count: number;
+}
+
 export interface HealthResponse {
   status: string;
   version?: string | null;

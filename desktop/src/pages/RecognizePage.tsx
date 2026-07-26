@@ -11,6 +11,7 @@ import { ProblemNavPanel } from "../components/ProblemNavPanel";
 import {
   StructureLayerPanel,
   defaultStructureLayersEnabled,
+  type StructureLayerId,
 } from "../components/StructureLayerPanel";
 import {
   problemMeasureNumbers,
@@ -23,6 +24,7 @@ import {
   preprocessImage,
   recognizeCrop,
   recognizeImage,
+  recognizeStructureRerun,
 } from "../lib/api";
 import {
   buildMeasureRects,
@@ -37,14 +39,216 @@ import {
   scoreFromRecognize,
 } from "../lib/scoreUtils";
 import type {
+  BoundingBox,
   CoreConnectionState,
   CropRect,
   HealthResponse,
   PreprocessOptions,
   RecognizeResponse,
   Score,
+  StructureBoxEdit,
+  StructureDebug,
 } from "../lib/types";
 import { defaultPreprocessOptions } from "../lib/types";
+
+const LAYER_RANK: Record<StructureLayerId, number> = {
+  L1: 1,
+  L2: 2,
+  L3: 3,
+  L4: 4,
+  L5: 5,
+};
+
+function boxChanged(a: BoundingBox, b: BoundingBox, eps = 0.5): boolean {
+  return (
+    Math.abs(a.x1 - b.x1) > eps ||
+    Math.abs(a.y1 - b.y1) > eps ||
+    Math.abs(a.x2 - b.x2) > eps ||
+    Math.abs(a.y2 - b.y2) > eps
+  );
+}
+
+function collectStructureEdits(
+  base: StructureDebug | null | undefined,
+  draft: StructureDebug | null | undefined,
+): StructureBoxEdit[] {
+  if (!base?.items?.length || !draft?.items?.length) return [];
+  const byId = new Map(base.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]));
+  const edits: StructureBoxEdit[] = [];
+  for (const it of draft.items) {
+    const id = it.id || `${it.layer}-${it.label}`;
+    const prev = byId.get(id);
+    if (!prev || boxChanged(prev.box, it.box)) {
+      edits.push({ id, layer: it.layer, label: it.label, box: { ...it.box } });
+    }
+  }
+  return edits;
+}
+
+/** Map L4 id `l4-m{g}-pitch{i}` → key used by L5 `l5-m{g}-n{i}`. */
+function l4ToL5Key(id: string): string | null {
+  const m = id.match(/^l4-m(\d+)-(?:pitch|chord|lyric)?(\d+)$/i);
+  if (!m) return null;
+  return `l5-m${m[1]}-n${m[2]}`;
+}
+
+function boxCenter(b: BoundingBox): { cx: number; cy: number } {
+  return { cx: (b.x1 + b.x2) / 2, cy: (b.y1 + b.y2) / 2 };
+}
+
+/**
+ * After L3 re-run the backend already:
+ *  - assigned measures to systems by geometry
+ *  - sorted by center (reading order)
+ *  - renumbered m1..n
+ * Do **not** reattach draft boxes by id (l3-m1 was detection order; after
+ * sort it points at a different physical box → 1↔3 / 2↔4 swaps).
+ *
+ * For L3: trust response order & labels; only overlay draft geometry via
+ * nearest-center match (1:1, no id).
+ * For other layers: pin draft geometry by id as before.
+ */
+function mergePinnedLayerBoxes(
+  draft: StructureDebug | null | undefined,
+  response: StructureDebug | null | undefined,
+  fromLayer: StructureLayerId,
+): StructureDebug | null {
+  if (!response?.items?.length) return response ?? null;
+  if (!draft?.items?.length) return response;
+
+  // L3 re-run: response is authoritative for order; match draft boxes by center only
+  if (fromLayer === "L3") {
+    return mergeL3RerunStructure(draft, response);
+  }
+
+  const pinRank = LAYER_RANK[fromLayer];
+  const draftById = new Map(
+    draft.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]),
+  );
+
+  const l4BoxByL5Id = new Map<string, BoundingBox>();
+  for (const p of draft.items) {
+    if (p.layer !== "L4" || LAYER_RANK[p.layer] > pinRank) continue;
+    const l5id = l4ToL5Key(p.id || "");
+    if (l5id) l4BoxByL5Id.set(l5id, { ...p.box });
+  }
+
+  let below = response.items.filter((it) => LAYER_RANK[it.layer] > pinRank);
+  if (fromLayer === "L4" || fromLayer === "L5") {
+    below = below.map((it) => {
+      if (it.layer !== "L5") return it;
+      const id = it.id || `${it.layer}-${it.label}`;
+      const box = l4BoxByL5Id.get(id);
+      return box ? { ...it, box: { ...box } } : it;
+    });
+  }
+
+  const aboveFromResponse = response.items.filter(
+    (it) => LAYER_RANK[it.layer] <= pinRank,
+  );
+  const mergedAbove = aboveFromResponse.map((resp) => {
+    const id = resp.id || `${resp.layer}-${resp.label}`;
+    const d = draftById.get(id);
+    if (!d) return resp;
+    return {
+      ...resp,
+      box: { ...d.box },
+      id: d.id || resp.id,
+      label: d.label || resp.label,
+      kind: d.kind ?? resp.kind,
+    };
+  });
+
+  return {
+    ...response,
+    items: [...mergedAbove, ...below],
+    barlines: response.barlines,
+    summary: response.summary,
+  };
+}
+
+/** L3-specific merge: reading order = response; boxes from draft by nearest center. */
+function mergeL3RerunStructure(
+  draft: StructureDebug,
+  response: StructureDebug,
+): StructureDebug {
+  const draftL3 = draft.items.filter((it) => it.layer === "L3");
+  const used = new Set<number>();
+
+  const matchDraftBox = (respBox: BoundingBox): BoundingBox => {
+    const rc = boxCenter(respBox);
+    let bestI = -1;
+    let bestD = Infinity;
+    for (let i = 0; i < draftL3.length; i++) {
+      if (used.has(i)) continue;
+      const dc = boxCenter(draftL3[i].box);
+      const dist = (dc.cx - rc.cx) ** 2 + (dc.cy - rc.cy) ** 2;
+      if (dist < bestD) {
+        bestD = dist;
+        bestI = i;
+      }
+    }
+    // Generous threshold: whole page may be large; prefer any unused nearest
+    if (bestI >= 0) {
+      used.add(bestI);
+      return { ...draftL3[bestI].box };
+    }
+    return { ...respBox };
+  };
+
+  // L1/L2: prefer draft geometry by id (stable)
+  const draftById = new Map(
+    draft.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]),
+  );
+
+  const items = response.items.map((resp) => {
+    if (resp.layer === "L3") {
+      // Keep response id/label (m1, m2… reading order); box from draft geometry
+      return {
+        ...resp,
+        box: matchDraftBox(resp.box),
+      };
+    }
+    if (resp.layer === "L1" || resp.layer === "L2") {
+      const id = resp.id || `${resp.layer}-${resp.label}`;
+      const d = draftById.get(id);
+      if (d) return { ...resp, box: { ...d.box } };
+    }
+    return resp;
+  });
+
+  // Any draft L3 not matched (user-added, missing from response): insert by geometry
+  if (used.size < draftL3.length) {
+    const orphans = draftL3.filter((_, i) => !used.has(i));
+    const l3Only = items.filter((it) => it.layer === "L3");
+    const nonL3 = items.filter((it) => it.layer !== "L3");
+    const mergedL3 = [
+      ...l3Only,
+      ...orphans.map((d, i) => ({
+        layer: "L3" as const,
+        id: d.id || `user-l3-orphan-${i}`,
+        label: "新小节",
+        kind: "measure",
+        box: { ...d.box },
+        confidence: d.confidence,
+      })),
+    ].sort((a, b) => {
+      const ac = boxCenter(a.box);
+      const bc = boxCenter(b.box);
+      return ac.cy - bc.cy || ac.cx - bc.cx;
+    });
+    mergedL3.forEach((it, i) => {
+      it.label = `m${i + 1}`;
+      it.id = `l3-m${i + 1}`;
+    });
+    return {
+      ...response,
+      items: [...nonL3, ...mergedL3],
+    };
+  }
+
+  return { ...response, items };
+}
 
 export function RecognizePage() {
   const baseUrl = useMemo(() => getCoreBaseUrl(), []);
@@ -79,6 +283,46 @@ export function RecognizePage() {
   const [structureLayers, setStructureLayers] = useState(
     defaultStructureLayersEnabled,
   );
+  /** #78 structure box edit draft (session). */
+  const [structureDraft, setStructureDraft] = useState<StructureDebug | null>(
+    null,
+  );
+  const [structureEditMode, setStructureEditMode] = useState(false);
+  const [selectedStructureId, setSelectedStructureId] = useState<string | null>(
+    null,
+  );
+  const [structureFromLayer, setStructureFromLayer] =
+    useState<StructureLayerId>("L2");
+  const [structureRerunning, setStructureRerunning] = useState(false);
+  const [structureAddMode, setStructureAddMode] = useState(false);
+
+  // Edit mode / layer change: show edit layer (+ parent); clear off-layer selection
+  useEffect(() => {
+    if (!structureEditMode) return;
+    setOverlayMode("structure");
+    setStructureLayers((prev) => {
+      const next = { ...prev, [structureFromLayer]: true };
+      const parentOf: Record<StructureLayerId, StructureLayerId | null> = {
+        L5: "L4",
+        L4: "L3",
+        L3: "L2",
+        L2: "L1",
+        L1: null,
+      };
+      const p = parentOf[structureFromLayer];
+      if (p) next[p] = true;
+      return next;
+    });
+    setSelectedStructureId((cur) => {
+      if (!cur) return null;
+      const items = (structureDraft ?? result?.structure)?.items ?? [];
+      const it = items.find((x) => (x.id || `${x.layer}-${x.label}`) === cur);
+      if (!it || it.layer !== structureFromLayer) return null;
+      return cur;
+    });
+    // Only react to mode/layer changes — not every box drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [structureEditMode, structureFromLayer]);
   /**
    * Full-page layout from last whole-image recognize (natural pixels).
    * Crop only returns ROI boxes — keep full map for dual-view (#45).
@@ -322,12 +566,17 @@ export function RecognizePage() {
       setLayoutBoxes(res.boxes ?? null);
       setLayoutRegions(res.regions ?? null);
       setScore(scoreFromRecognize(res.score, res.meta.filename || file.name));
+      setStructureDraft(
+        res.structure ? structuredClone(res.structure) : null,
+      );
+      setSelectedStructureId(null);
+      setStructureEditMode(false);
       setCoreState("online");
       if (res.structure?.items?.length) {
         setOverlayMode("structure");
       }
       const structHint = res.structure?.items?.length
-        ? ` · 结构分层 ${res.structure.items.length} 框（可切换 L1–L5）`
+        ? ` · 结构分层 ${res.structure.items.length} 框（可改框重识别）`
         : "";
       const ppHint =
         res.meta.preprocess_steps && res.meta.preprocess_steps.length > 2
@@ -465,6 +714,180 @@ export function RecognizePage() {
     result?.meta.width,
   ]);
 
+  const structureEdits = useMemo(
+    () => collectStructureEdits(result?.structure, structureDraft),
+    [result?.structure, structureDraft],
+  );
+  const structureDirty = structureEdits.length > 0;
+
+  const onStructureBoxChange = useCallback((id: string, box: BoundingBox) => {
+    setStructureDraft((prev) => {
+      if (!prev?.items?.length) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((it) => {
+          const sid = it.id || `${it.layer}-${it.label}`;
+          return sid === id ? { ...it, box: { ...box } } : it;
+        }),
+      };
+    });
+  }, []);
+
+  const onResetStructureEdits = useCallback(() => {
+    setStructureDraft(
+      result?.structure ? structuredClone(result.structure) : null,
+    );
+    setSelectedStructureId(null);
+    setStructureAddMode(false);
+  }, [result?.structure]);
+
+  const onStructureBoxAdd = useCallback(
+    (box: BoundingBox, layer: StructureLayerId) => {
+      setStructureDraft((prev) => {
+        const base =
+          prev ??
+          (result?.structure
+            ? structuredClone(result.structure)
+            : { pipeline: "structure", items: [], summary: {} });
+        const id = `user-${layer.toLowerCase()}-${Date.now().toString(36)}`;
+        const kindByLayer: Record<StructureLayerId, string> = {
+          L1: "score",
+          L2: "system",
+          L3: "measure",
+          L4: "note_roi",
+          L5: "glyph",
+        };
+        // Temporary label — L3 numbers are assigned by geometric order on re-run
+        const labelByLayer: Record<StructureLayerId, string> = {
+          L1: "自定义区域",
+          L2: "新谱行",
+          L3: "新小节",
+          L4: "新音符",
+          L5: "新字形",
+        };
+        const item = {
+          layer,
+          id,
+          label: labelByLayer[layer],
+          kind: kindByLayer[layer],
+          box: { ...box },
+          confidence: 1,
+        };
+        // Insert L3 among existing by geometric center so draft order is sane
+        if (layer === "L3") {
+          const others = base.items.filter((it) => it.layer !== "L3");
+          const l3s = [...base.items.filter((it) => it.layer === "L3"), item].sort(
+            (a, b) => {
+              const ac = boxCenter(a.box);
+              const bc = boxCenter(b.box);
+              return ac.cy - bc.cy || ac.cx - bc.cx;
+            },
+          );
+          return { ...base, items: [...others, ...l3s] };
+        }
+        return { ...base, items: [...base.items, item] };
+      });
+      setStructureAddMode(false);
+      setStructureFromLayer(layer);
+      setOverlayMode("structure");
+      setInfo(
+        layer === "L3"
+          ? `已添加 L3 区域（暂标「新小节」）· 重识别下层后会按几何位置排成正确小节号`
+          : `已添加 ${layer} 区域 · 可继续拖拽调整，然后点「按 ${layer} 框重识别下层」`,
+      );
+    },
+    [result?.structure],
+  );
+
+  const onDeleteSelectedStructure = useCallback(() => {
+    if (!selectedStructureId) return;
+    setStructureDraft((prev) => {
+      if (!prev?.items?.length) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter(
+          (it) => (it.id || `${it.layer}-${it.label}`) !== selectedStructureId,
+        ),
+      };
+    });
+    setSelectedStructureId(null);
+  }, [selectedStructureId]);
+
+  const onStructureRerun = useCallback(async () => {
+    const f = fileRef.current;
+    const base = result?.structure;
+    if (!f || !base || structureRerunning || loading) return;
+    setError(null);
+    setInfo(null);
+    setStructureRerunning(true);
+    setLoading(true);
+    try {
+      // Always use the UI edit layer. structureDraft already has user boxes;
+      // do NOT re-detect that layer — only recompute layers below it.
+      const draft = structureDraft ?? base;
+      const edits = collectStructureEdits(base, draft);
+      const res = await recognizeStructureRerun(f, {
+        fromLayer: structureFromLayer,
+        baseStructure: draft,
+        edits,
+        baseUrl,
+      });
+      // Keep pinned current-layer boxes from draft if response drifts
+      const mergedStructure = mergePinnedLayerBoxes(
+        draft,
+        res.structure ?? null,
+        structureFromLayer,
+      );
+      setResult({
+        ...res,
+        structure: mergedStructure ?? res.structure,
+      });
+      setLayoutBoxes(res.boxes ?? null);
+      setLayoutRegions(res.regions ?? null);
+      setScore(scoreFromRecognize(res.score, res.meta.filename || f.name));
+      setStructureDraft(
+        mergedStructure
+          ? structuredClone(mergedStructure)
+          : res.structure
+            ? structuredClone(res.structure)
+            : null,
+      );
+      setSelectedStructureId(null);
+      setOverlayMode("structure");
+      setStructureLayers((prev) => ({
+        ...prev,
+        [structureFromLayer]: true,
+      }));
+      setCoreState("online");
+      setInfo(
+        `已按编辑后的 ${structureFromLayer} 框重识别其下层 · from=${res.from_layer} · 改框 ${edits.length} · ${res.meta.elapsed_ms} ms`,
+      );
+      void refreshHealth();
+    } catch (err) {
+      const message =
+        err instanceof CoreApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : String(err);
+      setError(message);
+      if (err instanceof CoreApiError && err.kind === "network") {
+        setCoreState("offline");
+      }
+    } finally {
+      setStructureRerunning(false);
+      setLoading(false);
+    }
+  }, [
+    baseUrl,
+    loading,
+    refreshHealth,
+    result?.structure,
+    structureDraft,
+    structureFromLayer,
+    structureRerunning,
+  ]);
+
   // Esc clear selection; Ctrl+Shift+R crop re-recognize
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -472,6 +895,7 @@ export function RecognizePage() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "Escape") {
         setSelection(null);
+        setSelectedStructureId(null);
         return;
       }
       if (e.key === "R" && e.ctrlKey && e.shiftKey) {
@@ -533,16 +957,16 @@ export function RecognizePage() {
   const canCrop = Boolean(file && selection && !loading);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-3 px-3 py-3 sm:px-4 lg:px-5">
+      <header className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium tracking-[0.2em] text-indigo-300 uppercase">
             EnPu · Phase 2 / 4
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-white">
+          <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
             恩谱
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-0.5 text-sm text-slate-400">
             双视图校对 · 框选精调 · 编辑试听 · 导出
           </p>
         </div>
@@ -579,7 +1003,7 @@ export function RecognizePage() {
         />
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <ImagePicker
           disabled={loading}
           onFile={onFile}
@@ -588,9 +1012,6 @@ export function RecognizePage() {
             setInfo(null);
           }}
         />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={!file || loading}
@@ -674,19 +1095,10 @@ export function RecognizePage() {
         />
       </div>
 
-      {/* Dual-view: left original · right score (#45) */}
-      <div className="grid flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <section className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-200">
-              原稿对照
-            </h2>
-            <span className="text-[11px] text-slate-500">
-              {result?.structure
-                ? "结构叠图 L1–L5 · 悬停联动"
-                : "悬停同步小节 · 原图/叠图/小节格"}
-            </span>
-          </div>
+      {/* Left tools + dual-view aligned 原稿 | 识别 (#45/#78) — max work area */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row lg:items-stretch">
+        {/* Tools column — narrow so dual-view gets more width */}
+        <aside className="flex w-full shrink-0 flex-col gap-2 lg:sticky lg:top-2 lg:w-64 xl:w-72 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
           <PreprocessPanel
             options={preprocessOpts}
             onChange={setPreprocessOpts}
@@ -697,14 +1109,44 @@ export function RecognizePage() {
             steps={preprocessSteps}
           />
           <StructureLayerPanel
-            structure={result?.structure}
+            structure={structureDraft ?? result?.structure}
             enabled={structureLayers}
             onChange={(next) => {
               setStructureLayers(next);
-              if (result?.structure?.items?.length) {
+              if ((structureDraft ?? result?.structure)?.items?.length) {
                 setOverlayMode("structure");
               }
             }}
+            editMode={structureEditMode}
+            onEditModeChange={(on) => {
+              setStructureEditMode(on);
+              if (on) {
+                setOverlayMode("structure");
+                setStructureLayers((prev) => ({
+                  ...prev,
+                  [structureFromLayer]: true,
+                }));
+              } else {
+                setStructureAddMode(false);
+                setSelectedStructureId(null);
+              }
+            }}
+            fromLayer={structureFromLayer}
+            onFromLayerChange={(L) => {
+              setStructureFromLayer(L);
+              setSelectedStructureId(null);
+              if (structureEditMode) {
+                setStructureLayers((prev) => ({ ...prev, [L]: true }));
+              }
+            }}
+            dirty={structureDirty}
+            selectedId={selectedStructureId}
+            onRerun={() => void onStructureRerun()}
+            onResetEdits={onResetStructureEdits}
+            rerunning={structureRerunning}
+            addMode={structureAddMode}
+            onAddModeChange={setStructureAddMode}
+            onDeleteSelected={onDeleteSelectedStructure}
           />
           <ProblemNavPanel
             score={score}
@@ -717,70 +1159,101 @@ export function RecognizePage() {
               }
             }}
           />
-          <ImagePreview
-            src={preprocessPreviewUrl || previewUrl}
-            filename={file?.name}
-            selectionEnabled={Boolean(file)}
-            selection={selection}
-            onSelectionChange={(r) => {
-              setSelection(r);
-            }}
-            boxes={result?.boxes ?? layoutBoxes}
-            highlightSelection
-            measureRects={allMeasureRects.length ? allMeasureRects : null}
-            activeMeasureNumbers={activeMeasureNumbers}
-            overlayMode={overlayMode}
-            onOverlayModeChange={setOverlayMode}
-            onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
-            structure={result?.structure}
-            structureLayers={structureLayers}
-          />
-          {selection ? (
-            <p className="text-[11px] text-slate-500">
-              选区 {Math.round(selection.x2 - selection.x1)}×
-              {Math.round(selection.y2 - selection.y1)}
-              {selectionPreviewRange
-                ? selectionPreviewRange.large
-                  ? ` · 大框选 → 将替换全部 ${selectionPreviewRange.to} 小节`
-                  : ` · 预计小节 ${selectionPreviewRange.from}–${selectionPreviewRange.to}`
-                : ""}
-            </p>
-          ) : (
-            <p className="text-[11px] text-slate-600">
-              滚轮缩放 · 空格/中键平移 · 拖拽框选 · 结构模式看 L1–L5 叠图
-            </p>
-          )}
-        </section>
+        </aside>
 
-        <section className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-200">
-              识别结果 · 编辑
-            </h2>
-            {hoverMeasure != null ? (
-              <span className="text-[11px] text-amber-200/90">
-                联动小节 {hoverMeasure}
+        {/* Dual-view: tops aligned, equal height work areas */}
+        <div className="grid min-w-0 min-h-0 flex-1 gap-3 lg:grid-cols-2 lg:gap-4">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex shrink-0 items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-200">
+                原稿对照
+              </h2>
+              <span className="text-[11px] text-slate-500">
+                {result?.structure
+                  ? "结构叠图 L1–L5 · 悬停联动"
+                  : "悬停同步小节 · 原图/叠图/小节格"}
               </span>
+            </div>
+            <ImagePreview
+              src={preprocessPreviewUrl || previewUrl}
+              filename={file?.name}
+              selectionEnabled={
+                Boolean(file) && !structureEditMode && !structureAddMode
+              }
+              selection={selection}
+              onSelectionChange={(r) => {
+                setSelection(r);
+              }}
+              boxes={result?.boxes ?? layoutBoxes}
+              highlightSelection
+              measureRects={allMeasureRects.length ? allMeasureRects : null}
+              activeMeasureNumbers={activeMeasureNumbers}
+              overlayMode={overlayMode}
+              onOverlayModeChange={setOverlayMode}
+              onHoverImage={nMeasures > 0 ? onHoverImage : undefined}
+              structure={structureDraft ?? result?.structure}
+              structureLayers={structureLayers}
+              structureEditMode={structureEditMode}
+              structureEditLayer={structureFromLayer}
+              structureAddMode={structureAddMode}
+              structureAddLayer={structureFromLayer}
+              selectedStructureId={selectedStructureId}
+              onSelectStructureId={setSelectedStructureId}
+              onStructureBoxChange={onStructureBoxChange}
+              onStructureBoxAdd={onStructureBoxAdd}
+            />
+            {selection && !structureEditMode ? (
+              <p className="text-[11px] text-slate-500">
+                选区 {Math.round(selection.x2 - selection.x1)}×
+                {Math.round(selection.y2 - selection.y1)}
+                {selectionPreviewRange
+                  ? selectionPreviewRange.large
+                    ? ` · 大框选 → 将替换全部 ${selectionPreviewRange.to} 小节`
+                    : ` · 预计小节 ${selectionPreviewRange.from}–${selectionPreviewRange.to}`
+                  : ""}
+              </p>
             ) : (
-              <span className="text-[11px] text-slate-500">试听 / 导出</span>
+              <p className="text-[11px] text-slate-600">
+                滚轮缩放 · 空格/中键平移
+                {structureAddMode
+                  ? " · 拖拽添加区域（图像像素）"
+                  : structureEditMode
+                    ? " · 点选框自动缩放到上一层并居中 · 拖角调框"
+                    : " · 拖拽框选"}
+              </p>
             )}
-          </div>
-          <ResultPanel
-            result={result}
-            loading={loading}
-            score={score}
-            onScoreChange={setScore}
-            coreOnline={coreState === "online"}
-            onMessage={onMessage}
-            highlightMeasures={editorHighlights}
-            hoverMeasure={hoverMeasure}
-            onHoverMeasure={setHoverMeasure}
-            focusMeasure={focusMeasure ?? hoverMeasure}
-          />
-        </section>
+          </section>
+
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex shrink-0 items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-slate-200">
+                识别结果 · 编辑
+              </h2>
+              {hoverMeasure != null ? (
+                <span className="text-[11px] text-amber-200/90">
+                  联动小节 {hoverMeasure}
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-500">试听 / 导出</span>
+              )}
+            </div>
+            <ResultPanel
+              result={result}
+              loading={loading}
+              score={score}
+              onScoreChange={setScore}
+              coreOnline={coreState === "online"}
+              onMessage={onMessage}
+              highlightMeasures={editorHighlights}
+              hoverMeasure={hoverMeasure}
+              onHoverMeasure={setHoverMeasure}
+              focusMeasure={focusMeasure ?? hoverMeasure}
+            />
+          </section>
+        </div>
       </div>
 
-      <footer className="pb-4 text-center text-xs text-slate-500">
+      <footer className="shrink-0 py-1 text-center text-xs text-slate-500">
         双视图 #45 · 问题导航 #46 · 框选 #49 · core {baseUrl}
       </footer>
     </div>

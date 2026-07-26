@@ -2,7 +2,15 @@
  * Image preview: selection, zoom/pan (#49), dual-view overlays (#45).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+} from "react";
 import type {
   BoundingBox,
   CropRect,
@@ -33,6 +41,17 @@ export interface ImagePreviewProps {
   /** #58 structure-first layer overlays */
   structure?: StructureDebug | null;
   structureLayers?: Record<StructureLayerId, boolean> | null;
+  /** #78: allow drag-resize of structure boxes */
+  structureEditMode?: boolean;
+  /** #78: only boxes of this layer are selectable/editable */
+  structureEditLayer?: StructureLayerId;
+  /** #78: drag on image to create a new region of addLayer */
+  structureAddMode?: boolean;
+  structureAddLayer?: StructureLayerId;
+  selectedStructureId?: string | null;
+  onSelectStructureId?: (id: string | null) => void;
+  onStructureBoxChange?: (id: string, box: BoundingBox) => void;
+  onStructureBoxAdd?: (box: BoundingBox, layer: StructureLayerId) => void;
 }
 
 type DragState = {
@@ -49,9 +68,21 @@ type PanDrag = {
   originPanY: number;
 };
 
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 0.35;
 const MAX_ZOOM = 4;
+/** Auto-fit in edit mode may zoom closer than manual wheel max. */
+const MAX_AUTO_ZOOM = 12;
 const ZOOM_STEP = 1.15;
+/** Padding fraction when fitting parent layer box into viewport. */
+const FIT_PAD = 0.08;
+
+const PARENT_LAYER: Record<StructureLayerId, StructureLayerId | null> = {
+  L5: "L4",
+  L4: "L3",
+  L3: "L2",
+  L2: "L1",
+  L1: null,
+};
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
@@ -64,6 +95,91 @@ function normRect(x1: number, y1: number, x2: number, y2: number): CropRect {
     x2: Math.max(x1, x2),
     y2: Math.max(y1, y2),
   };
+}
+
+function itemId(it: StructureBox): string {
+  return it.id || `${it.layer}-${it.label}`;
+}
+
+/**
+ * Focus region for edit selection: parent layer box that contains the selection
+ * (e.g. L4 → surrounding L3). Falls back to the selected box itself.
+ */
+function focusBoxForSelection(
+  structure: StructureDebug,
+  selectedId: string,
+): BoundingBox | null {
+  const items = structure.items ?? [];
+  const selected = items.find((it) => itemId(it) === selectedId);
+  if (!selected) return null;
+
+  const parentLayer = PARENT_LAYER[selected.layer];
+  if (!parentLayer) {
+    // L1: prefer score region if selecting title/key; else self
+    if (selected.layer === "L1") {
+      const score = items.find(
+        (it) =>
+          it.layer === "L1" &&
+          (it.kind === "score" || it.label === "score" || it.id === "l1-score"),
+      );
+      if (
+        score &&
+        selected.kind !== "score" &&
+        selected.label !== "score" &&
+        selected.id !== "l1-score"
+      ) {
+        // Still zoom to the selected L1 band itself (title etc.)
+        return selected.box;
+      }
+    }
+    return selected.box;
+  }
+
+  const cx = (selected.box.x1 + selected.box.x2) / 2;
+  const cy = (selected.box.y1 + selected.box.y2) / 2;
+  let candidates = items.filter((it) => it.layer === parentLayer);
+
+  // L2→L1: prefer score region over title/key_time
+  if (parentLayer === "L1") {
+    const scores = candidates.filter(
+      (it) =>
+        it.kind === "score" || it.label === "score" || it.id === "l1-score",
+    );
+    if (scores.length) candidates = scores;
+  }
+
+  if (!candidates.length) return selected.box;
+
+  const containing = candidates.filter(
+    (c) =>
+      cx >= c.box.x1 - 2 &&
+      cx <= c.box.x2 + 2 &&
+      cy >= c.box.y1 - 2 &&
+      cy <= c.box.y2 + 2,
+  );
+  if (containing.length === 1) return containing[0].box;
+  if (containing.length > 1) {
+    // Smallest containing parent (tightest)
+    return containing.reduce((a, b) => {
+      const aa = (a.box.x2 - a.box.x1) * (a.box.y2 - a.box.y1);
+      const bb = (b.box.x2 - b.box.x1) * (b.box.y2 - b.box.y1);
+      return aa <= bb ? a : b;
+    }).box;
+  }
+
+  // Nearest by center distance
+  let best = candidates[0];
+  let bestD = Infinity;
+  for (const c of candidates) {
+    const bcx = (c.box.x1 + c.box.x2) / 2;
+    const bcy = (c.box.y1 + c.box.y2) / 2;
+    const d = (bcx - cx) ** 2 + (bcy - cy) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = c;
+    }
+  }
+  return best.box;
 }
 
 const LAYER_STYLE: Record<
@@ -97,38 +213,172 @@ const LAYER_STYLE: Record<
   },
 };
 
+type ResizeHandle =
+  | "n"
+  | "s"
+  | "e"
+  | "w"
+  | "ne"
+  | "nw"
+  | "se"
+  | "sw"
+  | "move";
+
+/**
+ * Structure box geometry is always in **natural image pixels** (authoritative).
+ * Screen size = natural * scale * zoom (zoom applied on parent transform).
+ * Drag deltas must divide by (scale * zoom) so edit handles match the painted box.
+ */
 function StructureItemOverlay({
   item,
   scaleX,
   scaleY,
+  zoom,
+  editable,
+  selected,
+  onSelect,
+  onBoxChange,
+  naturalW,
+  naturalH,
+  dimmed,
 }: {
   item: StructureBox;
   scaleX: number;
   scaleY: number;
+  zoom: number;
+  editable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  onBoxChange?: (id: string, box: BoundingBox) => void;
+  naturalW: number;
+  naturalH: number;
+  /** Other layers while editing: visible but not interactive */
+  dimmed?: boolean;
 }) {
   const st = LAYER_STYLE[item.layer];
   const showLabel = item.layer === "L1" || item.layer === "L2" || item.layer === "L5";
-  const thick = item.layer === "L1" || item.layer === "L2" ? "border-2" : "border";
+  const id = item.id || `${item.layer}-${item.label}`;
+  // Visual scale: CSS layout px per natural px, then parent applies zoom
+  const sx = Math.max(scaleX * zoom, 1e-6);
+  const sy = Math.max(scaleY * zoom, 1e-6);
+
+  const onPointerDownHandle = (
+    e: ReactPointerEvent,
+    handle: ResizeHandle,
+  ) => {
+    if (!editable || !onBoxChange) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.(id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origin = { ...item.box };
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+
+    const onMove = (ev: PointerEvent) => {
+      // client delta → natural image pixels (accounts for zoom)
+      const dx = (ev.clientX - startX) / sx;
+      const dy = (ev.clientY - startY) / sy;
+      let { x1, y1, x2, y2 } = origin;
+      if (handle === "move") {
+        const w = x2 - x1;
+        const h = y2 - y1;
+        x1 = clamp(origin.x1 + dx, 0, Math.max(0, naturalW - w));
+        y1 = clamp(origin.y1 + dy, 0, Math.max(0, naturalH - h));
+        x2 = x1 + w;
+        y2 = y1 + h;
+      } else {
+        if (handle.includes("e")) x2 = origin.x2 + dx;
+        if (handle.includes("w")) x1 = origin.x1 + dx;
+        if (handle.includes("s")) y2 = origin.y2 + dy;
+        if (handle.includes("n")) y1 = origin.y1 + dy;
+        x1 = clamp(x1, 0, naturalW);
+        x2 = clamp(x2, 0, naturalW);
+        y1 = clamp(y1, 0, naturalH);
+        y2 = clamp(y2, 0, naturalH);
+      }
+      const next = normRect(x1, y1, x2, y2);
+      if (next.x2 - next.x1 < 4 || next.y2 - next.y1 < 4) return;
+      onBoxChange(id, next);
+    };
+    const onUp = (ev: PointerEvent) => {
+      target.releasePointerCapture(ev.pointerId);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const handles: { h: ResizeHandle; style: CSSProperties; cursor: string }[] = [
+    { h: "nw", style: { left: 0, top: 0, transform: "translate(-50%, -50%)" }, cursor: "nwse-resize" },
+    { h: "ne", style: { left: "100%", top: 0, transform: "translate(-50%, -50%)" }, cursor: "nesw-resize" },
+    { h: "sw", style: { left: 0, top: "100%", transform: "translate(-50%, -50%)" }, cursor: "nesw-resize" },
+    { h: "se", style: { left: "100%", top: "100%", transform: "translate(-50%, -50%)" }, cursor: "nwse-resize" },
+    { h: "n", style: { left: "50%", top: 0, transform: "translate(-50%, -50%)" }, cursor: "ns-resize" },
+    { h: "s", style: { left: "50%", top: "100%", transform: "translate(-50%, -50%)" }, cursor: "ns-resize" },
+    { h: "w", style: { left: 0, top: "50%", transform: "translate(-50%, -50%)" }, cursor: "ew-resize" },
+    { h: "e", style: { left: "100%", top: "50%", transform: "translate(-50%, -50%)" }, cursor: "ew-resize" },
+  ];
+
   return (
     <div
-      className={`pointer-events-none absolute ${thick} ${st.border} ${st.bg}`}
+      className={`absolute border-2 ${st.border} ${st.bg} box-border ${
+        editable ? "pointer-events-auto" : "pointer-events-none"
+      } ${selected ? "z-20" : dimmed ? "z-[5]" : "z-10"} ${
+        dimmed ? "opacity-35" : ""
+      }`}
       style={{
         left: item.box.x1 * scaleX,
         top: item.box.y1 * scaleY,
         width: Math.max(1, (item.box.x2 - item.box.x1) * scaleX),
         height: Math.max(1, (item.box.y2 - item.box.y1) * scaleY),
+        // Outline outside geometry so selected frame matches natural-pixel box
+        outline: selected ? "2px solid rgba(255,255,255,0.9)" : undefined,
+        outlineOffset: 0,
       }}
-      title={[item.layer, item.label, item.pitch, item.duration]
+      title={[
+        item.layer,
+        item.label,
+        item.pitch,
+        item.duration,
+        `像素 ${Math.round(item.box.x1)},${Math.round(item.box.y1)}–${Math.round(item.box.x2)},${Math.round(item.box.y2)}`,
+        editable
+          ? "拖角缩放 · 拖框移动 · 以图像像素为准"
+          : dimmed
+            ? "非当前编辑层（不可选）"
+            : "",
+      ]
         .filter(Boolean)
         .join(" · ")}
+      onPointerDown={(e) => {
+        if (!editable) return;
+        onPointerDownHandle(e, "move");
+      }}
+      onClick={(e) => {
+        if (!editable) return;
+        e.stopPropagation();
+        onSelect?.(id);
+      }}
     >
       {showLabel && item.label ? (
         <span
-          className={`absolute -top-0.5 left-0 max-w-full truncate px-0.5 text-[9px] leading-tight ${st.text} bg-black/55`}
+          className={`pointer-events-none absolute -top-0.5 left-0 max-w-full truncate px-0.5 text-[9px] leading-tight ${st.text} bg-black/55`}
         >
           {item.label}
         </span>
       ) : null}
+      {editable && selected
+        ? handles.map(({ h, style, cursor }) => (
+            <div
+              key={h}
+              className="absolute h-2.5 w-2.5 rounded-sm border border-white bg-indigo-400"
+              style={{ ...style, cursor }}
+              onPointerDown={(e) => onPointerDownHandle(e, h)}
+            />
+          ))
+        : null}
     </div>
   );
 }
@@ -149,6 +399,14 @@ export function ImagePreview({
   compact = false,
   structure = null,
   structureLayers = null,
+  structureEditMode = false,
+  structureEditLayer = "L2",
+  structureAddMode = false,
+  structureAddLayer = "L2",
+  selectedStructureId = null,
+  onSelectStructureId,
+  onStructureBoxChange,
+  onStructureBoxAdd,
 }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -220,6 +478,79 @@ export function ImagePreview({
     [natural.h, natural.w],
   );
 
+  // Keep latest structure for parent lookup without re-fitting on every drag
+  const structureRef = useRef(structure);
+  structureRef.current = structure;
+
+  /**
+   * Fit a natural-pixel box into the viewport and center it.
+   * Uses flex-centered image + transform-origin center:
+   *   pan = -(boxCenter - imageCenter) * zoom  (in layout px)
+   */
+  const fitNaturalBox = useCallback(
+    (box: BoundingBox) => {
+      const vp = viewportRef.current;
+      const img = imgRef.current;
+      if (!vp || !img || !natural.w || !natural.h) return;
+
+      const layoutW = img.offsetWidth || img.clientWidth || baseSize.w;
+      const layoutH = img.offsetHeight || img.clientHeight || baseSize.h;
+      if (layoutW <= 1 || layoutH <= 1) return;
+
+      const sx = layoutW / natural.w;
+      const sy = layoutH / natural.h;
+      const tw = Math.max(8, (box.x2 - box.x1) * sx);
+      const th = Math.max(8, (box.y2 - box.y1) * sy);
+      const tcx = ((box.x1 + box.x2) / 2) * sx;
+      const tcy = ((box.y1 + box.y2) / 2) * sy;
+
+      const vpW = vp.clientWidth;
+      const vpH = vp.clientHeight;
+      if (vpW <= 1 || vpH <= 1) return;
+
+      const availW = vpW * (1 - 2 * FIT_PAD);
+      const availH = vpH * (1 - 2 * FIT_PAD);
+      const z = clamp(
+        Math.min(availW / tw, availH / th),
+        MIN_ZOOM,
+        MAX_AUTO_ZOOM,
+      );
+
+      // Flex-centers the unscaled image; pan offsets scaled delta from image center
+      const panX = -(tcx - layoutW / 2) * z;
+      const panY = -(tcy - layoutH / 2) * z;
+
+      setZoom(z);
+      setPan({ x: panX, y: panY });
+    },
+    [baseSize.h, baseSize.w, natural.h, natural.w],
+  );
+
+  // #78 edit mode: on selection change only → zoom/pan to parent layer region
+  // (do not re-run when box is resized — structure updates on every drag)
+  useEffect(() => {
+    if (!structureEditMode || structureAddMode) return;
+    if (!selectedStructureId) return;
+    if (!natural.w || !natural.h) return;
+    const st = structureRef.current;
+    if (!st?.items?.length) return;
+
+    const focus = focusBoxForSelection(st, selectedStructureId);
+    if (!focus) return;
+
+    const id = requestAnimationFrame(() => {
+      fitNaturalBox(focus);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [
+    selectedStructureId,
+    structureEditMode,
+    structureAddMode,
+    natural.w,
+    natural.h,
+    fitNaturalBox,
+  ]);
+
   const zoomAt = useCallback(
     (nextZoom: number, clientX?: number, clientY?: number) => {
       const z = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
@@ -241,13 +572,13 @@ export function ImagePreview({
     [zoom],
   );
 
-  const onWheel = (e: React.WheelEvent) => {
+  const onWheel = (e: ReactWheelEvent) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
     zoomAt(zoom * factor, e.clientX, e.clientY);
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
+  const onPointerDown = (e: ReactPointerEvent) => {
     if (!src) return;
     const el = e.currentTarget as HTMLElement;
 
@@ -263,6 +594,15 @@ export function ImagePreview({
       return;
     }
 
+    // #78: draw a new structure region
+    if (structureAddMode && structureEditMode && onStructureBoxAdd && e.button === 0) {
+      const p = toImageCoords(e.clientX, e.clientY);
+      if (!p) return;
+      el.setPointerCapture?.(e.pointerId);
+      setDrag({ startX: p.x, startY: p.y, curX: p.x, curY: p.y });
+      return;
+    }
+
     if (!selectionEnabled || e.button !== 0) return;
     const p = toImageCoords(e.clientX, e.clientY);
     if (!p) return;
@@ -270,7 +610,7 @@ export function ImagePreview({
     setDrag({ startX: p.x, startY: p.y, curX: p.x, curY: p.y });
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  const onPointerMove = (e: ReactPointerEvent) => {
     if (panDrag) {
       setPan({
         x: panDrag.originPanX + (e.clientX - panDrag.originClientX),
@@ -305,6 +645,10 @@ export function ImagePreview({
     if (r.x2 - r.x1 < 4 || r.y2 - r.y1 < 4) {
       return;
     }
+    if (structureAddMode && structureEditMode && onStructureBoxAdd) {
+      onStructureBoxAdd(r, structureAddLayer ?? "L2");
+      return;
+    }
     onSelectionChange?.(r);
   };
 
@@ -324,7 +668,7 @@ export function ImagePreview({
 
   if (!src) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
+      <div className="flex min-h-[420px] h-[min(780px,calc(100vh-11rem))] items-center justify-center rounded-xl border border-white/10 bg-slate-950/50 text-sm text-slate-500">
         尚未选择图片
       </div>
     );
@@ -334,16 +678,23 @@ export function ImagePreview({
     ? "cursor-grabbing"
     : spaceDown
       ? "cursor-grab"
-      : selectionEnabled
+      : structureAddMode && structureEditMode
         ? "cursor-crosshair"
-        : "cursor-default";
+        : selectionEnabled
+          ? "cursor-crosshair"
+          : "cursor-default";
 
-  const vh = compact ? "h-[min(360px,42vh)]" : "h-[min(420px,50vh)]";
-  const imgMax = compact ? "max-h-[340px]" : "max-h-[400px]";
+  // Prefer large work area for dual-view proofing (#78 layout)
+  const vh = compact
+    ? "h-[min(420px,48vh)]"
+    : "h-[min(780px,calc(100vh-11rem))] min-h-[420px]";
+  const imgMax = compact
+    ? "max-h-[400px]"
+    : "max-h-[min(760px,calc(100vh-12rem))]";
   const showBoxes = overlayMode === "boxes" && boxes && boxes.length > 0;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-3 py-2">
         <span className="truncate text-xs text-slate-400" title={filename ?? ""}>
           {filename || "原稿"}
@@ -384,7 +735,14 @@ export function ImagePreview({
           >
             −
           </button>
-          <span className="min-w-[3rem] text-center tabular-nums text-slate-400">
+          <span
+            className="min-w-[3rem] text-center tabular-nums text-slate-400"
+            title={
+              structureEditMode
+                ? "编辑模式选中框时自动缩放到上一层区域"
+                : undefined
+            }
+          >
             {Math.round(zoom * 100)}%
           </span>
           <button
@@ -415,7 +773,7 @@ export function ImagePreview({
       <div
         ref={viewportRef}
         className={[
-          "relative flex items-center justify-center overflow-hidden bg-slate-950/40 p-3",
+          "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-slate-950/40 p-2 sm:p-3",
           vh,
           cursorClass,
           "touch-none select-none",
@@ -438,7 +796,7 @@ export function ImagePreview({
             ref={imgRef}
             src={src}
             alt={filename ? `预览：${filename}` : "简谱预览"}
-            className={`${imgMax} max-w-full object-contain`}
+            className={`${imgMax} max-w-full w-auto object-contain`}
             draggable={false}
             onLoad={() => requestAnimationFrame(syncBaseSize)}
           />
@@ -497,7 +855,7 @@ export function ImagePreview({
                 );
               })
             : null}
-          {/* #58 structure L1–L5 overlays */}
+          {/* #58 structure L1–L5 overlays (#78 editable; only current edit layer selectable) */}
           {structure?.items?.length && natural.w > 0
             ? structure.items.map((it) => {
                 const show =
@@ -505,12 +863,27 @@ export function ImagePreview({
                     ? structureLayers?.[it.layer] !== false
                     : false;
                 if (!show) return null;
+                const sid = it.id || `${it.layer}-${it.label}`;
+                const isEditLayer =
+                  !structureEditMode || it.layer === structureEditLayer;
+                const canEdit =
+                  structureEditMode &&
+                  !structureAddMode &&
+                  it.layer === structureEditLayer;
                 return (
                   <StructureItemOverlay
-                    key={it.id || `${it.layer}-${it.label}-${it.box.x1}`}
+                    key={sid}
                     item={it}
                     scaleX={scaleX}
                     scaleY={scaleY}
+                    zoom={zoom}
+                    editable={canEdit}
+                    selected={canEdit && selectedStructureId === sid}
+                    onSelect={canEdit ? onSelectStructureId : undefined}
+                    onBoxChange={canEdit ? onStructureBoxChange : undefined}
+                    naturalW={natural.w}
+                    naturalH={natural.h}
+                    dimmed={structureEditMode && !isEditLayer}
                   />
                 );
               })
