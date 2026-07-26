@@ -219,6 +219,89 @@ def test_sort_measures_by_geometric_center() -> None:
     assert systems[1].measures[1].extra["global_m"] == 3
 
 
+def test_new_l3_box_in_row1_col2_is_measure_2() -> None:
+    """User-added L3 at first-row second-slot must not become m9 by list order."""
+    from app.pipeline.structure.rebuild import (
+        page_layout_from_structure,
+        reindex_global_measure_numbers,
+        sort_systems_and_measures_by_center,
+    )
+    from app.schemas.recognize import BoundingBox, StructureBox, StructureDebug
+
+    # 2 systems × 4 measures; new box inserted in list last but geometry is m2
+    items = [
+        StructureBox(
+            layer="L1",
+            id="l1-score",
+            label="score",
+            kind="score",
+            box=BoundingBox(x1=0, y1=0, x2=800, y2=400),
+        ),
+        StructureBox(
+            layer="L2",
+            id="l2-sys0",
+            label="s1",
+            kind="system",
+            box=BoundingBox(x1=0, y1=40, x2=800, y2=120),
+        ),
+        StructureBox(
+            layer="L2",
+            id="l2-sys1",
+            label="s2",
+            kind="system",
+            box=BoundingBox(x1=0, y1=200, x2=800, y2=280),
+        ),
+    ]
+    # First row: 4 measures; second row: 4 measures (list order)
+    slots = [
+        (0, 20, 180),
+        (0, 200, 360),
+        (0, 380, 540),
+        (0, 560, 740),
+        (1, 20, 180),
+        (1, 200, 360),
+        (1, 380, 540),
+        (1, 560, 740),
+    ]
+    for i, (row, x1, x2) in enumerate(slots):
+        y0 = 50 if row == 0 else 210
+        y1 = 110 if row == 0 else 270
+        items.append(
+            StructureBox(
+                layer="L3",
+                id=f"l3-m{i + 1}",
+                label=f"m{i + 1}",
+                kind="measure",
+                box=BoundingBox(x1=x1, y1=y0, x2=x2, y2=y1),
+            )
+        )
+    # User "new" box at first row, between m1 and m3 (second slot) — appended last
+    items.append(
+        StructureBox(
+            layer="L3",
+            id="user-l3-new",
+            label="新小节",
+            kind="measure",
+            box=BoundingBox(x1=190, y1=50, x2=350, y2=110),
+        )
+    )
+    # Remove old m2 to simulate insert into empty gap (optional) — keep all 9 boxes
+    st = StructureDebug(pipeline="structure", items=items)
+    layout = page_layout_from_structure(st, width=800, height=400)
+    sort_systems_and_measures_by_center(layout.systems)
+    reindex_global_measure_numbers(layout.systems)
+    # Flatten in reading order
+    ordered = []
+    for s in layout.systems:
+        for m in s.measures:
+            ordered.append((m.extra.get("global_m"), m.extra.get("id"), m.rect.cx))
+    assert ordered[0][1] == "l3-m1"
+    # New box should be measure 2 by geometry (cx between m1 and old m2)
+    new_entry = next(t for t in ordered if t[1] == "user-l3-new")
+    assert new_entry[0] == 2, ordered
+    assert layout.systems[0].measures[1].extra.get("id") == "user-l3-new"
+
+
 def test_structure_rerun_l3_sorts_measure_order(monkeypatch: pytest.MonkeyPatch) -> None:
     """L3 rerun reorders user measure boxes by center before L4/L5."""
     import app.config as config_mod

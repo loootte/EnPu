@@ -155,31 +155,28 @@ def page_layout_from_structure(
     for i, s in enumerate(systems):
         s.index = i
 
-    # L3 measures → assign to systems by vertical center
+    # L3 measures → assign to systems by containment / vertical overlap (not list order)
     l3_items = [it for it in structure.items if it.layer == "L3"]
-    l3_items = sorted(l3_items, key=lambda it: (it.box.y1, it.box.x1))
     for it in l3_items:
         rect = _norm_rect(_box_to_rect(it.box), w=width, h=height)
-        sys = _nearest_system(systems, rect)
+        sys = _assign_measure_to_system(systems, rect)
         if sys is None:
             continue
-        mi = len(sys.measures)
-        m_id = _L3_RE.match(it.id or "")
-        global_m = int(m_id.group(1)) if m_id else None
         sys.measures.append(
             MeasureLayout(
-                index=mi,
+                index=len(sys.measures),
                 rect=rect,
                 confidence=float(it.confidence or 0.75),
                 extra={
                     "source": "user_structure",
                     "id": it.id,
-                    "global_m": global_m,
+                    # global_m assigned after geometry sort — ignore old id numbers
                 },
             )
         )
     # Reading order: systems top→bottom, measures left→right by geometric center
     sort_systems_and_measures_by_center(systems)
+    reindex_global_measure_numbers(systems)
     for sys in systems:
         # Reconstruct barline xs from measure edges
         xs: list[float] = []
@@ -318,12 +315,49 @@ def _parse_l4_ids(it: StructureBox) -> tuple[int | None, int | None]:
 
 
 def _nearest_system(systems: list[StaffSystem], rect: Rect) -> StaffSystem | None:
+    """Legacy helper: contain-by-cy then nearest system center."""
+    return _assign_measure_to_system(systems, rect)
+
+
+def _assign_measure_to_system(
+    systems: list[StaffSystem],
+    rect: Rect,
+) -> StaffSystem | None:
+    """Assign an L3 measure box to the best L2 system by geometry (#78).
+
+    Prefer:
+      1. System whose rect contains the measure center
+      2. Largest vertical overlap with the measure
+      3. Nearest system center (cy)
+    """
     if not systems:
         return None
-    cy = rect.cy
-    for s in systems:
-        if s.rect.y1 - 4 <= cy <= s.rect.y2 + 4:
-            return s
+    cx, cy = rect.cx, rect.cy
+
+    containing = [
+        s
+        for s in systems
+        if s.rect.x1 - 8 <= cx <= s.rect.x2 + 8
+        and s.rect.y1 - 8 <= cy <= s.rect.y2 + 8
+    ]
+    if len(containing) == 1:
+        return containing[0]
+    if len(containing) > 1:
+        # Tightest system by area among those that contain the center
+        return min(
+            containing,
+            key=lambda s: (s.rect.width * s.rect.height, abs(s.rect.cy - cy)),
+        )
+
+    def _v_overlap(s: StaffSystem) -> float:
+        return max(
+            0.0,
+            min(s.rect.y2, rect.y2) - max(s.rect.y1, rect.y1),
+        )
+
+    best = max(systems, key=lambda s: (_v_overlap(s), -abs(s.rect.cy - cy)))
+    if _v_overlap(best) > 2.0:
+        return best
     return min(systems, key=lambda s: abs(s.rect.cy - cy))
 
 
@@ -366,13 +400,15 @@ def sort_systems_and_measures_by_center(systems: list[StaffSystem]) -> None:
     Reassigns ``system.index`` and ``measure.index`` after sorting so Score /
     L3 global order matches the original jianpu layout after user box edits.
     """
-    systems.sort(key=lambda s: (s.rect.cy, s.rect.cx))
+    systems.sort(key=lambda s: (round(s.rect.cy, 1), round(s.rect.cx, 1)))
     for si, sys in enumerate(systems):
         sys.index = si
-        sys.measures.sort(key=lambda m: (m.rect.cx, m.rect.cy))
+        # Primary: left→right by center x (jianpu staff reading order)
+        sys.measures.sort(
+            key=lambda m: (round(m.rect.cx, 1), round(m.rect.cy, 1))
+        )
         for mi, m in enumerate(sys.measures):
             m.index = mi
-            # global_m is 1-based reading order; recomputed by caller if needed
             extra = dict(m.extra or {})
             extra["sorted_by_center"] = True
             m.extra = extra
@@ -384,7 +420,11 @@ def reindex_global_measure_numbers(systems: list[StaffSystem]) -> int:
     for sys in systems:
         for m in sys.measures:
             g += 1
-            m.extra = {**(m.extra or {}), "global_m": g}
+            m.extra = {
+                **(m.extra or {}),
+                "global_m": g,
+                "sorted_by_center": True,
+            }
     return g
 
 

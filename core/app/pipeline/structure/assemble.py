@@ -247,6 +247,7 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
             )
         for meas in sys.measures:
             global_m += 1
+            # global_m follows system/measure iteration after geometry sort (#78)
             items.append(
                 StructureBox(
                     layer="L3",
