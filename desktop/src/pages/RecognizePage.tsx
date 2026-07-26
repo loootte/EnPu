@@ -36,6 +36,7 @@ import {
   dataUrlToFile,
   fileToDataUrl,
   loadProjectFromFile,
+  openProjectWithPicker,
   PROJECT_ACCEPT,
   saveProjectFile,
 } from "../lib/projectIo";
@@ -430,57 +431,10 @@ export function RecognizePage() {
     setInfo(`已选择：${f.name}（${Math.round(f.size / 1024)} KB）`);
   };
 
-  const onSaveProject = useCallback(async () => {
-    const sc = scoreRef.current;
-    if (!sc) {
-      setError("没有可保存的谱面，请先识别或新建谱");
-      return;
-    }
-    try {
-      let dataUrl = imageDataUrl;
-      if (!dataUrl && fileRef.current) {
-        dataUrl = await fileToDataUrl(fileRef.current);
-        setImageDataUrl(dataUrl);
-      }
-      const proj = buildProject({
-        score: sc,
-        sourceImageName: fileRef.current?.name ?? sc.meta?.source_image ?? null,
-        sourceImageDataUrl: dataUrl,
-        structure: structureDraft ?? result?.structure ?? null,
-        boxes: result?.boxes ?? layoutBoxes,
-        regions: result?.regions ?? layoutRegions,
-        engine: result?.engine ?? health?.engine ?? null,
-      });
-      const name = saveProjectFile(proj, projectName ?? proj.title);
-      setProjectName(name);
-      setDirty(false);
-      setInfo(
-        `已保存工程：${name}` +
-          (dataUrl ? "（含原图与结构层）" : "（仅谱面，未嵌入原图）"),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "保存工程失败");
-    }
-  }, [
-    health?.engine,
-    imageDataUrl,
-    layoutBoxes,
-    layoutRegions,
-    projectName,
-    result?.boxes,
-    result?.engine,
-    result?.regions,
-    result?.structure,
-    structureDraft,
-  ]);
-
-  const onOpenProjectFile = useCallback(async (f: File) => {
-    setError(null);
-    setInfo(null);
-    try {
-      const proj = await loadProjectFromFile(f);
+  const applyOpenedProject = useCallback(
+    async (proj: Awaited<ReturnType<typeof loadProjectFromFile>>, name: string) => {
       setScore(proj.score);
-      setProjectName(f.name);
+      setProjectName(name);
       setDirty(false);
       setSelection(null);
       setHighlightMeasures(null);
@@ -503,7 +457,7 @@ export function RecognizePage() {
             width: 0,
             height: 0,
             elapsed_ms: 0,
-            filename: proj.source_image ?? f.name,
+            filename: proj.source_image ?? name,
             mock: false,
             parse_mode: "score",
             parse_warnings: ["从工程文件恢复"],
@@ -532,15 +486,97 @@ export function RecognizePage() {
       }
 
       setInfo(
-        `已打开工程：${f.name}` +
+        `已打开工程：${name}` +
           (proj.title ? ` · ${proj.title}` : "") +
           (proj.structure ? " · 已恢复结构叠图" : "") +
           (proj.source_image_data_url ? " · 已恢复原图" : " · 无嵌入原图"),
       );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "无法打开工程文件");
+    },
+    [],
+  );
+
+  const onSaveProject = useCallback(async () => {
+    const sc = scoreRef.current;
+    if (!sc) {
+      setError("没有可保存的谱面，请先识别或新建谱");
+      return;
     }
-  }, []);
+    try {
+      let dataUrl = imageDataUrl;
+      if (!dataUrl && fileRef.current) {
+        dataUrl = await fileToDataUrl(fileRef.current);
+        setImageDataUrl(dataUrl);
+      }
+      const proj = buildProject({
+        score: sc,
+        sourceImageName: fileRef.current?.name ?? sc.meta?.source_image ?? null,
+        sourceImageDataUrl: dataUrl,
+        structure: structureDraft ?? result?.structure ?? null,
+        boxes: result?.boxes ?? layoutBoxes,
+        regions: result?.regions ?? layoutRegions,
+        engine: result?.engine ?? health?.engine ?? null,
+      });
+      const saved = await saveProjectFile(proj, projectName ?? proj.title);
+      setProjectName(saved.filename);
+      setDirty(false);
+      setInfo(
+        saved.message +
+          (dataUrl ? " · 已嵌入原图与结构层" : " · 仅谱面（未嵌入原图）"),
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "保存工程失败";
+      if (msg.includes("取消")) {
+        setInfo(msg);
+        return;
+      }
+      setError(msg);
+    }
+  }, [
+    health?.engine,
+    imageDataUrl,
+    layoutBoxes,
+    layoutRegions,
+    projectName,
+    result?.boxes,
+    result?.engine,
+    result?.regions,
+    result?.structure,
+    structureDraft,
+  ]);
+
+  const onOpenProjectFile = useCallback(
+    async (f: File) => {
+      setError(null);
+      setInfo(null);
+      try {
+        const proj = await loadProjectFromFile(f);
+        await applyOpenedProject(proj, f.name);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "无法打开工程文件");
+      }
+    },
+    [applyOpenedProject],
+  );
+
+  /** Prefer system open dialog; fall back to hidden file input. */
+  const onOpenProjectDialog = useCallback(async () => {
+    setError(null);
+    try {
+      const picked = await openProjectWithPicker();
+      if (picked === null) {
+        // cancelled or picker unavailable → try input
+        if (!("showOpenFilePicker" in window)) {
+          projectInputRef.current?.click();
+        }
+        return;
+      }
+      await applyOpenedProject(picked.project, picked.filename);
+    } catch (err) {
+      // Picker failed → fall back to classic file input
+      console.warn("openProjectWithPicker failed", err);
+      projectInputRef.current?.click();
+    }
+  }, [applyOpenedProject]);
 
   const onExportScoreJson = useCallback(() => {
     const sc = scoreRef.current;
@@ -1120,7 +1156,7 @@ export function RecognizePage() {
           imageInputRef.current?.click();
           break;
         case "file.openProject":
-          projectInputRef.current?.click();
+          void onOpenProjectDialog();
           break;
         case "file.saveProject":
           void onSaveProject();
@@ -1164,6 +1200,7 @@ export function RecognizePage() {
       onExportBinary,
       onExportScoreJson,
       onNewScore,
+      onOpenProjectDialog,
       onRecognize,
       onSaveProject,
       refreshHealth,
@@ -1187,7 +1224,7 @@ export function RecognizePage() {
       }
       if (e.ctrlKey && e.shiftKey && (e.key === "O" || e.key === "o")) {
         e.preventDefault();
-        projectInputRef.current?.click();
+        void onOpenProjectDialog();
         return;
       }
       if (e.ctrlKey && !e.shiftKey && (e.key === "o" || e.key === "O")) {
@@ -1212,7 +1249,13 @@ export function RecognizePage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCropRecognize, onNewScore, onRecognize, onSaveProject]);
+  }, [
+    onCropRecognize,
+    onNewScore,
+    onOpenProjectDialog,
+    onRecognize,
+    onSaveProject,
+  ]);
 
   const onMessage = (kind: "info" | "error", message: string) => {
     if (kind === "error") {

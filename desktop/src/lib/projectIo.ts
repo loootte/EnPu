@@ -1,6 +1,9 @@
 /**
  * EnPu project save / open helpers (.enpu.json).
  * Embeds score + optional image + structure for full session restore.
+ *
+ * Prefer the File System Access API (Save / Open dialogs in WebView2 & Chrome)
+ * so users pick a folder. Fall back to download + file input when unavailable.
  */
 
 import type {
@@ -14,6 +17,37 @@ import { cloneScore, downloadText, parseProjectJson, safeFilename } from "./scor
 
 export const PROJECT_EXT = ".enpu.json";
 export const PROJECT_ACCEPT = ".enpu.json,.json,application/json";
+
+export type SaveProjectResult = {
+  filename: string;
+  /** full path when known (rarely available in browser) */
+  path?: string | null;
+  method: "picker" | "download";
+  message: string;
+};
+
+export type OpenProjectResult = {
+  project: EnPuProject;
+  filename: string;
+  method: "picker" | "input";
+};
+
+function hasSavePicker(): boolean {
+  return typeof window !== "undefined" && "showSaveFilePicker" in window;
+}
+
+function hasOpenPicker(): boolean {
+  return typeof window !== "undefined" && "showOpenFilePicker" in window;
+}
+
+const PROJECT_PICKER_TYPES = [
+  {
+    description: "EnPu 工程 (.enpu.json)",
+    accept: {
+      "application/json": [".json", ".enpu.json"],
+    },
+  },
+] as const;
 
 export interface ProjectSnapshot {
   score: Score;
@@ -55,14 +89,91 @@ export function buildProject(snap: ProjectSnapshot): EnPuProject {
   };
 }
 
-/** Download project as .enpu.json */
-export function saveProjectFile(project: EnPuProject, filenameHint?: string): string {
-  const name = safeFilename(
-    filenameHint || project.title || "enpu-project",
+/**
+ * Save project with system "Save As" dialog when available.
+ * Otherwise downloads to the browser Downloads folder and explains where.
+ */
+export async function saveProjectFile(
+  project: EnPuProject,
+  filenameHint?: string,
+): Promise<SaveProjectResult> {
+  const suggested = safeFilename(
+    stripProjectExt(filenameHint || project.title || "enpu-project"),
     PROJECT_EXT,
   );
-  downloadText(JSON.stringify(project, null, 2), name, "application/json");
-  return name;
+  const text = JSON.stringify(project, null, 2);
+
+  if (hasSavePicker()) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: suggested,
+        types: PROJECT_PICKER_TYPES,
+        excludeAcceptAllOption: false,
+      });
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      const name = handle.name || suggested;
+      return {
+        filename: name,
+        path: null,
+        method: "picker",
+        message: `已保存工程到：${name}（请在刚才选择的文件夹中查看）`,
+      };
+    } catch (err) {
+      // User cancelled
+      if (err && typeof err === "object" && (err as { name?: string }).name === "AbortError") {
+        throw new Error("已取消保存");
+      }
+      // Fall through to download
+      console.warn("showSaveFilePicker failed, fallback to download", err);
+    }
+  }
+
+  downloadText(text, suggested, "application/json");
+  return {
+    filename: suggested,
+    method: "download",
+    message:
+      `已下载工程文件「${suggested}」。` +
+      `请到系统「下载」文件夹查找（不是打开对话框的默认目录）。` +
+      `若要用「打开工程」，请先在下载文件夹中找到该文件。`,
+  };
+}
+
+/** Open project via system file picker when available. */
+export async function openProjectWithPicker(): Promise<OpenProjectResult | null> {
+  if (!hasOpenPicker()) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handles = await (window as any).showOpenFilePicker({
+      multiple: false,
+      types: PROJECT_PICKER_TYPES,
+      excludeAcceptAllOption: false,
+    });
+    const handle = handles?.[0];
+    if (!handle) return null;
+    const file = (await handle.getFile()) as File;
+    const project = await loadProjectFromFile(file);
+    return {
+      project,
+      filename: file.name || handle.name || "project.enpu.json",
+      method: "picker",
+    };
+  } catch (err) {
+    if (err && typeof err === "object" && (err as { name?: string }).name === "AbortError") {
+      return null; // cancelled
+    }
+    throw err;
+  }
+}
+
+function stripProjectExt(name: string): string {
+  return name
+    .replace(/\.enpu\.json$/i, "")
+    .replace(/\.json$/i, "")
+    .trim() || "enpu-project";
 }
 
 /** Read File → EnPuProject (supports v0.1 project, v0.2, or bare Score JSON). */
