@@ -97,9 +97,16 @@ function boxCenter(b: BoundingBox): { cx: number; cy: number } {
 }
 
 /**
- * After rerun, keep user geometry for fromLayer and above, but **order/labels
- * for L3 must follow geometric reading order from the response** (not draft
- * list order — new boxes were appended at the end and must not stay m+N).
+ * After L3 re-run the backend already:
+ *  - assigned measures to systems by geometry
+ *  - sorted by center (reading order)
+ *  - renumbered m1..n
+ * Do **not** reattach draft boxes by id (l3-m1 was detection order; after
+ * sort it points at a different physical box → 1↔3 / 2↔4 swaps).
+ *
+ * For L3: trust response order & labels; only overlay draft geometry via
+ * nearest-center match (1:1, no id).
+ * For other layers: pin draft geometry by id as before.
  */
 function mergePinnedLayerBoxes(
   draft: StructureDebug | null | undefined,
@@ -108,19 +115,21 @@ function mergePinnedLayerBoxes(
 ): StructureDebug | null {
   if (!response?.items?.length) return response ?? null;
   if (!draft?.items?.length) return response;
-  const pinRank = LAYER_RANK[fromLayer];
 
+  // L3 re-run: response is authoritative for order; match draft boxes by center only
+  if (fromLayer === "L3") {
+    return mergeL3RerunStructure(draft, response);
+  }
+
+  const pinRank = LAYER_RANK[fromLayer];
   const draftById = new Map(
     draft.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]),
   );
 
-  // L4 draft boxes → force L5 (below) to same geometry
   const l4BoxByL5Id = new Map<string, BoundingBox>();
   for (const p of draft.items) {
-    if (p.layer !== "L4") continue;
-    if (LAYER_RANK[p.layer] > pinRank) continue;
-    const id = p.id || `${p.layer}-${p.label}`;
-    const l5id = l4ToL5Key(id);
+    if (p.layer !== "L4" || LAYER_RANK[p.layer] > pinRank) continue;
+    const l5id = l4ToL5Key(p.id || "");
     if (l5id) l4BoxByL5Id.set(l5id, { ...p.box });
   }
 
@@ -130,104 +139,96 @@ function mergePinnedLayerBoxes(
       if (it.layer !== "L5") return it;
       const id = it.id || `${it.layer}-${it.label}`;
       const box = l4BoxByL5Id.get(id);
-      if (box) return { ...it, box: { ...box } };
-      return it;
+      return box ? { ...it, box: { ...box } } : it;
     });
-    if (fromLayer === "L4") {
-      const haveL5 = new Set(
-        below
-          .filter((it) => it.layer === "L5")
-          .map((it) => it.id || `${it.layer}-${it.label}`),
-      );
-      for (const p of draft.items) {
-        if (p.layer !== "L4" || LAYER_RANK.L4 > pinRank) continue;
-        const kind = (p.kind || "").toLowerCase();
-        if (kind === "chord" || kind === "lyric") continue;
-        const l5id = l4ToL5Key(p.id || "");
-        if (!l5id || haveL5.has(l5id)) continue;
-        below.push({
-          layer: "L5",
-          id: l5id,
-          label: p.label || "?",
-          kind: "glyph",
-          box: { ...p.box },
-          confidence: p.confidence ?? 0.5,
-        });
-        haveL5.add(l5id);
-      }
-    }
   }
 
-  // Build "above" layers: for L3 use response reading order; pin boxes from draft
   const aboveFromResponse = response.items.filter(
     (it) => LAYER_RANK[it.layer] <= pinRank,
   );
-  const usedDraftIds = new Set<string>();
-
   const mergedAbove = aboveFromResponse.map((resp) => {
     const id = resp.id || `${resp.layer}-${resp.label}`;
     const d = draftById.get(id);
-    if (d) {
-      usedDraftIds.add(id);
-      // Geometry from draft (user edit); label/order from response after sort
+    if (!d) return resp;
+    return {
+      ...resp,
+      box: { ...d.box },
+      id: d.id || resp.id,
+      label: d.label || resp.label,
+      kind: d.kind ?? resp.kind,
+    };
+  });
+
+  return {
+    ...response,
+    items: [...mergedAbove, ...below],
+    barlines: response.barlines,
+    summary: response.summary,
+  };
+}
+
+/** L3-specific merge: reading order = response; boxes from draft by nearest center. */
+function mergeL3RerunStructure(
+  draft: StructureDebug,
+  response: StructureDebug,
+): StructureDebug {
+  const draftL3 = draft.items.filter((it) => it.layer === "L3");
+  const used = new Set<number>();
+
+  const matchDraftBox = (respBox: BoundingBox): BoundingBox => {
+    const rc = boxCenter(respBox);
+    let bestI = -1;
+    let bestD = Infinity;
+    for (let i = 0; i < draftL3.length; i++) {
+      if (used.has(i)) continue;
+      const dc = boxCenter(draftL3[i].box);
+      const dist = (dc.cx - rc.cx) ** 2 + (dc.cy - rc.cy) ** 2;
+      if (dist < bestD) {
+        bestD = dist;
+        bestI = i;
+      }
+    }
+    // Generous threshold: whole page may be large; prefer any unused nearest
+    if (bestI >= 0) {
+      used.add(bestI);
+      return { ...draftL3[bestI].box };
+    }
+    return { ...respBox };
+  };
+
+  // L1/L2: prefer draft geometry by id (stable)
+  const draftById = new Map(
+    draft.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]),
+  );
+
+  const items = response.items.map((resp) => {
+    if (resp.layer === "L3") {
+      // Keep response id/label (m1, m2… reading order); box from draft geometry
       return {
         ...resp,
-        box: { ...d.box },
-        id: d.id || resp.id,
-        // Keep response label (m1, m2, … reading order) for L3
-        label:
-          resp.layer === "L3"
-            ? resp.label
-            : d.label || resp.label,
-        kind: d.kind ?? resp.kind,
-        confidence: d.confidence ?? resp.confidence,
+        box: matchDraftBox(resp.box),
       };
     }
-    // Match draft L3 by nearest center if id changed
-    if (resp.layer === "L3") {
-      const rc = boxCenter(resp.box);
-      let best: (typeof draft.items)[0] | null = null;
-      let bestD = Infinity;
-      for (const d3 of draft.items) {
-        if (d3.layer !== "L3") continue;
-        const did = d3.id || `${d3.layer}-${d3.label}`;
-        if (usedDraftIds.has(did)) continue;
-        const dc = boxCenter(d3.box);
-        const dist = (dc.cx - rc.cx) ** 2 + (dc.cy - rc.cy) ** 2;
-        if (dist < bestD) {
-          bestD = dist;
-          best = d3;
-        }
-      }
-      if (best && bestD < 80 * 80) {
-        const did = best.id || `${best.layer}-${best.label}`;
-        usedDraftIds.add(did);
-        return {
-          ...resp,
-          box: { ...best.box },
-          id: best.id || resp.id,
-          label: resp.label,
-          kind: best.kind ?? resp.kind,
-        };
-      }
+    if (resp.layer === "L1" || resp.layer === "L2") {
+      const id = resp.id || `${resp.layer}-${resp.label}`;
+      const d = draftById.get(id);
+      if (d) return { ...resp, box: { ...d.box } };
     }
     return resp;
   });
 
-  // Draft-only L3 boxes missing from response (should be rare): append by geometry
-  const orphanL3 = draft.items.filter((d) => {
-    if (d.layer !== "L3" || pinRank < LAYER_RANK.L3) return false;
-    const id = d.id || `${d.layer}-${d.label}`;
-    return !usedDraftIds.has(id);
-  });
-  if (orphanL3.length) {
-    const allL3 = [
-      ...mergedAbove.filter((it) => it.layer === "L3"),
-      ...orphanL3.map((d) => ({
+  // Any draft L3 not matched (user-added, missing from response): insert by geometry
+  if (used.size < draftL3.length) {
+    const orphans = draftL3.filter((_, i) => !used.has(i));
+    const l3Only = items.filter((it) => it.layer === "L3");
+    const nonL3 = items.filter((it) => it.layer !== "L3");
+    const mergedL3 = [
+      ...l3Only,
+      ...orphans.map((d, i) => ({
         layer: "L3" as const,
-        id: d.id,
-        label: d.label,
-        kind: d.kind || "measure",
+        id: d.id || `user-l3-orphan-${i}`,
+        label: "新小节",
+        kind: "measure",
         box: { ...d.box },
         confidence: d.confidence,
       })),
@@ -236,26 +237,17 @@ function mergePinnedLayerBoxes(
       const bc = boxCenter(b.box);
       return ac.cy - bc.cy || ac.cx - bc.cx;
     });
-    // Re-number labels m1.. in reading order
-    allL3.forEach((it, i) => {
+    mergedL3.forEach((it, i) => {
       it.label = `m${i + 1}`;
-      it.id = it.id || `l3-m${i + 1}`;
+      it.id = `l3-m${i + 1}`;
     });
-    const nonL3 = mergedAbove.filter((it) => it.layer !== "L3");
     return {
       ...response,
-      items: [...nonL3, ...allL3, ...below],
-      barlines: response.barlines,
-      summary: response.summary,
+      items: [...nonL3, ...mergedL3],
     };
   }
 
-  return {
-    ...response,
-    items: [...mergedAbove, ...below],
-    barlines: response.barlines,
-    summary: response.summary,
-  };
+  return { ...response, items };
 }
 
 export function RecognizePage() {

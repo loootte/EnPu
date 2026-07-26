@@ -299,12 +299,19 @@ def run_structure_rerun(
                 "(edit/add a measure region first).",
                 status_code=400,
             )
-        # Sort L3 boxes by geometric center so measure order matches the score
-        # (top→bottom systems, left→right measures) after user drag/add/delete.
+        # Reading order by geometric center (never trust previous m1.. ids)
         sort_systems_and_measures_by_center(layout.systems)
         n_global = reindex_global_measure_numbers(layout.systems)
+        order_dbg = []
+        for s in layout.systems:
+            for m in s.measures:
+                order_dbg.append(
+                    f"m{m.extra.get('global_m')}:cx={m.rect.cx:.0f},cy={m.rect.cy:.0f}"
+                )
         warnings.append(
-            f"L3 sorted by geometric center → {n_global} measure(s) in reading order"
+            f"L3 sorted by geometric center → {n_global} measure(s): "
+            + "; ".join(order_dbg[:12])
+            + ("…" if len(order_dbg) > 12 else "")
         )
         # Keep user measure rects; only re-detect note candidates inside them
         for s in layout.systems:
@@ -312,7 +319,7 @@ def run_structure_rerun(
                 m.notes = []
                 m.extra = {**(m.extra or {}), "user_edited": True, "pinned": True}
         warnings.append(f"L3 pinned ({n_meas} measure rect(s)); re-run L4–L5")
-        # Snapshot AFTER sort so pin order matches reading order
+        # Snapshot AFTER sort so pin order == reading order (do not use pre-sort pin)
         pinned = _snapshot_pinned_geometry(layout, from_layer)
         systems, w4 = detect_note_candidates(image_bgr, layout.systems)
         warnings.extend(w4)
