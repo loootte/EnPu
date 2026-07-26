@@ -365,6 +365,9 @@ def run_structure_rerun(
 
     # Re-apply pinned geometry so lower-layer work never moves user boxes
     _restore_pinned_geometry(layout, pinned, from_layer)
+    # L5 overlay must use the same ROI as L4 (especially after user L4 edit)
+    if from_layer in {"L4", "L5"}:
+        _sync_l5_rects_to_l4(layout)
     layout.warnings = warnings
 
     return _layout_to_response(
@@ -375,6 +378,20 @@ def run_structure_rerun(
         started=started,
         preprocess_steps=["decode", f"structure_rerun_{from_layer}_below"],
     )
+
+
+def _sync_l5_rects_to_l4(layout: PageLayout) -> None:
+    """L5 shares the note candidate rect with L4; keep them identical."""
+    for s in layout.systems:
+        for m in s.measures:
+            for n in m.notes:
+                if (n.extra or {}).get("kind", "pitch") != "pitch":
+                    continue
+                # rect is already the L4 ROI; ensure extra records it for debug
+                n.extra = {
+                    **(n.extra or {}),
+                    "l5_uses_l4_rect": True,
+                }
 
 
 def _snapshot_pinned_geometry(

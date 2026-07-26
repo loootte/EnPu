@@ -85,9 +85,17 @@ function collectStructureEdits(
   return edits;
 }
 
+/** Map L4 id `l4-m{g}-pitch{i}` → key used by L5 `l5-m{g}-n{i}`. */
+function l4ToL5Key(id: string): string | null {
+  const m = id.match(/^l4-m(\d+)-(?:pitch|chord|lyric)?(\d+)$/i);
+  if (!m) return null;
+  return `l5-m${m[1]}-n${m[2]}`;
+}
+
 /**
  * After rerun, force boxes of fromLayer and above to match the pre-rerun draft
  * so the current edit layer is never replaced by re-detection.
+ * When fromLayer is L4, L5 boxes are forced to the matching L4 rect.
  */
 function mergePinnedLayerBoxes(
   draft: StructureDebug | null | undefined,
@@ -101,18 +109,63 @@ function mergePinnedLayerBoxes(
   const pinnedIds = new Set(
     pinned.map((it) => it.id || `${it.layer}-${it.label}`),
   );
-  // Keep response items for layers strictly below fromLayer
-  const below = response.items.filter(
-    (it) => LAYER_RANK[it.layer] > pinRank,
-  );
-  // Prefer draft geometry for fromLayer and above (by id, then append leftovers)
+  // L4 draft boxes → force L5 (below) to same geometry
+  const l4BoxByL5Id = new Map<string, BoundingBox>();
+  for (const p of pinned) {
+    if (p.layer !== "L4") continue;
+    const id = p.id || `${p.layer}-${p.label}`;
+    const l5id = l4ToL5Key(id);
+    if (l5id) l4BoxByL5Id.set(l5id, { ...p.box });
+  }
+
+  let below = response.items.filter((it) => LAYER_RANK[it.layer] > pinRank);
+  if (fromLayer === "L4" || fromLayer === "L5") {
+    below = below.map((it) => {
+      if (it.layer !== "L5") return it;
+      const id = it.id || `${it.layer}-${it.label}`;
+      const box = l4BoxByL5Id.get(id);
+      if (box) return { ...it, box: { ...box } };
+      // Fallback: match by global measure + index from id
+      const m = id.match(/^l5-m(\d+)-n(\d+)$/i);
+      if (m) {
+        const alt = l4BoxByL5Id.get(`l5-m${m[1]}-n${m[2]}`);
+        if (alt) return { ...it, box: { ...alt } };
+      }
+      return it;
+    });
+    // If L5 missing for a pitch L4, synthesize from L4 so overlay covers user ROI
+    if (fromLayer === "L4") {
+      const haveL5 = new Set(
+        below
+          .filter((it) => it.layer === "L5")
+          .map((it) => it.id || `${it.layer}-${it.label}`),
+      );
+      for (const p of pinned) {
+        if (p.layer !== "L4") continue;
+        const kind = (p.kind || "").toLowerCase();
+        if (kind === "chord" || kind === "lyric") continue;
+        const id = p.id || "";
+        const l5id = l4ToL5Key(id);
+        if (!l5id || haveL5.has(l5id)) continue;
+        below.push({
+          layer: "L5",
+          id: l5id,
+          label: p.label || "?",
+          kind: "glyph",
+          box: { ...p.box },
+          confidence: p.confidence ?? 0.5,
+        });
+        haveL5.add(l5id);
+      }
+    }
+  }
+
   const byId = new Map(
     response.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]),
   );
   const mergedAbove = pinned.map((p) => {
     const id = p.id || `${p.layer}-${p.label}`;
     const resp = byId.get(id);
-    // Keep draft box; retain response extras if same id
     return {
       ...resp,
       ...p,
@@ -123,7 +176,6 @@ function mergePinnedLayerBoxes(
       kind: p.kind ?? resp?.kind,
     };
   });
-  // Response items on pin layers that were not in draft (shouldn't happen)
   const extraAbove = response.items.filter((it) => {
     const r = LAYER_RANK[it.layer];
     if (r > pinRank) return false;

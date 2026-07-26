@@ -162,17 +162,17 @@ def _pitch_body_y(
     if pitch_y is not None:
         y0, y1 = pitch_y
         h = max(8.0, y1 - y0)
-        # Slight pad for octave dots / digit tops; keep bottom at digit body
-        y0 = y0 - 0.25 * h
-        y1 = y1 + 0.08 * h
+        # Wider search band so digit tops/bottoms and thin strokes are not cut
+        y0 = y0 - 0.35 * h
+        y1 = y1 + 0.22 * h
     else:
         y0 = system_rect.y1
-        y1 = system_rect.y1 + 0.38 * max(system_rect.height, 1.0)
+        y1 = system_rect.y1 + 0.42 * max(system_rect.height, 1.0)
     y0 = max(meas_rect.y1, y0)
     y1 = min(meas_rect.y2, y1)
     if y1 - y0 < 8:
         y0, y1 = meas_rect.y1, meas_rect.y1 + min(
-            meas_rect.height * 0.35, system_rect.height * 0.35
+            meas_rect.height * 0.40, system_rect.height * 0.40
         )
     return y0, y1
 
@@ -209,10 +209,17 @@ def _pitch_candidates_in_measure(
             img_h=img_h,
             full_height=False,
         )
+    # Keep full CC extent (do not hard-clip to band) so ROI can cover whole digits.
+    # Only require the box to intersect the pitch search band.
     clamped: list[Rect] = []
     for b in boxes:
-        cy0 = max(b.y1, by0)
-        cy1 = min(b.y2, by1)
+        if b.y2 < by0 or b.y1 > by1:
+            continue
+        if b.y2 - b.y1 < 4 or b.x2 - b.x1 < 3:
+            continue
+        # Soft clamp only to measure bounds
+        cy0 = max(b.y1, float(meas_rect.y1))
+        cy1 = min(b.y2, float(meas_rect.y2))
         if cy1 - cy0 < 4:
             continue
         clamped.append(Rect(b.x1, cy0, b.x2, cy1))
@@ -262,26 +269,29 @@ def _pitch_candidates_in_measure(
         filtered.append(r)
     final = filtered
 
-    # Expand final ROIs for L5: upper octave dots + underlines + 附点/延音线.
+    # Expand final ROIs for L5: full digit body + octave dots + underlines + 附点.
     out: list[NoteCandidate] = []
     for i, r in enumerate(final):
-        pad_x = max(2.0, 0.12 * r.width)
+        pad_x = max(3.0, 0.22 * r.width)
         # #71/#72: high octave dots sit above the digit (~0.3–0.6× body height)
-        pad_top = max(6.0, 0.55 * r.height)
-        # Grow top further if small ink (octave dots) is present above body
+        pad_top = max(8.0, 0.70 * r.height)
         top_ink = _top_ink_extent(bw, body=r, img_w=img_w, img_h=img_h)
         if top_ink is not None:
-            pad_top = max(pad_top, float(r.y1 - top_ink) + 3.0)
-        # Cap: stay within measure / not into previous system (measure y1)
+            pad_top = max(pad_top, float(r.y1 - top_ink) + 4.0)
+        # Always include full digit body top (+ pad for octave dots)
         top = max(float(meas_rect.y1), r.y1 - pad_top)
 
-        if underline_y is not None and underline_y[0] <= by1 + max(20.0, 0.9 * band_h):
-            bot = float(underline_y[1] + 3)
+        # Bottom: prefer underline band; else generous pad under digit body
+        if underline_y is not None and underline_y[0] <= r.y2 + max(24.0, 1.1 * band_h):
+            bot = float(underline_y[1] + 4)
         else:
-            bot = r.y2 + max(10.0, 0.55 * r.height)
+            bot = r.y2 + max(12.0, 0.65 * r.height)
         if pitch_y is not None:
-            bot = min(bot, pitch_y[1] + max(18.0, 0.7 * (pitch_y[1] - pitch_y[0])))
-        bot = min(bot, by1 + max(16.0, 0.65 * band_h))
+            # Allow past pitch band into underline strip, but not deep into lyric
+            bot = max(bot, pitch_y[1] + max(10.0, 0.45 * (pitch_y[1] - pitch_y[0])))
+            bot = min(bot, pitch_y[1] + max(28.0, 1.1 * (pitch_y[1] - pitch_y[0])))
+        # Ensure ROI covers full CC body (digits not clipped)
+        bot = max(bot, r.y2 + 2.0)
         bot = min(float(meas_rect.y2), bot)
 
         # Right ornaments: augmentation dots + sustain/tie dashes (延音线)
@@ -296,7 +306,8 @@ def _pitch_candidates_in_measure(
             img_h=img_h,
         )
         x2 = max(r.x2 + pad_x, right_x)
-        x2 = min(float(img_w), x2)
+        x2 = min(float(img_w), float(meas_rect.x2), x2)
+        x1 = max(0.0, float(meas_rect.x1), r.x1 - pad_x)
 
         u_count = _precount_underlines(
             bw,
@@ -306,7 +317,7 @@ def _pitch_candidates_in_measure(
         )
 
         pr = Rect(
-            max(0.0, r.x1 - pad_x),
+            x1,
             max(0.0, top),
             x2,
             min(float(img_h), bot),
