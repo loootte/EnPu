@@ -85,13 +85,14 @@ jobs:
           workspaces: desktop/src-tauri -> target
           shared-key: enpu-tauri-windows
 
-      - name: Install core deps + PyInstaller (no Paddle in sidecar)
+      - name: Install core deps + PyInstaller (slim sidecar, no Paddle)
         working-directory: core
         shell: pwsh
         run: |
           python -m venv .venv
           .\.venv\Scripts\pip.exe install -U pip
-          .\.venv\Scripts\pip.exe install -r requirements-ci.txt
+          # #81: use requirements-sidecar.txt (no pytest / paddle)
+          .\.venv\Scripts\pip.exe install -r requirements-sidecar.txt
           .\.venv\Scripts\pip.exe install "pyinstaller>=6.0,<7"
 
       - name: Build mock enpu-core sidecar
@@ -100,8 +101,12 @@ jobs:
         run: |
           .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean enpu-core.spec
           if (-not (Test-Path "dist\enpu-core.exe")) { throw "sidecar missing: dist\enpu-core.exe" }
-          $mb = [math]::Round((Get-Item "dist\enpu-core.exe").Length / 1MB, 2)
-          Write-Host "sidecar OK: $mb MB"
+          $bytes = (Get-Item "dist\enpu-core.exe").Length
+          $mb = [math]::Round($bytes / 1MB, 2)
+          Write-Host "sidecar OK: $mb MB ($bytes bytes)"
+          if ($mb -gt 110) {
+            Write-Host "::warning::sidecar $mb MB exceeds soft budget 110MB (#81)"
+          }
 
       - name: Prepare Tauri externalBin (target triple)
         shell: pwsh
@@ -129,7 +134,7 @@ jobs:
             Write-Host ("installer: {0} ({1} MB)" -f $_.FullName, [math]::Round($_.Length/1MB, 2))
           }
 
-      - name: Stage release files
+      - name: Stage release files + size report
         id: stage
         shell: pwsh
         run: |
@@ -137,6 +142,19 @@ jobs:
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           Copy-Item "desktop\src-tauri\target\release\bundle\nsis\*.exe" $out -Force
           Copy-Item "core\dist\enpu-core.exe" $out -Force
+          # #81 size report (also soft-warns on budgets)
+          .\scripts\report-release-sizes.ps1 -OutDir $out -ReportPath (Join-Path $out "SIZE_REPORT.txt")
+          $nsis = Get-ChildItem $out -Filter "*setup*.exe" -ErrorAction SilentlyContinue |
+            Sort-Object Length -Descending | Select-Object -First 1
+          if ($nsis) {
+            $nsisMb = [math]::Round($nsis.Length / 1MB, 2)
+            Write-Host "NSIS setup: $($nsis.Name) $nsisMb MB"
+            if ($nsisMb -gt 120) {
+              Write-Host "::warning::NSIS setup $nsisMb MB exceeds soft budget 120MB (#81)"
+            } elseif ($nsisMb -gt 100) {
+              Write-Host "::notice::NSIS setup $nsisMb MB exceeds stretch goal 100MB (#81; cv2 bottleneck OK)"
+            }
+          }
           # checksums
           Get-ChildItem $out -File | ForEach-Object {
             $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
@@ -198,9 +216,10 @@ jobs:
             ## Windows installer (CD)
 
             - **Version**: ${{ needs.build-installer.outputs.version }}
-            - **Sidecar**: mock engine (offline). Post-install may set up PaddleOCR if Python is available.
-            - **Artifact**: NSIS setup + `enpu-core.exe` + `SHA256SUMS.txt`
+            - **Sidecar**: **mock** engine only (offline). **Does not include PaddleOCR** or models.
+            - **Artifact**: NSIS setup + `enpu-core.exe` + `SIZE_REPORT.txt` + `SHA256SUMS.txt`
+            - Real OCR: install Python 3.10+ then use post-install script / `%LOCALAPPDATA%\EnPu\venv` (see docs).
 
-            See `docs/release-windows.md`.
+            See `docs/release-windows.md` (#81 size policy).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

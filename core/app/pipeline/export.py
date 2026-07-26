@@ -72,10 +72,11 @@ def _require_music21() -> Any:
         import music21  # noqa: F401
     except ImportError as exc:
         raise ExportError(
-            "music21 is not installed. Install with: pip install 'music21>=9.1,<10'"
+            "music21 is not available in this runtime. "
+            "Install with: pip install 'music21>=9.1,<10' "
+            f"(import error: {exc})"
         ) from exc
     return __import__("music21")
-
 
 def parse_key_tonic(key_str: str) -> tuple[str, int]:
     """Return (pitch-class letter with accidental, tonic MIDI in octave 4).

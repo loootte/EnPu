@@ -88,16 +88,21 @@ Push / PR 到 `main` 时 GitHub Actions 会：
 
 工作流：`.github/workflows/ci.yml`  
 
-**Windows 安装包（#14）**：
+**Windows 安装包（#14 / #81）**：
 
 ```powershell
 .\scripts\build-release.ps1
+# 仅重建 sidecar 并看体积：
+.\scripts\build-core-sidecar.ps1
+.\scripts\report-release-sizes.ps1
 ```
 
-- 文档：[docs/release-windows.md](./docs/release-windows.md)  
+- 文档：[docs/release-windows.md](./docs/release-windows.md)（含体积分解）  
+- **默认包 ≈ UI + mock sidecar（约 75MB）**，**不含 PaddleOCR / 模型**  
+- 真 OCR：开发态 `.\scripts\start.ps1 -Engine paddleocr`，或安装后本机 Python + post-install venv  
 - **CD**：GitHub Actions → **CD Windows**（`.github/workflows/cd-windows.yml`）  
   - 手动 Run workflow，或 `git push origin v0.1.0`  
-  - 产物：NSIS setup + sidecar + SHA256，Artifacts 可下载；tag 推送会挂 Release  
+  - 产物：NSIS setup + sidecar + `SIZE_REPORT.txt` + SHA256；tag 推送会挂 Release  
 
 ---
 

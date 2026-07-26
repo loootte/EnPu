@@ -1,6 +1,56 @@
-# Windows 安装包与 Sidecar 打包（Issue #14）
+# Windows 安装包与 Sidecar 打包（Issue #14 / #81）
 
 > 目标：在**没有安装 Python** 的 Windows 机器上，通过安装包运行 EnPu 桌面端，并由内置 `enpu-core` sidecar 完成本地基础识别（默认 **mock** 引擎）。
+
+**默认安装包不含 PaddleOCR**。真识别需本机 Python + 安装后可选脚本，或开发态 venv。
+
+---
+
+## 0. 体积策略与实测（#81）
+
+### 产品定位
+
+```text
+标准安装包 = Tauri UI + 轻量 core sidecar（mock OCR + OpenCV 结构/预处理 + music21 导出）
+完整识别   = 可选后装：%LOCALAPPDATA%\EnPu\venv 或开发态 Paddle
+```
+
+| 项 | 说明 |
+|----|------|
+| 含什么 | 桌面 UI、`enpu-core.exe`（mock）、编辑/试听/导出 MusicXML·MIDI |
+| 不含什么 | PaddlePaddle、PaddleOCR、OCR 模型、开发 samples/venv |
+| 真 OCR | 安装包 post-install 脚本（需本机 Python）或 `.\scripts\start.ps1 -Engine paddleocr` |
+
+### 基线 vs 瘦身后（本机 Windows 实测）
+
+| 产物 | 瘦身前（约） | 瘦身后（#81，本机实测） | 备注 |
+|------|-------------|-------------------------|------|
+| `enpu-core.exe` | **~152 MB** | **~75 MB** | 主体积来源 |
+| NSIS `*_x64-setup.exe` | **~154 MB** | **~77 MB** | **已低于 100 MB 目标** |
+| 桌面主程序 | ~9 MB | ~9 MB | WebView2 系统自带 |
+
+软预算（CI **警告**、不硬失败）：sidecar **>110 MB**、NSIS **>120 MB**。  
+拉伸目标 NSIS **≤100 MB**：已达成（~77 MB）。再压需处理 Windows `cv2.pyd`（未压缩 ≈113 MB）。
+
+### 体积分解（sidecar PKG 源文件，瘦身后）
+
+| 组件 | 约占用 | 处理 |
+|------|--------|------|
+| `cv2` / OpenCV | ~113 MB（`cv2.pyd`） | **保留**（结构管线 / 预处理需要） |
+| OpenCV FFmpeg DLL | 曾 ~60 MB | **剔除**（仅处理静态简谱图） |
+| `scipy` + openblas | 曾 ~70 MB | **剔除**（music21 软依赖，导出不需要） |
+| `matplotlib` 等 | 曾 ~15 MB+ | **剔除** |
+| `numpy` + libs | ~27 MB | 保留 |
+| music21 + 服务栈 | PYZ 等 | 保留最小导出路径；不 `collect_submodules` 全量 |
+| Paddle / torch | — | **永不打进默认 sidecar** |
+
+构建：`core/requirements-sidecar.txt` + `core/enpu-core.spec` 的 `excludes` / 二进制过滤。  
+**不用 UPX**（误报与启动成本）。复现体积报告：
+
+```powershell
+.\scripts\build-core-sidecar.ps1
+.\scripts\report-release-sizes.ps1
+```
 
 ---
 
@@ -137,19 +187,23 @@ git push origin v0.1.0
 
 ## 5. 已知限制
 
-1. **默认 mock OCR**：安装包体积约「UI + ~100MB sidecar」，**不含** PaddleOCR 模型。真实拍照识别请用开发态：  
-   `.\scripts\start.ps1 -Engine paddleocr`  
+1. **默认 mock OCR**：安装包为「UI + 瘦身 sidecar（约 75MB）」，**不含** PaddleOCR 模型。真实拍照识别：  
+   - 开发态：`.\scripts\start.ps1 -Engine paddleocr`  
+   - 安装后：本机 Python 3.10+ + post-install / `%LOCALAPPDATA%\EnPu\venv`  
 2. **无控制台 sidecar 日志**：`enpu-core.exe` 为 windowed 构建时日志写入同目录 `enpu-core.log`（避免 uvicorn `isatty` 崩溃）。  
 3. **关闭桌面时询问是否结束 enpu-core**（进程树 `taskkill /T`，避免 PyInstaller 残留）。  
-4. **安装后 PaddleOCR**：NSIS `NSIS_HOOK_POSTINSTALL` 运行 `resources/install-paddle-ocr.ps1`，在 `%LOCALAPPDATA%\EnPu\venv` 安装 Paddle；成功后生成 `start-enpu-core-paddle.cmd`，桌面优先用真实 OCR。需本机已装 Python 3.10+。  
-2. **首次 Paddle**：若自行改 sidecar 打入 paddle，体积与路径问题见 [poc-sidecar.md](./poc-sidecar.md)。  
-3. **杀软误报**：PyInstaller onefile 偶发误报；未使用 UPX。  
-4. **签名**：当前未做 Authenticode 代码签名；企业分发需自行签名。  
-5. **macOS/Linux 安装包**：#14 仅 Windows。  
+4. **安装后 PaddleOCR**：NSIS `NSIS_HOOK_POSTINSTALL` 运行 `resources/install-paddle-ocr.ps1`，在 `%LOCALAPPDATA%\EnPu\venv` 安装 Paddle；成功后生成 `start-enpu-core-paddle.cmd`，桌面优先用真实 OCR。  
+5. **首次 Paddle**：若自行改 sidecar 打入 paddle，体积与路径问题见 [poc-sidecar.md](./poc-sidecar.md)。  
+6. **杀软误报**：PyInstaller onefile 偶发误报；**未使用 UPX**（#81）。  
+7. **签名**：当前未做 Authenticode 代码签名；企业分发需自行签名。  
+8. **macOS/Linux 安装包**：#14 仅 Windows。  
+9. **剩余体积瓶颈**：Windows wheel 的 `cv2.pyd` 很大；再压到极致需自建 OpenCV 或换轻量 CV 栈（另开 Issue）。  
 
 ---
 
-## 6. 验收勾选（#14）
+## 6. 验收勾选
+
+### #14 安装闭环
 
 - [x] 可复现脚本：`scripts/build-release.ps1` + `prepare-sidecar.ps1`  
 - [x] Tauri `externalBin` + 应用生命周期内 start/stop sidecar  
@@ -157,15 +211,28 @@ git push origin v0.1.0
 - [x] CI workflow 可构建 Windows 安装产物（Actions artifact）  
 - [ ] （人工）在干净 Windows 机安装 NSIS 包点验  
 
+### #81 瘦身
+
+- [x] 书面体积分解（上文 §0）  
+- [x] sidecar 默认依赖与 `excludes` 裁剪（`requirements-sidecar.txt` + `enpu-core.spec`）  
+- [x] 本机 sidecar **~152 → ~75 MB**；NSIS **~154 → ~77 MB**（mock 识别 / MusicXML·MIDI 导出冒烟）  
+- [x] CD 打印/归档 `SIZE_REPORT.txt`；>110 / >120 MB 仅 warning  
+- [x] 文档明确默认不含 PaddleOCR  
+- [ ] （可选）OCR 附加组件按需下载 — 另开 Issue  
+
 ---
 
 ## 7. 相关文件
 
 | 路径 | 说明 |
 |------|------|
-| `core/enpu-core.spec` | PyInstaller |
-| `scripts/build-core-sidecar.ps1` | 打 sidecar |
+| `core/enpu-core.spec` | PyInstaller（#81 精简 excludes / 去 FFmpeg） |
+| `core/requirements-sidecar.txt` | 发布 sidecar 依赖（无 Paddle） |
+| `core/requirements-ci.txt` | CI pytest（无 Paddle） |
+| `scripts/build-core-sidecar.ps1` | 打 sidecar（默认 sidecar 依赖） |
+| `scripts/report-release-sizes.ps1` | 体积报告 |
 | `scripts/prepare-sidecar.ps1` | 拷贝为 triple 名 |
 | `scripts/build-release.ps1` | 全量发布构建 |
 | `desktop/src-tauri/src/lib.rs` | sidecar 生命周期 |
 | `desktop/src-tauri/tauri.conf.json` | `externalBin` + NSIS |
+| `.github/workflows/cd-windows.yml` | CD + size soft budgets |

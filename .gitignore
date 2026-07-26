@@ -45,6 +45,9 @@ core/build/
 *.spec.bak
 # PyInstaller leftover warns (optional local)
 core/warn-*.txt
+# Local release size report (#81); CD attaches one to artifacts
+SIZE_REPORT.txt
+/dist-cd/
 
 # PaddleOCR / ML model caches (download on first run; do not commit)
 **/.paddleocr/

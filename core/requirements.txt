@@ -1,5 +1,7 @@
-# EnPu core — Phase 0
+# EnPu core — full local OCR development stack
 # #2 FastAPI skeleton + #3 OpenCV / PaddleOCR pipeline
+# Release sidecar (no Paddle): requirements-sidecar.txt  (#81)
+# CI unit tests (no Paddle):   requirements-ci.txt
 
 fastapi>=0.110,<1
 uvicorn[standard]>=0.27,<1

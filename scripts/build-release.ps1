@@ -208,6 +208,10 @@ if (Test-Path $mainExe) {
   Write-Host "  app: $mainExe ($mb MB)"
 }
 
+# #81 size report (soft budgets; does not fail the build)
+Write-Host "`n=== Size report (#81) ===" -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot "report-release-sizes.ps1") -OutDir $Root
+
 if (Test-Path $bundleRoot) {
   $found = Get-ChildItem -Recurse -File $bundleRoot -Include *.exe,*.msi,*.nsis.zip,*.zip -ErrorAction SilentlyContinue
   if ($found) {
