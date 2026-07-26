@@ -230,7 +230,9 @@ export function StructureLayerPanel({
             onClick={() => onRerun?.()}
             className="rounded-md bg-indigo-500/90 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-400 disabled:opacity-40"
           >
-            {rerunning ? "重识别中…" : `重识别 ${fromLayer} 及下层`}
+            {rerunning
+              ? "重识别中…"
+              : `按 ${fromLayer} 框重识别下层`}
           </button>
           <button
             type="button"

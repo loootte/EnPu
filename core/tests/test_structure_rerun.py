@@ -106,7 +106,7 @@ def _synthetic_png() -> bytes:
 
 
 def test_structure_rerun_l2_pipeline(monkeypatch: pytest.MonkeyPatch) -> None:
-    """from_layer=L2 uses edited system rects and re-runs L3–L5."""
+    """from_layer=L2 pins edited system rects and re-runs L3–L5 only."""
     import app.config as config_mod
     from app.pipeline.structure.pipeline import run_structure_rerun
 
@@ -129,14 +129,20 @@ def test_structure_rerun_l2_pipeline(monkeypatch: pytest.MonkeyPatch) -> None:
     assert res.structure is not None
     l2 = [i for i in res.structure.items if i.layer == "L2"]
     assert len(l2) >= 1
+    # Edited L2 box must be preserved (not re-detected)
+    sys0 = next(i for i in l2 if i.id == "l2-sys0" or i.box.y1 == 45)
+    assert abs(sys0.box.y1 - 45) < 1.0
+    assert abs(sys0.box.y2 - 135) < 1.0
     l1 = [i for i in res.structure.items if i.layer == "L1"]
     assert any(i.id == "l1-score" or i.kind == "score" for i in l1)
     assert any("structure_rerun" in w for w in res.meta.parse_warnings)
     assert any("from=L2" in w for w in res.meta.parse_warnings)
+    assert any("pin=L2" in w or "L2 pinned" in w for w in res.meta.parse_warnings)
     config_mod.get_settings.cache_clear()
 
 
 def test_structure_rerun_l3_keeps_systems(monkeypatch: pytest.MonkeyPatch) -> None:
+    """from_layer=L3 pins L2+L3; re-runs L4–L5 only (does not re-detect L3)."""
     import app.config as config_mod
     from app.pipeline.structure.pipeline import run_structure_rerun
 
@@ -161,5 +167,51 @@ def test_structure_rerun_l3_keeps_systems(monkeypatch: pytest.MonkeyPatch) -> No
     sys0 = next(i for i in l2 if i.id == "l2-sys0")
     assert sys0.box.y1 == 50
     assert sys0.box.y2 == 120
+    # Edited L3 measure must keep user rect
+    l3 = [i for i in res.structure.items if i.layer == "L3"]
+    m1 = next((i for i in l3 if i.id == "l3-m1"), None)
+    assert m1 is not None
+    assert abs(m1.box.x1 - 15) < 1.0
+    assert abs(m1.box.y1 - 50) < 1.0
+    assert abs(m1.box.x2 - 190) < 1.0
+    assert abs(m1.box.y2 - 118) < 1.0
     assert any("from=L3" in w for w in res.meta.parse_warnings)
+    assert any("L3 pinned" in w or "pin=L3" in w for w in res.meta.parse_warnings)
+    config_mod.get_settings.cache_clear()
+
+
+def test_structure_rerun_l2_requires_systems(monkeypatch: pytest.MonkeyPatch) -> None:
+    """L2 rerun without L2 boxes must not silently re-detect; it errors."""
+    import app.config as config_mod
+    import pytest as pt
+    from app.pipeline.structure.pipeline import (
+        StructurePipelineError,
+        run_structure_rerun,
+    )
+    from app.schemas.recognize import BoundingBox, StructureBox, StructureDebug
+
+    monkeypatch.setenv("ENPU_RECOGNIZE_ENGINE", "mock")
+    config_mod.get_settings.cache_clear()
+    settings = config_mod.get_settings()
+    st = StructureDebug(
+        pipeline="structure",
+        items=[
+            StructureBox(
+                layer="L1",
+                id="l1-score",
+                label="score",
+                kind="score",
+                box=BoundingBox(x1=0, y1=0, x2=400, y2=300),
+            )
+        ],
+    )
+    with pt.raises(StructurePipelineError, match="L2 system"):
+        run_structure_rerun(
+            _synthetic_png(),
+            settings=settings,
+            from_layer="L2",
+            base_structure=st,
+            edits=[],
+            filename="t.png",
+        )
     config_mod.get_settings.cache_clear()

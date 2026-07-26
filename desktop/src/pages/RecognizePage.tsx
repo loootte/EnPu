@@ -85,22 +85,57 @@ function collectStructureEdits(
   return edits;
 }
 
-function highestEditedLayer(
-  edits: StructureBoxEdit[],
-  fallback: StructureLayerId,
-): StructureLayerId {
-  if (!edits.length) return fallback;
-  let best = fallback;
-  let bestRank = LAYER_RANK[fallback];
-  for (const e of edits) {
-    const L = (e.layer || fallback) as StructureLayerId;
-    const r = LAYER_RANK[L] ?? 9;
-    if (r < bestRank) {
-      best = L;
-      bestRank = r;
-    }
-  }
-  return best;
+/**
+ * After rerun, force boxes of fromLayer and above to match the pre-rerun draft
+ * so the current edit layer is never replaced by re-detection.
+ */
+function mergePinnedLayerBoxes(
+  draft: StructureDebug | null | undefined,
+  response: StructureDebug | null | undefined,
+  fromLayer: StructureLayerId,
+): StructureDebug | null {
+  if (!response?.items?.length) return response ?? null;
+  if (!draft?.items?.length) return response;
+  const pinRank = LAYER_RANK[fromLayer];
+  const pinned = draft.items.filter((it) => LAYER_RANK[it.layer] <= pinRank);
+  const pinnedIds = new Set(
+    pinned.map((it) => it.id || `${it.layer}-${it.label}`),
+  );
+  // Keep response items for layers strictly below fromLayer
+  const below = response.items.filter(
+    (it) => LAYER_RANK[it.layer] > pinRank,
+  );
+  // Prefer draft geometry for fromLayer and above (by id, then append leftovers)
+  const byId = new Map(
+    response.items.map((it) => [it.id || `${it.layer}-${it.label}`, it]),
+  );
+  const mergedAbove = pinned.map((p) => {
+    const id = p.id || `${p.layer}-${p.label}`;
+    const resp = byId.get(id);
+    // Keep draft box; retain response extras if same id
+    return {
+      ...resp,
+      ...p,
+      box: { ...p.box },
+      layer: p.layer,
+      id: p.id,
+      label: p.label,
+      kind: p.kind ?? resp?.kind,
+    };
+  });
+  // Response items on pin layers that were not in draft (shouldn't happen)
+  const extraAbove = response.items.filter((it) => {
+    const r = LAYER_RANK[it.layer];
+    if (r > pinRank) return false;
+    const id = it.id || `${it.layer}-${it.label}`;
+    return !pinnedIds.has(id);
+  });
+  return {
+    ...response,
+    items: [...mergedAbove, ...extraAbove, ...below],
+    barlines: response.barlines,
+    summary: response.summary,
+  };
 }
 
 export function RecognizePage() {
@@ -661,34 +696,45 @@ export function RecognizePage() {
     setStructureRerunning(true);
     setLoading(true);
     try {
-      const edits = collectStructureEdits(base, structureDraft);
-      const fromLayer =
-        edits.length > 0
-          ? highestEditedLayer(edits, structureFromLayer)
-          : structureFromLayer;
-      // Prefer user's explicit from_layer if higher (earlier) than auto
-      const chosen =
-        LAYER_RANK[structureFromLayer] <= LAYER_RANK[fromLayer]
-          ? structureFromLayer
-          : fromLayer;
+      // Always use the UI edit layer. structureDraft already has user boxes;
+      // do NOT re-detect that layer — only recompute layers below it.
+      const draft = structureDraft ?? base;
+      const edits = collectStructureEdits(base, draft);
       const res = await recognizeStructureRerun(f, {
-        fromLayer: chosen,
-        baseStructure: structureDraft ?? base,
+        fromLayer: structureFromLayer,
+        baseStructure: draft,
         edits,
         baseUrl,
       });
-      setResult(res);
+      // Keep pinned current-layer boxes from draft if response drifts
+      const mergedStructure = mergePinnedLayerBoxes(
+        draft,
+        res.structure ?? null,
+        structureFromLayer,
+      );
+      setResult({
+        ...res,
+        structure: mergedStructure ?? res.structure,
+      });
       setLayoutBoxes(res.boxes ?? null);
       setLayoutRegions(res.regions ?? null);
       setScore(scoreFromRecognize(res.score, res.meta.filename || f.name));
       setStructureDraft(
-        res.structure ? structuredClone(res.structure) : null,
+        mergedStructure
+          ? structuredClone(mergedStructure)
+          : res.structure
+            ? structuredClone(res.structure)
+            : null,
       );
       setSelectedStructureId(null);
       setOverlayMode("structure");
+      setStructureLayers((prev) => ({
+        ...prev,
+        [structureFromLayer]: true,
+      }));
       setCoreState("online");
       setInfo(
-        `结构层重识别完成 · from=${res.from_layer} · 改框 ${res.edited_item_count} · ${res.meta.elapsed_ms} ms · L${res.from_layer.slice(1)} 及下层已更新`,
+        `已按编辑后的 ${structureFromLayer} 框重识别其下层 · from=${res.from_layer} · 改框 ${edits.length} · ${res.meta.elapsed_ms} ms`,
       );
       void refreshHealth();
     } catch (err) {
