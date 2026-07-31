@@ -17,6 +17,7 @@ import type {
   StructureBoxEdit,
   StructureDebug,
   StructureRerunResponse,
+  TuneLayerResult,
   TuneParamResult,
 } from "./types";
 
@@ -466,4 +467,112 @@ export async function evaluateTuneParamUpload(
   }
   const data = (await res.json()) as { result: TuneParamResult };
   return data.result;
+}
+
+/** POST /v1/evaluation/tune-layer/upload — single-layer auto-tune (#89). */
+export async function evaluateTuneLayerUpload(
+  file: File,
+  opts: {
+    gt: Record<string, unknown>;
+    layer?: string;
+    max_trials?: number;
+    max_seconds?: number;
+    seed?: number;
+    method?: string;
+    apply_best?: boolean;
+    baseUrl?: string;
+    signal?: AbortSignal;
+  },
+): Promise<TuneLayerResult> {
+  const baseUrl = opts.baseUrl ?? getCoreBaseUrl();
+  const form = new FormData();
+  form.append("file", file, file.name || "score.png");
+  form.append("gt_json", JSON.stringify(opts.gt));
+  form.append("layer", opts.layer ?? "l3");
+  form.append("max_trials", String(opts.max_trials ?? 40));
+  form.append("max_seconds", String(opts.max_seconds ?? 120));
+  form.append("seed", String(opts.seed ?? 42));
+  form.append("method", opts.method ?? "random");
+  form.append("apply_best", opts.apply_best ? "true" : "false");
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/evaluation/tune-layer/upload`, {
+      method: "POST",
+      body: form,
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+  if (!res.ok) {
+    let detail = `本层自动调优失败：HTTP ${res.status}`;
+    try {
+      const j = (await res.json()) as { detail?: unknown };
+      if (typeof j.detail === "string") detail = j.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+  const data = (await res.json()) as { result: TuneLayerResult };
+  return data.result;
+}
+
+/** Apply layer params to core runtime (#89). */
+export async function applyLayerParams(
+  layer: string,
+  params: Record<string, unknown>,
+  opts?: { merge?: boolean; baseUrl?: string; signal?: AbortSignal },
+): Promise<Record<string, unknown>> {
+  const baseUrl = opts?.baseUrl ?? getCoreBaseUrl();
+  const form = new FormData();
+  form.append("layer", layer);
+  form.append("params_json", JSON.stringify(params));
+  form.append("merge", opts?.merge === false ? "false" : "true");
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/evaluation/params/apply`, {
+      method: "POST",
+      body: form,
+      signal: opts?.signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+  if (!res.ok) {
+    throw new CoreApiError(`应用参数失败：HTTP ${res.status}`, {
+      status: res.status,
+      kind: "http",
+    });
+  }
+  return (await res.json()) as Record<string, unknown>;
+}
+
+/** Reset runtime layer params to YAML defaults (#89). */
+export async function resetLayerParams(
+  layer?: string,
+  baseUrl: string = getCoreBaseUrl(),
+  signal?: AbortSignal,
+): Promise<void> {
+  const qs = layer ? `?layer=${encodeURIComponent(layer)}` : "";
+  // FastAPI Form optional — use query via body empty POST with form
+  const form = new FormData();
+  if (layer) form.append("layer", layer);
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/evaluation/params/reset${qs}`, {
+      method: "POST",
+      body: form,
+      signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+  if (!res.ok) {
+    throw new CoreApiError(`重置参数失败：HTTP ${res.status}`, {
+      status: res.status,
+      kind: "http",
+    });
+  }
 }

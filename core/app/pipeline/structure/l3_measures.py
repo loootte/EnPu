@@ -31,8 +31,9 @@ def segment_measures_on_systems(
     image_bgr: np.ndarray,
     systems: list[StaffSystem],
     *,
-    min_measure_width: float = 24.0,
-    enable_cross_line: bool = True,
+    min_measure_width: float | None = None,
+    enable_cross_line: bool | None = None,
+    params: dict | None = None,
 ) -> tuple[list[StaffSystem], list[str]]:
     """For each system, detect vertical barlines and split into measures.
 
@@ -41,7 +42,19 @@ def segment_measures_on_systems(
 
     **#84**: barlines are sought primarily in the estimated melody band;
     soft gap cut + explicit ``measure_source`` when bars are insufficient.
+
+    **#89**: thresholds from ``params`` / runtime L3 store when not passed.
     """
+    from app.tuning.params import L3Params, get_l3_params
+
+    base = get_l3_params()
+    if params:
+        base = L3Params.from_dict({**base.to_dict(), **params})
+    if min_measure_width is not None:
+        base.min_measure_width = float(min_measure_width)
+    if enable_cross_line is not None:
+        base.enable_cross_line = bool(enable_cross_line)
+
     warnings: list[str] = []
     if image_bgr is None or image_bgr.size == 0:
         return systems, ["L3: empty image"]
@@ -52,12 +65,12 @@ def segment_measures_on_systems(
         sys2, wsys = _segment_one_system(
             image_bgr,
             sys,
-            min_measure_width=min_measure_width,
+            p=base,
         )
         out.append(sys2)
         warnings.extend(wsys)
 
-    if enable_cross_line and len(out) >= 2:
+    if base.enable_cross_line and len(out) >= 2:
         out, w_cross = _merge_cross_line_opens(out)
         warnings.extend(w_cross)
 
@@ -68,8 +81,14 @@ def _segment_one_system(
     image_bgr: np.ndarray,
     sys: StaffSystem,
     *,
-    min_measure_width: float,
+    p: "object",
 ) -> tuple[StaffSystem, list[str]]:
+    from app.tuning.params import L3Params
+
+    if not isinstance(p, L3Params):
+        p = L3Params.from_dict(dict(p) if p else None)  # type: ignore[arg-type]
+
+    min_measure_width = float(p.min_measure_width)
     warnings: list[str] = []
     y0, y1 = sys.rect.y1, sys.rect.y2
     x_lo, x_hi = sys.rect.x1, sys.rect.x2
@@ -89,7 +108,8 @@ def _segment_one_system(
         f"(system y=[{y0:.0f},{y1:.0f}])"
     )
 
-    min_gap = max(18.0, sys.rect.width * 0.03)
+    min_gap = max(float(p.min_gap_floor), sys.rect.width * float(p.min_gap_ratio))
+    dedup = min_measure_width * float(p.dedup_gap_factor)
 
     # Graphic bars inside melody band first
     xs_mel = detect_barline_xs(
@@ -106,10 +126,10 @@ def _segment_one_system(
         melody_mode=False,
     )
 
-    xs = _merge_unique_xs(xs_mel + xs_full, min_gap=min_measure_width * 0.5)
+    xs = _merge_unique_xs(xs_mel + xs_full, min_gap=dedup)
     # Keep xs inside system x range with margin
     xs = [x for x in xs if x_lo + 8 < x < x_hi - 8]
-    xs = _dedup_xs(sorted(xs), min_gap=min_measure_width * 0.5)
+    xs = _dedup_xs(sorted(xs), min_gap=dedup)
 
     measures: list[MeasureLayout] = []
     source = SRC_L3_BARLINE
@@ -124,7 +144,7 @@ def _segment_one_system(
         )
 
     # #84: not enough bars → soft gap cut inside melody band
-    if len(measures) < 2:
+    if len(measures) < 2 and p.soft_gap_enabled:
         soft_xs = gap_soft_bar_xs(
             image_bgr,
             y_range=(my0, my1),
@@ -208,7 +228,12 @@ def _segment_one_system(
             )
 
     # Open trailing only when ink exists after last bar (not empty margin) (#84 / #66)
-    if measures and source == SRC_L3_BARLINE and len(xs) >= 2:
+    if (
+        p.open_trailing_enabled
+        and measures
+        and source == SRC_L3_BARLINE
+        and len(xs) >= 2
+    ):
         last_bar = xs[-1]
         if x_hi - last_bar > min_measure_width * 1.2 and _has_ink_in_band(
             image_bgr,

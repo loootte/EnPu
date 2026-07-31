@@ -1,0 +1,15 @@
+# Default layer parameters for structure pipeline + auto-tune (#89)
+schema: enpu-tune-params-v0.1
+
+l3:
+  min_measure_width: 24.0
+  min_gap_floor: 18.0
+  min_gap_ratio: 0.03
+  enable_cross_line: true
+  soft_gap_enabled: true
+  open_trailing_enabled: true
+  dedup_gap_factor: 0.5
+
+l4:
+  min_area: 18
+  max_aspect: 3.5

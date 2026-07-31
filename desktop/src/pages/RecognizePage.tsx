@@ -1083,80 +1083,85 @@ export function RecognizePage() {
     setSelectedStructureId(null);
   }, [selectedStructureId]);
 
-  const onStructureRerun = useCallback(async () => {
-    const f = fileRef.current;
-    const base = result?.structure;
-    if (!f || !base || structureRerunning || loading) return;
-    setError(null);
-    setInfo(null);
-    setStructureRerunning(true);
-    setLoading(true);
-    try {
-      // Always use the UI edit layer. structureDraft already has user boxes;
-      // do NOT re-detect that layer — only recompute layers below it.
-      const draft = structureDraft ?? base;
-      const edits = collectStructureEdits(base, draft);
-      const res = await recognizeStructureRerun(f, {
-        fromLayer: structureFromLayer,
-        baseStructure: draft,
-        edits,
-        baseUrl,
-      });
-      // Keep pinned current-layer boxes from draft if response drifts
-      const mergedStructure = mergePinnedLayerBoxes(
-        draft,
-        res.structure ?? null,
-        structureFromLayer,
-      );
-      setResult({
-        ...res,
-        structure: mergedStructure ?? res.structure,
-      });
-      setLayoutBoxes(res.boxes ?? null);
-      setLayoutRegions(res.regions ?? null);
-      setScore(scoreFromRecognize(res.score, res.meta.filename || f.name));
-      setStructureDraft(
-        mergedStructure
-          ? structuredClone(mergedStructure)
-          : res.structure
-            ? structuredClone(res.structure)
-            : null,
-      );
-      setSelectedStructureId(null);
-      setOverlayMode("structure");
-      setStructureLayers((prev) => ({
-        ...prev,
-        [structureFromLayer]: true,
-      }));
-      setCoreState("online");
-      setInfo(
-        `已按编辑后的 ${structureFromLayer} 框重识别其下层 · from=${res.from_layer} · 改框 ${edits.length} · ${res.meta.elapsed_ms} ms`,
-      );
-      void refreshHealth();
-    } catch (err) {
-      const message =
-        err instanceof CoreApiError
-          ? err.message
-          : err instanceof Error
+  const onStructureRerun = useCallback(
+    async (fromLayerOverride?: StructureLayerId) => {
+      const f = fileRef.current;
+      const base = result?.structure;
+      if (!f || !base || structureRerunning || loading) return;
+      const fromLayer = fromLayerOverride ?? structureFromLayer;
+      setError(null);
+      setInfo(null);
+      setStructureRerunning(true);
+      setLoading(true);
+      try {
+        // Always use the UI edit layer. structureDraft already has user boxes;
+        // do NOT re-detect that layer — only recompute layers below it.
+        const draft = structureDraft ?? base;
+        const edits = collectStructureEdits(base, draft);
+        const res = await recognizeStructureRerun(f, {
+          fromLayer,
+          baseStructure: draft,
+          edits,
+          baseUrl,
+        });
+        // Keep pinned current-layer boxes from draft if response drifts
+        const mergedStructure = mergePinnedLayerBoxes(
+          draft,
+          res.structure ?? null,
+          fromLayer,
+        );
+        setResult({
+          ...res,
+          structure: mergedStructure ?? res.structure,
+        });
+        setLayoutBoxes(res.boxes ?? null);
+        setLayoutRegions(res.regions ?? null);
+        setScore(scoreFromRecognize(res.score, res.meta.filename || f.name));
+        setStructureDraft(
+          mergedStructure
+            ? structuredClone(mergedStructure)
+            : res.structure
+              ? structuredClone(res.structure)
+              : null,
+        );
+        setSelectedStructureId(null);
+        setOverlayMode("structure");
+        setStructureFromLayer(fromLayer);
+        setStructureLayers((prev) => ({
+          ...prev,
+          [fromLayer]: true,
+        }));
+        setCoreState("online");
+        setInfo(
+          `已按编辑后的 ${fromLayer} 框重识别其下层 · from=${res.from_layer} · 改框 ${edits.length} · ${res.meta.elapsed_ms} ms`,
+        );
+        void refreshHealth();
+      } catch (err) {
+        const message =
+          err instanceof CoreApiError
             ? err.message
-            : String(err);
-      setError(message);
-      if (err instanceof CoreApiError && err.kind === "network") {
-        setCoreState("offline");
+            : err instanceof Error
+              ? err.message
+              : String(err);
+        setError(message);
+        if (err instanceof CoreApiError && err.kind === "network") {
+          setCoreState("offline");
+        }
+      } finally {
+        setStructureRerunning(false);
+        setLoading(false);
       }
-    } finally {
-      setStructureRerunning(false);
-      setLoading(false);
-    }
-  }, [
-    baseUrl,
-    loading,
-    refreshHealth,
-    result?.structure,
-    structureDraft,
-    structureFromLayer,
-    structureRerunning,
-  ]);
+    },
+    [
+      baseUrl,
+      loading,
+      refreshHealth,
+      result?.structure,
+      structureDraft,
+      structureFromLayer,
+      structureRerunning,
+    ],
+  );
 
   const onMenuAction = useCallback(
     (action: MenuAction) => {
@@ -1458,6 +1463,10 @@ export function RecognizePage() {
             disabled={loading || structureRerunning}
             onErrorsChange={setMetricErrors}
             onLayerF1Change={setLayerF1}
+            onRequestRerunFromL2={() => {
+              setStructureEditMode(true);
+              void onStructureRerun("L2");
+            }}
           />
           <ProblemNavPanel
             score={score}

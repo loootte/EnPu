@@ -22,6 +22,9 @@ paddleocr>=2.7,<3
 # Export (MusicXML / MIDI) — issue #11
 music21>=9.1,<10
 
+# Layer param YAML (#89)
+PyYAML>=6.0,<7
+
 # tests
 httpx>=0.27,<1
 pytest>=8.0,<9
