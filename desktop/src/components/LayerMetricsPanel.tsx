@@ -355,17 +355,12 @@ export function LayerMetricsPanel({
         <p className="mt-1.5 truncate text-[10px] text-teal-200/80">
           标注 GT: {gtName}
           {gtSource === "edit" ? " · 来自编辑框" : " · 来自文件"}
-          {Array.isArray(
-            (gt?.layers as { L3?: { measures?: unknown[] } } | undefined)?.L3
-              ?.measures,
-          )
-            ? ` · L3×${
-                (
-                  (gt?.layers as { L3?: { measures?: unknown[] } }).L3
-                    .measures as unknown[]
-                ).length
-              }`
-            : ""}
+          {(() => {
+            const measures = (
+              gt?.layers as { L3?: { measures?: unknown[] } } | undefined
+            )?.L3?.measures;
+            return Array.isArray(measures) ? ` · L3×${measures.length}` : "";
+          })()}
         </p>
       ) : (
         <p className="mt-1.5 text-[10px] text-slate-600">
