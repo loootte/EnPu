@@ -675,19 +675,16 @@ def test_l4_m04_first_measure_pitch_count() -> None:
         assert n.rect.y2 < chord_y0 - 5, (n.rect, chord_y0)
 
 
-def test_l3_no_outer_margin_measures() -> None:
-    """#66: do not treat left-of-first / right-of-last barline as measures."""
+def test_l3_split_derived_measures() -> None:
+    """#85: interior splits + L2 bounds → n_measures = n_splits + 1."""
     from app.pipeline.structure.ir import StaffSystem
 
     h, w = 120, 400
     img = np.full((h, w, 3), 255, dtype=np.uint8)
-    # Staff band ink
     img[40:90, 20:380] = 245
-    # Four tall barlines → 3 real measures between them
     bar_xs = [60, 150, 240, 330]
     for x in bar_xs:
         img[38:92, x : x + 3] = 0
-    # Note blobs only between barlines
     for x in (90, 180, 270):
         img[55:75, x : x + 10] = 0
 
@@ -697,23 +694,19 @@ def test_l3_no_outer_margin_measures() -> None:
     systems, warnings = segment_measures_on_systems(img, systems)
     assert len(systems) == 1
     measures = systems[0].measures
-    detected = systems[0].barline_xs
-    assert len(detected) >= 4, detected
-    # Must be between-barline only: n_bars-1 measures, not n_bars+1 (with outer pads)
-    assert len(measures) == len(detected) - 1, (
+    splits = systems[0].barline_xs  # interior only
+    assert len(splits) >= 3, splits
+    # Derived measures use L2 endpoints
+    assert len(measures) == len(splits) + 1, (
         [(m.rect.x1, m.rect.x2) for m in measures],
-        detected,
+        splits,
     )
-    first_bar, last_bar = detected[0], detected[-1]
+    assert measures[0].rect.x1 == pytest.approx(systems[0].rect.x1)
+    assert measures[-1].rect.x2 == pytest.approx(systems[0].rect.x2)
     for m in measures:
-        # Each measure sits between two barlines (no system-edge pads)
-        assert m.rect.x1 >= first_bar - 0.5, m.rect
-        assert m.rect.x2 <= last_bar + 0.5, m.rect
         assert m.barline_x_left is not None and m.barline_x_right is not None
-    # No measure lives wholly in left margin (x < first bar) or right margin
-    assert not any(m.rect.x2 <= first_bar + 1 for m in measures)
-    assert not any(m.rect.x1 >= last_bar - 1 for m in measures)
-    assert any("between-barlines only" in w for w in warnings)
+        assert m.extra.get("from_splits") is True
+    assert any("split" in w.lower() or "derived" in w.lower() for w in warnings)
 
 
 def test_l4_note_candidates() -> None:

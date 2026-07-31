@@ -177,25 +177,78 @@ def page_layout_from_structure(
     # Reading order: systems top→bottom, measures left→right by geometric center
     sort_systems_and_measures_by_center(systems)
     reindex_global_measure_numbers(systems)
+    from app.pipeline.structure.ir import SplitLine
+    from app.pipeline.structure.splits import (
+        measures_to_splits,
+        normalize_splits,
+        splits_to_measures,
+    )
+
     for sys in systems:
-        # Reconstruct barline xs from measure edges
-        xs: list[float] = []
-        for m in sys.measures:
-            if m.barline_x_left is None:
-                m.barline_x_left = m.rect.x1
-            if m.barline_x_right is None:
-                m.barline_x_right = m.rect.x2
-            xs.extend([m.rect.x1, m.rect.x2])
-        # Prefer barlines from structure if present
-        bl = [
-            float(b.get("x"))
+        # Prefer #85 splits from structure.barlines (interior only)
+        bl_items = [
+            b
             for b in (structure.barlines or [])
             if int(b.get("system", -1)) == sys.index and b.get("x") is not None
         ]
-        if bl:
-            sys.barline_xs = sorted(set(bl))
+        if bl_items:
+            raw_splits = [
+                SplitLine(
+                    x=float(b["x"]),
+                    split_id=str(b.get("id") or f"s{i}"),
+                    source=str(b.get("source") or "user"),
+                    confidence=float(b.get("confidence") or 1.0),
+                )
+                for i, b in enumerate(bl_items)
+            ]
+            splits = normalize_splits(
+                raw_splits,
+                x_left=sys.rect.x1,
+                x_right=sys.rect.x2,
+                min_gap=6.0,
+            )
+            sys.splits = splits
+            sys.barline_xs = [s.x for s in splits]
+            # Re-derive measures from splits (edit source of truth)
+            notes_by_cx = []
+            for m in sys.measures:
+                for n in m.notes:
+                    notes_by_cx.append(n)
+            sys.measures = splits_to_measures(
+                x_left=sys.rect.x1,
+                x_right=sys.rect.x2,
+                y_top=sys.rect.y1,
+                y_bot=sys.rect.y2,
+                splits=splits,
+                min_measure_width=8.0,
+                measure_source="user_splits",
+            )
+            # Best-effort reattach notes by center-x into new measures
+            for n in notes_by_cx:
+                cx = n.rect.cx
+                host = next(
+                    (m for m in sys.measures if m.rect.x1 - 1 <= cx <= m.rect.x2 + 1),
+                    sys.measures[0] if sys.measures else None,
+                )
+                if host is not None:
+                    n.index = len(host.notes)
+                    host.notes.append(n)
         else:
-            sys.barline_xs = sorted(set(xs))
+            # Migrate measure rects → splits
+            for m in sys.measures:
+                if m.barline_x_left is None:
+                    m.barline_x_left = m.rect.x1
+                if m.barline_x_right is None:
+                    m.barline_x_right = m.rect.x2
+            splits = measures_to_splits(
+                sys.measures,
+                x_left=sys.rect.x1,
+                x_right=sys.rect.x2,
+                min_gap=6.0,
+            )
+            sys.splits = splits
+            sys.barline_xs = [s.x for s in splits]
+    reindex_global_measure_numbers(systems)
 
     # L4 note candidates
     l4_items = [it for it in structure.items if it.layer == "L4"]

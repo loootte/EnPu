@@ -90,9 +90,11 @@ export function structureToEvalGt(
     })
     .filter(Boolean);
 
+  // #85: L3 GT is primarily ordered split xs (from editable barlines)
   const barlines = (structure.barlines ?? [])
     .map((b) => Number(b.x))
-    .filter((x) => Number.isFinite(x));
+    .filter((x) => Number.isFinite(x))
+    .sort((a, b) => a - b);
 
   // Pitch sequence from L5 boxes if present, else from score
   const l5 = items.filter((it) => it.layer === "L5" && it.pitch);
@@ -151,7 +153,16 @@ export function structureToEvalGt(
     layers: {
       L1: { regions },
       L2: { systems },
-      L3: { measures, barlines },
+      // Primary L3 GT: splits (x); measures kept as derived compatibility
+      L3: {
+        splits: barlines.map((x, i) => ({
+          x,
+          split_id: `s${i}`,
+          source: "user",
+        })),
+        barlines,
+        measures,
+      },
       L4: { notes },
     },
   };
@@ -165,4 +176,64 @@ export function cloneStructure(
 ): StructureDebug | null {
   if (!structure) return null;
   return JSON.parse(JSON.stringify(structure)) as StructureDebug;
+}
+
+/**
+ * Recompute L3 measure boxes from L2 rows + barline splits (#85).
+ * Endpoints = L2 left/right; interiors = barlines for that system.
+ */
+export function rederiveMeasuresFromSplits(
+  structure: StructureDebug,
+): StructureDebug {
+  const next = cloneStructure(structure);
+  if (!next) return structure;
+
+  const systems = next.items
+    .filter((it) => it.layer === "L2")
+    .sort((a, b) => a.box.y1 - b.box.y1 || a.box.x1 - b.box.x1);
+  const barlines = [...(next.barlines ?? [])];
+  const newMeasures: StructureBox[] = [];
+  let globalM = 0;
+
+  for (let order = 0; order < systems.length; order++) {
+    const sys = systems[order];
+    const bars = barlines
+      .filter((b) => b.system === order)
+      .map((b) => b.x)
+      .filter((x) => x > sys.box.x1 + 1 && x < sys.box.x2 - 1)
+      .sort((a, b) => a - b);
+
+    const xs: number[] = [sys.box.x1];
+    for (const x of bars) {
+      if (x - xs[xs.length - 1] > 2) xs.push(x);
+    }
+    if (sys.box.x2 - xs[xs.length - 1] > 2) xs.push(sys.box.x2);
+    else xs[xs.length - 1] = sys.box.x2;
+
+    for (let i = 0; i < xs.length - 1; i++) {
+      globalM += 1;
+      newMeasures.push({
+        layer: "L3",
+        id: `l3-m${globalM}`,
+        label: `m${globalM}`,
+        box: {
+          x1: xs[i],
+          y1: sys.box.y1,
+          x2: xs[i + 1],
+          y2: sys.box.y2,
+        },
+        kind: "measure_derived",
+        confidence: 1,
+      });
+    }
+  }
+
+  const nonL3 = next.items.filter((it) => it.layer !== "L3");
+  next.items = [...nonL3, ...newMeasures];
+  next.summary = {
+    ...(next.summary || {}),
+    n_measures: newMeasures.length,
+    l3_model: "splits",
+  };
+  return next;
 }

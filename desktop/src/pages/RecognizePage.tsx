@@ -14,7 +14,8 @@ import {
   type StructureLayerId,
 } from "../components/StructureLayerPanel";
 import { LayerMetricsPanel } from "../components/LayerMetricsPanel";
-import type { MetricErrorBox } from "../lib/types";
+import type { MetricErrorBox, StructureBarline } from "../lib/types";
+import { rederiveMeasuresFromSplits } from "../lib/structureGt";
 import {
   problemMeasureNumbers,
   problemsFromScore,
@@ -319,6 +320,10 @@ export function RecognizePage() {
   const [layerF1, setLayerF1] = useState<Partial<
     Record<StructureLayerId, number>
   > | null>(null);
+  /** #85 selected L3 split line */
+  const [selectedBarlineId, setSelectedBarlineId] = useState<string | null>(
+    null,
+  );
 
   // Edit mode / layer change: show edit layer (+ parent); clear off-layer selection
   useEffect(() => {
@@ -1003,16 +1008,109 @@ export function RecognizePage() {
     setDirty(true);
   }, []);
 
+  /** #85: drag L3 split line */
+  const onBarlineMove = useCallback((id: string, x: number) => {
+    setStructureDraft((prev) => {
+      const base =
+        prev ??
+        (result?.structure ? structuredClone(result.structure) : null);
+      if (!base?.barlines?.length) return prev;
+      const nextBars = base.barlines.map((b, i) => {
+        const bid = b.id || `bar-${b.system}-${i}`;
+        return bid === id ? { ...b, x, source: "user" } : b;
+      });
+      const updated = { ...base, barlines: nextBars };
+      return rederiveMeasuresFromSplits(updated);
+    });
+    setDirty(true);
+  }, [result?.structure]);
+
+  const onBarlineDelete = useCallback((id: string) => {
+    setStructureDraft((prev) => {
+      const base =
+        prev ??
+        (result?.structure ? structuredClone(result.structure) : null);
+      if (!base?.barlines?.length) return prev;
+      const nextBars = base.barlines.filter((b, i) => {
+        const bid = b.id || `bar-${b.system}-${i}`;
+        return bid !== id;
+      });
+      const updated = { ...base, barlines: nextBars };
+      return rederiveMeasuresFromSplits(updated);
+    });
+    setSelectedBarlineId(null);
+    setDirty(true);
+  }, [result?.structure]);
+
+  const onBarlineAdd = useCallback(
+    (system: number, x: number, y1: number, y2: number) => {
+      setStructureDraft((prev) => {
+        const base =
+          prev ??
+          (result?.structure
+            ? structuredClone(result.structure)
+            : { pipeline: "structure", items: [], barlines: [], summary: {} });
+        const id = `user-split-${Date.now().toString(36)}`;
+        const bl: StructureBarline = {
+          system,
+          x,
+          y1,
+          y2,
+          id,
+          source: "user",
+          editable: true,
+        };
+        const updated = {
+          ...base,
+          barlines: [...(base.barlines ?? []), bl],
+        };
+        return rederiveMeasuresFromSplits(updated);
+      });
+      setStructureAddMode(false);
+      setDirty(true);
+      setInfo("已插入 L3 分割线；小节框已按线重算");
+    },
+    [result?.structure],
+  );
+
   const onResetStructureEdits = useCallback(() => {
     setStructureDraft(
       result?.structure ? structuredClone(result.structure) : null,
     );
     setSelectedStructureId(null);
+    setSelectedBarlineId(null);
     setStructureAddMode(false);
   }, [result?.structure]);
 
   const onStructureBoxAdd = useCallback(
     (box: BoundingBox, layer: StructureLayerId) => {
+      // #85: L3 "add" inserts a vertical split at the box center-x
+      if (layer === "L3") {
+        const cx = (box.x1 + box.x2) / 2;
+        const systems =
+          (structureDraft ?? result?.structure)?.items.filter(
+            (it) => it.layer === "L2",
+          ) ?? [];
+        let sysIdx = 0;
+        let y1 = box.y1;
+        let y2 = box.y2;
+        for (let i = 0; i < systems.length; i++) {
+          const s = systems[i];
+          if (
+            cx >= s.box.x1 &&
+            cx <= s.box.x2 &&
+            (box.y1 + box.y2) / 2 >= s.box.y1 &&
+            (box.y1 + box.y2) / 2 <= s.box.y2
+          ) {
+            sysIdx = i;
+            y1 = s.box.y1;
+            y2 = s.box.y2;
+            break;
+          }
+        }
+        onBarlineAdd(sysIdx, cx, y1, y2);
+        return;
+      }
       setStructureDraft((prev) => {
         const base =
           prev ??
@@ -1023,7 +1121,7 @@ export function RecognizePage() {
         const kindByLayer: Record<StructureLayerId, string> = {
           L1: "score",
           L2: "system",
-          L3: "measure",
+          L3: "measure_derived",
           L4: "note_roi",
           L5: "glyph",
         };
@@ -1043,30 +1141,16 @@ export function RecognizePage() {
           box: { ...box },
           confidence: 1,
         };
-        // Insert L3 among existing by geometric center so draft order is sane
-        if (layer === "L3") {
-          const others = base.items.filter((it) => it.layer !== "L3");
-          const l3s = [...base.items.filter((it) => it.layer === "L3"), item].sort(
-            (a, b) => {
-              const ac = boxCenter(a.box);
-              const bc = boxCenter(b.box);
-              return ac.cy - bc.cy || ac.cx - bc.cx;
-            },
-          );
-          return { ...base, items: [...others, ...l3s] };
-        }
         return { ...base, items: [...base.items, item] };
       });
       setStructureAddMode(false);
       setStructureFromLayer(layer);
       setOverlayMode("structure");
       setInfo(
-        layer === "L3"
-          ? `已添加 L3 区域（暂标「新小节」）· 重识别下层后会按几何位置排成正确小节号`
-          : `已添加 ${layer} 区域 · 可继续拖拽调整，然后点「按 ${layer} 框重识别下层」`,
+        `已添加 ${layer} 区域 · 可继续拖拽调整，然后点「按 ${layer} 框重识别下层」`,
       );
     },
-    [result?.structure],
+    [onBarlineAdd, result?.structure, structureDraft],
   );
 
   const onDeleteSelectedStructure = useCallback(() => {
@@ -1522,6 +1606,11 @@ export function RecognizePage() {
               onStructureBoxChange={onStructureBoxChange}
               onStructureBoxAdd={onStructureBoxAdd}
               metricErrors={metricErrors}
+              onBarlineMove={onBarlineMove}
+              onBarlineDelete={onBarlineDelete}
+              onBarlineAdd={onBarlineAdd}
+              selectedBarlineId={selectedBarlineId}
+              onSelectBarlineId={setSelectedBarlineId}
             />
             {selection && !structureEditMode ? (
               <p className="text-[11px] text-slate-500">
@@ -1536,11 +1625,15 @@ export function RecognizePage() {
             ) : (
               <p className="text-[11px] text-slate-600">
                 滚轮缩放 · 空格/中键平移
-                {structureAddMode
-                  ? " · 拖拽添加区域（图像像素）"
-                  : structureEditMode
-                    ? " · 点选框自动缩放到上一层并居中 · 拖角调框"
-                    : " · 拖拽框选"}
+                {structureAddMode && structureFromLayer === "L3"
+                  ? " · 拖出区域：在中心 x 插入 L3 分割线"
+                  : structureAddMode
+                    ? " · 拖拽添加区域（图像像素）"
+                    : structureEditMode && structureFromLayer === "L3"
+                      ? " · L3：左右拖动红色分割线 · 双击删线 · 添加区域=插线"
+                      : structureEditMode
+                        ? " · 点选框自动缩放到上一层并居中 · 拖角调框"
+                        : " · 拖拽框选"}
               </p>
             )}
           </section>

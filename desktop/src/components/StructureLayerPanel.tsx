@@ -15,7 +15,7 @@ export const STRUCTURE_LAYERS: {
 }[] = [
   { id: "L1", name: "L1 页面", color: "bg-violet-500/80", desc: "标题 / 调号拍号 / 主谱面" },
   { id: "L2", name: "L2 谱行", color: "bg-sky-500/80", desc: "水平谱行 systems" },
-  { id: "L3", name: "L3 小节", color: "bg-emerald-500/80", desc: "小节框 + 小节线" },
+  { id: "L3", name: "L3 分割线", color: "bg-emerald-500/80", desc: "行内纵向分割线 → 派生小节框 (#85)" },
   { id: "L4", name: "L4 音符位", color: "bg-cyan-400/80", desc: "音符候选 ROI" },
   { id: "L5", name: "L5 字形", color: "bg-amber-400/80", desc: "音高 OCR + 时值/八度" },
 ];
@@ -185,7 +185,8 @@ export function StructureLayerPanel({
         <p className="text-[10px] leading-relaxed text-slate-500">
           编辑模式自动显示当前层（及上一层作参照）。
           <span className="text-slate-300">只能选中当前层</span>
-          的框；点选后缩放到上一层区域并居中。可拖边角调框；「添加区域」在图上拖出新框。
+          。L3 以<strong className="font-medium text-slate-300">拖动/增删分割线</strong>
+          为主（小节框为派生）；其它层可拖边角调框。
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1 text-[11px] text-slate-400">

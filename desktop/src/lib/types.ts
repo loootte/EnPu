@@ -132,6 +132,11 @@ export interface StructureBarline {
   x: number;
   y1: number;
   y2: number;
+  /** #85 split id for drag/delete */
+  id?: string;
+  source?: string;
+  confidence?: number | null;
+  editable?: boolean;
 }
 
 export interface StructureDebug {

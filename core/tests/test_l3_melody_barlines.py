@@ -136,20 +136,17 @@ def test_soft_gap_split_when_no_graphic_bars() -> None:
         assert any("soft-gap" in w or "fallback" in w or "measure_source" in w for w in warnings)
 
 
-def test_cross_line_merge_open_trailing() -> None:
-    """Open trailing on line0 + content on line1 → cross_line source (#84 P1)."""
+def test_multi_system_split_model() -> None:
+    """#85: multi-row systems each get independent interior splits."""
     h, w = 220, 400
     img = np.full((h, w, 3), 255, dtype=np.uint8)
-    # Line 0: bars at 50,150,250 + ink after last bar (open trail)
     img[40:80, 40:360] = 245
     for x in (50, 150, 250):
         img[42:78, x : x + 2] = 0
     for x in (80, 180):
         img[50:70, x : x + 12] = 0
-    # ink after last bar
     img[50:70, 270:340] = 0
 
-    # Line 1: no bars, one ink blob (continuation)
     img[130:170, 40:360] = 245
     img[140:160, 60:200] = 0
 
@@ -158,11 +155,9 @@ def test_cross_line_merge_open_trailing() -> None:
         StaffSystem(index=1, rect=Rect(30, 125, 370, 180), confidence=0.8),
     ]
     systems, warnings = segment_measures_on_systems(img, systems)
-    # Either cross_line warning or open trailing present
-    has_cross = any("cross_line" in w for w in warnings)
-    has_open = any(
-        m.extra.get("segment") == "open_trailing" or m.extra.get("closed") is False
-        for s in systems
-        for m in s.measures
-    )
-    assert has_cross or has_open, warnings
+    assert len(systems) == 2
+    # Row 0 should have interior splits; measures derived
+    assert len(systems[0].measures) >= 1
+    assert any("split" in w.lower() or "measure" in w.lower() for w in warnings)
+    # Row 1 may be whole_line (no bars)
+    assert len(systems[1].measures) >= 1
