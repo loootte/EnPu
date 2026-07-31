@@ -42,6 +42,8 @@ interface StructureLayerPanelProps {
   addMode?: boolean;
   onAddModeChange?: (on: boolean) => void;
   onDeleteSelected?: () => void;
+  /** #86 per-layer F1 from evaluation panel */
+  layerF1?: Partial<Record<StructureLayerId, number>> | null;
 }
 
 export function StructureLayerPanel({
@@ -60,6 +62,7 @@ export function StructureLayerPanel({
   addMode = false,
   onAddModeChange,
   onDeleteSelected,
+  layerF1 = null,
 }: StructureLayerPanelProps) {
   if (!structure?.items?.length) {
     return (
@@ -144,6 +147,21 @@ export function StructureLayerPanel({
             <span className={`h-1.5 w-1.5 rounded-full ${L.color}`} />
             {L.name}
             <span className="text-slate-500">{counts[L.id] ?? 0}</span>
+            {layerF1 && layerF1[L.id] != null ? (
+              <span
+                className={[
+                  "rounded px-1 tabular-nums",
+                  (layerF1[L.id] as number) >= 0.8
+                    ? "bg-emerald-500/30 text-emerald-100"
+                    : (layerF1[L.id] as number) >= 0.5
+                      ? "bg-amber-500/30 text-amber-100"
+                      : "bg-rose-500/30 text-rose-100",
+                ].join(" ")}
+                title={`${L.id} F1`}
+              >
+                {(layerF1[L.id] as number).toFixed(2)}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>

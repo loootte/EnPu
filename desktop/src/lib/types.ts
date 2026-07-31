@@ -208,6 +208,52 @@ export interface ExportResponse {
   warnings: string[];
 }
 
+/** Layered evaluation metrics (#86). */
+export interface LayerMetric {
+  layer: string;
+  precision: number;
+  recall: number;
+  f1: number;
+  tp: number;
+  fp: number;
+  fn: number;
+  mean_iou: number;
+  mode: string;
+  extra?: Record<string, unknown>;
+  errors?: MetricErrorBox[];
+}
+
+export interface MetricErrorBox {
+  kind: "tp" | "fp" | "fn";
+  box: BoundingBox;
+  iou?: number | null;
+}
+
+export interface SampleMetrics {
+  sample_id: string;
+  layers: Record<string, LayerMetric>;
+  warnings: string[];
+  meta?: Record<string, unknown>;
+}
+
+export interface TuneParamResult {
+  param: string;
+  layer: string;
+  points: Array<{
+    param: string;
+    value: number | boolean | string;
+    f1: number;
+    precision: number;
+    recall: number;
+    extra?: Record<string, unknown>;
+  }>;
+  best_value: number | boolean | string | null;
+  best_f1: number;
+  elapsed_sec: number;
+  n_runs: number;
+  warnings: string[];
+}
+
 /** OpenCV preprocess toolbox options (#47). */
 export interface PreprocessOptions {
   denoise: boolean;

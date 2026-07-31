@@ -13,6 +13,8 @@ import {
   defaultStructureLayersEnabled,
   type StructureLayerId,
 } from "../components/StructureLayerPanel";
+import { LayerMetricsPanel } from "../components/LayerMetricsPanel";
+import type { MetricErrorBox } from "../lib/types";
 import {
   problemMeasureNumbers,
   problemsFromScore,
@@ -310,6 +312,13 @@ export function RecognizePage() {
     useState<StructureLayerId>("L2");
   const [structureRerunning, setStructureRerunning] = useState(false);
   const [structureAddMode, setStructureAddMode] = useState(false);
+  /** #86 evaluation */
+  const [metricErrors, setMetricErrors] = useState<MetricErrorBox[] | null>(
+    null,
+  );
+  const [layerF1, setLayerF1] = useState<Partial<
+    Record<StructureLayerId, number>
+  > | null>(null);
 
   // Edit mode / layer change: show edit layer (+ parent); clear off-layer selection
   useEffect(() => {
@@ -1439,6 +1448,15 @@ export function RecognizePage() {
             addMode={structureAddMode}
             onAddModeChange={setStructureAddMode}
             onDeleteSelected={onDeleteSelectedStructure}
+            layerF1={layerF1}
+          />
+          <LayerMetricsPanel
+            file={file}
+            score={score}
+            structure={structureDraft ?? result?.structure}
+            disabled={loading || structureRerunning}
+            onErrorsChange={setMetricErrors}
+            onLayerF1Change={setLayerF1}
           />
           <ProblemNavPanel
             score={score}
@@ -1493,6 +1511,7 @@ export function RecognizePage() {
               onSelectStructureId={setSelectedStructureId}
               onStructureBoxChange={onStructureBoxChange}
               onStructureBoxAdd={onStructureBoxAdd}
+              metricErrors={metricErrors}
             />
             {selection && !structureEditMode ? (
               <p className="text-[11px] text-slate-500">
