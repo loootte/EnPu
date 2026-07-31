@@ -25,9 +25,13 @@ from app.schemas.evaluation import (
     CompareRequest,
     CompareResponse,
     SampleMetricsOut,
+    TuneLayerRequest,
+    TuneLayerResponse,
     TuneParamRequest,
     TuneParamResponse,
 )
+from app.tuning.params import reset_layer_params, set_layer_params, snapshot_all_params
+from app.tuning.search import tune_layer
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
 
@@ -269,3 +273,120 @@ def baseline_get(name: str) -> dict:
     if not path.is_file():
         raise HTTPException(status_code=404, detail=f"baseline not found: {safe}")
     return load_baseline(path)
+
+
+@router.post(
+    "/tune-layer",
+    response_model=TuneLayerResponse,
+    summary="Single-layer auto-tune loop (#89): random/grid search on L3 or L4",
+)
+def tune_layer_json(body: TuneLayerRequest) -> TuneLayerResponse:
+    """JSON body with base64 image + GT. Prefer multipart for large images."""
+    if not body.image_base64:
+        raise HTTPException(
+            status_code=400,
+            detail="image_base64 required (or use /tune-layer/upload)",
+        )
+    try:
+        image_bgr = decode_image_bytes(_decode_b64_image(body.image_base64))
+    except ImageDecodeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    gt = load_ground_truth_from_dict(body.gt)
+    try:
+        result = tune_layer(
+            image_bgr,
+            gt=gt,
+            layer=body.layer,  # type: ignore[arg-type]
+            max_trials=body.max_trials,
+            max_seconds=body.max_seconds,
+            seed=body.seed,
+            method=body.method,  # type: ignore[arg-type]
+            apply_best=body.apply_best,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return TuneLayerResponse(result=result.as_dict())
+
+
+@router.post(
+    "/tune-layer/upload",
+    response_model=TuneLayerResponse,
+    summary="Single-layer auto-tune with multipart image + GT (#89)",
+)
+async def tune_layer_upload(
+    file: UploadFile = File(...),
+    gt_json: str = Form(...),
+    layer: str = Form("l3"),
+    max_trials: int = Form(40),
+    max_seconds: float = Form(120.0),
+    seed: int = Form(42),
+    method: str = Form("random"),
+    apply_best: bool = Form(False),
+) -> TuneLayerResponse:
+    import json
+
+    data = await file.read()
+    try:
+        image_bgr = decode_image_bytes(data)
+    except ImageDecodeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        gt_raw = json.loads(gt_json)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"gt_json invalid: {exc}") from exc
+    gt = load_ground_truth_from_dict(gt_raw)
+    try:
+        result = tune_layer(
+            image_bgr,
+            gt=gt,
+            layer=layer,  # type: ignore[arg-type]
+            max_trials=max_trials,
+            max_seconds=max_seconds,
+            seed=seed,
+            method=method,  # type: ignore[arg-type]
+            apply_best=apply_best,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return TuneLayerResponse(result=result.as_dict())
+
+
+@router.post(
+    "/params/apply",
+    summary="Apply layer params to runtime store (#89)",
+)
+def params_apply(
+    layer: str = Form("l3"),
+    params_json: str = Form(...),
+    merge: bool = Form(True),
+) -> dict:
+    import json
+
+    try:
+        params = json.loads(params_json)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not isinstance(params, dict):
+        raise HTTPException(status_code=400, detail="params must be object")
+    try:
+        effective = set_layer_params(layer, params, merge=merge)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, "layer": layer.lower(), "params": effective}
+
+
+@router.post(
+    "/params/reset",
+    summary="Reset runtime layer params to YAML defaults (#89)",
+)
+def params_reset(layer: str | None = Form(default=None)) -> dict:
+    reset_layer_params(layer if layer else None)
+    return {"ok": True, "params": snapshot_all_params()}
+
+
+@router.get(
+    "/params",
+    summary="Snapshot effective layer params (#89)",
+)
+def params_get() -> dict:
+    return snapshot_all_params()

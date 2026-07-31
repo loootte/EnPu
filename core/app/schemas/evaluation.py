@@ -99,3 +99,24 @@ class BaselineDiffRequest(BaseModel):
 
 class BaselineDiffResponse(BaseModel):
     diff: dict[str, Any]
+
+
+class TuneLayerRequest(BaseModel):
+    """Full single-layer auto-tune loop (#89)."""
+
+    sample_id: str = "tune"
+    gt: dict[str, Any]
+    image_base64: str | None = None
+    layer: str = Field(default="l3", description="l3 | l4")
+    max_trials: int = Field(default=40, ge=1, le=500)
+    max_seconds: float = Field(default=120.0, ge=1.0, le=3600.0)
+    seed: int = 42
+    method: str = Field(default="random", description="random | grid")
+    apply_best: bool = Field(
+        default=False,
+        description="If true, write best params into runtime store for next recognize",
+    )
+
+
+class TuneLayerResponse(BaseModel):
+    result: dict[str, Any]

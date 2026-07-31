@@ -254,6 +254,22 @@ export interface TuneParamResult {
   warnings: string[];
 }
 
+/** Full layer auto-tune result (#89). */
+export interface TuneLayerResult {
+  layer: string;
+  best_params: Record<string, unknown>;
+  best_loss: number;
+  best_score: number;
+  baseline_loss: number;
+  baseline_score: number;
+  improved: boolean;
+  n_trials: number;
+  seed: number;
+  elapsed_sec: number;
+  warnings: string[];
+  trials?: Array<Record<string, unknown>>;
+}
+
 /** OpenCV preprocess toolbox options (#47). */
 export interface PreprocessOptions {
   denoise: boolean;

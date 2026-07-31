@@ -1,0 +1,20 @@
+# L4 parameter search space (#89) — secondary; L3 closed-loop first
+schema: enpu-tune-space-v0.1
+layer: l4
+
+params:
+  min_area:
+    type: int
+    low: 8
+    high: 48
+  max_aspect:
+    type: float
+    low: 2.0
+    high: 5.0
+
+objective:
+  w_iou: 1.0
+  w_cnt: 0.4
+  w_fn: 0.4
+  w_fp: 0.3
+  iou_threshold: 0.4

@@ -24,10 +24,26 @@ def detect_note_candidates(
     image_bgr: np.ndarray,
     systems: list[StaffSystem],
     *,
-    min_area: int = 18,
-    max_aspect: float = 3.5,
+    min_area: int | None = None,
+    max_aspect: float | None = None,
+    params: dict | None = None,
 ) -> tuple[list[StaffSystem], list[str]]:
-    """Fill each measure with pitch note ROIs (+ optional chord/lyric slots)."""
+    """Fill each measure with pitch note ROIs (+ optional chord/lyric slots).
+
+    **#89**: thresholds from runtime L4 params when not passed explicitly.
+    """
+    from app.tuning.params import L4Params, get_l4_params
+
+    p = get_l4_params()
+    if params:
+        p = L4Params.from_dict({**p.to_dict(), **params})
+    if min_area is not None:
+        p.min_area = int(min_area)
+    if max_aspect is not None:
+        p.max_aspect = float(max_aspect)
+    min_area = int(p.min_area)
+    max_aspect = float(p.max_aspect)
+
     warnings: list[str] = []
     if image_bgr is None or image_bgr.size == 0:
         return systems, ["L4: empty image"]

@@ -9,7 +9,13 @@
  */
 
 import { useMemo, useRef, useState } from "react";
-import { evaluateCompare, evaluateTuneParamUpload } from "../lib/api";
+import {
+  applyLayerParams,
+  evaluateCompare,
+  evaluateTuneLayerUpload,
+  evaluateTuneParamUpload,
+  resetLayerParams,
+} from "../lib/api";
 import { cloneStructure, structureToEvalGt } from "../lib/structureGt";
 import type {
   LayerMetric,
@@ -17,6 +23,7 @@ import type {
   SampleMetrics,
   Score,
   StructureDebug,
+  TuneLayerResult,
   TuneParamResult,
 } from "../lib/types";
 import type { StructureLayerId } from "./StructureLayerPanel";
@@ -45,6 +52,8 @@ export interface LayerMetricsPanelProps {
   disabled?: boolean;
   onErrorsChange?: (errors: MetricErrorBox[] | null) => void;
   onLayerF1Change?: (map: Partial<Record<StructureLayerId, number>>) => void;
+  /** After applying best params, parent can re-run structure from L2 (#89). */
+  onRequestRerunFromL2?: () => void;
 }
 
 export function LayerMetricsPanel({
@@ -55,6 +64,7 @@ export function LayerMetricsPanel({
   disabled,
   onErrorsChange,
   onLayerF1Change,
+  onRequestRerunFromL2,
 }: LayerMetricsPanelProps) {
   const gtInputRef = useRef<HTMLInputElement>(null);
   const [gt, setGt] = useState<Record<string, unknown> | null>(null);
@@ -64,12 +74,15 @@ export function LayerMetricsPanel({
   const [frozenPred, setFrozenPred] = useState<StructureDebug | null>(null);
   const [metrics, setMetrics] = useState<SampleMetrics | null>(null);
   const [tune, setTune] = useState<TuneParamResult | null>(null);
+  const [layerTune, setLayerTune] = useState<TuneLayerResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(true);
   const [tuneStart, setTuneStart] = useState(16);
   const [tuneStop, setTuneStop] = useState(64);
   const [tuneStep, setTuneStep] = useState(8);
+  const [tuneTrials, setTuneTrials] = useState(30);
   /** Compare target: current structure vs frozen auto pred */
   const [predMode, setPredMode] = useState<"current" | "auto">("current");
 
@@ -243,6 +256,7 @@ export function LayerMetricsPanel({
     }
     setBusy(true);
     setError(null);
+    setInfo(null);
     try {
       const r = await evaluateTuneParamUpload(file, {
         gt,
@@ -254,6 +268,73 @@ export function LayerMetricsPanel({
         sample_id: gtName || file.name,
       });
       setTune(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Full L3 auto-tune loop (#89): random search → optional apply. */
+  const onTuneLayer = async (applyBest: boolean) => {
+    if (!file || !gt) {
+      setError("本层调优需要当前图片 + 标注 GT（请先「将编辑框存为标注」）");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const r = await evaluateTuneLayerUpload(file, {
+        gt,
+        layer: "l3",
+        max_trials: tuneTrials,
+        max_seconds: 90,
+        seed: 42,
+        method: "random",
+        apply_best: applyBest,
+      });
+      setLayerTune(r);
+      setInfo(
+        applyBest
+          ? `已应用最优参数（loss ${r.baseline_loss.toFixed(3)} → ${r.best_loss.toFixed(3)}）。请点结构层「按 L2 重识别下层」。`
+          : `调优完成：loss ${r.baseline_loss.toFixed(3)} → ${r.best_loss.toFixed(3)}（${r.improved ? "有改进" : "持平"}，${r.n_trials} trials）`,
+      );
+      if (applyBest && onRequestRerunFromL2) {
+        onRequestRerunFromL2();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onApplyBest = async () => {
+    if (!layerTune?.best_params) {
+      setError("请先完成本层自动调优");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await applyLayerParams("l3", layerTune.best_params, { merge: false });
+      setInfo("最优参数已写入 core。请「按 L2 框重识别下层」刷新预测。");
+      onRequestRerunFromL2?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onResetParams = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await resetLayerParams("l3");
+      setInfo("已恢复 L3 默认参数");
+      setLayerTune(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -410,6 +491,11 @@ export function LayerMetricsPanel({
           {error}
         </p>
       ) : null}
+      {info ? (
+        <p className="mt-2 rounded-md border border-teal-400/30 bg-teal-950/40 px-2 py-1 text-[11px] text-teal-100">
+          {info}
+        </p>
+      ) : null}
 
       {layerList.length > 0 ? (
         <>
@@ -471,12 +557,78 @@ export function LayerMetricsPanel({
         </>
       ) : null}
 
+      {/* #89 full layer auto-tune */}
+      <div className="mt-3 space-y-1.5 rounded-lg border border-indigo-500/30 bg-indigo-950/25 px-2 py-2">
+        <p className="text-[11px] font-medium text-indigo-100/95">
+          本层自动调优 · L3（#89）
+        </p>
+        <p className="text-[10px] leading-relaxed text-slate-500">
+          用标注 GT 最小化 layer loss；只搜 L3 参数。上游 L1/L2 缓存，不改 GT。
+        </p>
+        <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400">
+          <label className="flex items-center gap-1">
+            trials
+            <input
+              type="number"
+              className="w-12 rounded border border-white/15 bg-slate-900 px-1 py-0.5 text-slate-200"
+              value={tuneTrials}
+              min={5}
+              max={200}
+              onChange={(e) => setTuneTrials(Number(e.target.value))}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={disabled || busy || !file || !gt}
+            onClick={() => void onTuneLayer(false)}
+            className="rounded-md bg-indigo-500/90 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-400 disabled:opacity-40"
+          >
+            {busy ? "调优中…" : "本层自动调优"}
+          </button>
+          <button
+            type="button"
+            disabled={disabled || busy || !layerTune}
+            onClick={() => void onApplyBest()}
+            className="rounded-md border border-indigo-300/40 px-2 py-1 text-[11px] text-indigo-100 hover:bg-indigo-500/20 disabled:opacity-40"
+          >
+            应用最优参数
+          </button>
+          <button
+            type="button"
+            disabled={disabled || busy || !file || !gt}
+            onClick={() => void onTuneLayer(true)}
+            className="rounded-md border border-emerald-400/40 px-2 py-1 text-[11px] text-emerald-100 hover:bg-emerald-500/15 disabled:opacity-40"
+            title="调优结束立即 apply，并触发 L2 重识别"
+          >
+            调优并应用+再识别
+          </button>
+          <button
+            type="button"
+            disabled={disabled || busy}
+            onClick={() => void onResetParams()}
+            className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-slate-400 hover:bg-white/5 disabled:opacity-40"
+          >
+            恢复默认参数
+          </button>
+        </div>
+        {layerTune ? (
+          <div className="text-[10px] text-slate-300">
+            <p>
+              baseline loss={layerTune.baseline_loss.toFixed(4)} → best=
+              {layerTune.best_loss.toFixed(4)}
+              {layerTune.improved ? " · 已改进" : " · 持平"} ·{" "}
+              {layerTune.n_trials} trials / {layerTune.elapsed_sec}s
+            </p>
+            <p className="mt-0.5 truncate text-slate-500">
+              best: {JSON.stringify(layerTune.best_params)}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
       <div className="mt-3 space-y-1.5 rounded-lg border border-white/10 bg-black/20 px-2 py-2">
         <p className="text-[11px] font-medium text-slate-300">
-          L3 参数扫描 · min_measure_width
-        </p>
-        <p className="text-[10px] text-slate-600">
-          使用上方标注 GT（编辑框即可）；L1/L2 只算一次
+          单参数扫描 · min_measure_width（#86）
         </p>
         <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400">
           <label className="flex items-center gap-1">
