@@ -29,11 +29,16 @@ def detect_barline_xs(
     min_height_ratio: float = 0.06,
     max_width: int = 10,
     min_gap: float = 28.0,
+    melody_mode: bool = False,
 ) -> list[float]:
     """Return x-centers of tall thin vertical strokes (candidate barlines).
 
     ``y_range`` — single staff band; ``y_ranges`` — multi-row systems (#35).
     When bands are set, only strokes that overlap a band are kept.
+
+    ``melody_mode`` (#84): target short/mid barlines that only span the
+    **pitch-digit band** (not full staff + lyrics). Uses a shorter
+    morphology kernel and lower min-height relative to the band.
     """
     if image_bgr is None or image_bgr.size == 0:
         return []
@@ -50,9 +55,10 @@ def detect_barline_xs(
     # Morphology: slightly shorter kernel so per-line bars still register
     v_len = max(12, int(h * min_height_ratio))
     if bands:
-        # Prefer kernel ~ 50% of average band height
         avg_bh = sum(b1 - b0 for b0, b1 in bands) / max(len(bands), 1)
-        v_len = max(10, min(v_len, int(0.55 * avg_bh)))
+        # #84: short bars only need ~35% of melody-band height as kernel
+        kern_frac = 0.35 if melody_mode else 0.55
+        v_len = max(8 if melody_mode else 10, min(v_len, int(kern_frac * avg_bh)))
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, v_len))
     vertical = cv2.morphologyEx(bw, cv2.MORPH_OPEN, kernel, iterations=1)
 
@@ -62,13 +68,18 @@ def detect_barline_xs(
     xs: list[float] = []
     min_h = max(14, int(h * min_height_ratio * 0.7))
     if bands:
-        min_h = max(10, min(min_h, int(0.35 * min(b1 - b0 for b0, b1 in bands))))
+        min_band = min(b1 - b0 for b0, b1 in bands)
+        # #84: accept bars ≥ ~50% of melody band (was 35% of full system → too tall)
+        band_frac = 0.50 if melody_mode else 0.35
+        floor = 8 if melody_mode else 10
+        min_h = max(floor, min(min_h, int(band_frac * min_band)))
 
+    aspect_min = 2.5 if melody_mode else 3.0
     for cnt in contours:
         x, y, cw, ch = cv2.boundingRect(cnt)
         if ch < min_h or cw > max_width:
             continue
-        if ch / max(cw, 1) < 3.0:
+        if ch / max(cw, 1) < aspect_min:
             continue
         cx = x + cw / 2.0
         if cx < w * 0.03 or cx > w * 0.97:
@@ -78,7 +89,12 @@ def detect_barline_xs(
             for y0, y1 in bands:
                 overlap = max(0.0, min(y + ch, y1) - max(y, y0))
                 band_h = max(y1 - y0, 1.0)
-                if overlap >= 0.35 * band_h or overlap >= 0.6 * ch:
+                # Melody bars: mostly inside band (overlap with band, not full ch)
+                if melody_mode:
+                    if overlap >= 0.45 * ch or overlap >= 0.40 * band_h:
+                        ok = True
+                        break
+                elif overlap >= 0.35 * band_h or overlap >= 0.6 * ch:
                     ok = True
                     break
             if not ok:
@@ -88,15 +104,28 @@ def detect_barline_xs(
                 continue
         xs.append(cx)
 
-    # Hough supplement for thin printed bars (#35)
+    # Hough supplement for thin printed bars (#35 / #84)
     xs.extend(
         _hough_bar_xs(
             bw,
             bands=bands if bands else None,
             min_gap=min_gap,
             max_width=max_width,
+            melody_mode=melody_mode,
         )
     )
+    # Column projection only when morph+Hough are sparse (avoid digit false peaks)
+    if melody_mode and bands:
+        merged_so_far = _merge_xs(xs, min_gap)
+        if len(merged_so_far) < 2:
+            xs.extend(
+                _projection_bar_xs(
+                    bw,
+                    bands=bands,
+                    min_gap=min_gap,
+                    max_width=max(3, max_width - 4),
+                )
+            )
     return _merge_xs(xs, min_gap)
 
 
@@ -106,6 +135,7 @@ def _hough_bar_xs(
     bands: list[tuple[float, float]] | None,
     min_gap: float,
     max_width: int,
+    melody_mode: bool = False,
 ) -> list[float]:
     h, w = bw.shape[:2]
     # Restrict search ROI when bands known
@@ -119,12 +149,20 @@ def _hough_bar_xs(
     else:
         roi = bw
 
+    if melody_mode and bands:
+        avg_bh = sum(b1 - b0 for b0, b1 in bands) / max(len(bands), 1)
+        min_len = max(8, int(0.45 * avg_bh))
+        thr = 25
+    else:
+        min_len = max(12, int(h * 0.04))
+        thr = 40
+
     lines = cv2.HoughLinesP(
         roi,
         rho=1,
         theta=np.pi / 180,
-        threshold=40,
-        minLineLength=max(12, int(h * 0.04)),
+        threshold=thr,
+        minLineLength=min_len,
         maxLineGap=4,
     )
     if lines is None:
@@ -132,10 +170,11 @@ def _hough_bar_xs(
     xs: list[float] = []
     # OpenCV may return (N,1,4) or (N,4)
     arr = lines.reshape(-1, 4)
+    min_dy = 8 if melody_mode else 12
     for x1, y1, x2, y2 in arr:
         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
         dx, dy = abs(x2 - x1), abs(y2 - y1)
-        if dy < 12 or dx > max_width:
+        if dy < min_dy or dx > max_width:
             continue
         if dy < 3 * max(dx, 1):
             continue  # not vertical enough
@@ -144,6 +183,174 @@ def _hough_bar_xs(
             continue
         xs.append(cx)
     return xs
+
+
+def _projection_bar_xs(
+    bw: np.ndarray,
+    *,
+    bands: list[tuple[float, float]],
+    min_gap: float,
+    max_width: int,
+) -> list[float]:
+    """Vertical-ink column peaks inside melody bands (#84 short bars).
+
+    Requires near-full-band column fill so wide digit blobs are rejected.
+    """
+    h, w = bw.shape[:2]
+    col = np.zeros(w, dtype=np.float32)
+    band_h = 0.0
+    for y0, y1 in bands:
+        ya, yb = max(0, int(y0)), min(h, int(y1))
+        if yb <= ya:
+            continue
+        strip = bw[ya:yb, :]
+        band_h = max(band_h, float(yb - ya))
+        col += (strip > 0).sum(axis=0).astype(np.float32)
+
+    if col.max() < 3 or band_h < 4:
+        return []
+    # Bar columns fill most of the band height; digit blobs fill less
+    thr = max(band_h * 0.55, float(col.max()) * 0.55, 4.0)
+    xs: list[float] = []
+    i = 1
+    while i < w - 1:
+        if col[i] >= thr and col[i] >= col[i - 1] and col[i] >= col[i + 1]:
+            left = i
+            while left > 0 and col[left] >= thr * 0.55:
+                left -= 1
+            right = i
+            while right < w - 1 and col[right] >= thr * 0.55:
+                right += 1
+            width = right - left
+            if 1 <= width <= max_width:
+                cx = 0.5 * (left + right)
+                if w * 0.03 < cx < w * 0.97:
+                    xs.append(float(cx))
+            i = right + 1
+        else:
+            i += 1
+    return xs
+
+
+def estimate_melody_band(
+    image_bgr: np.ndarray,
+    system_rect: tuple[float, float, float, float],
+    *,
+    top_frac: float = 0.18,
+    bottom_frac: float = 0.28,
+) -> tuple[float, float]:
+    """Estimate vertical range of pitch-digit band inside a staff system (#84).
+
+    Strategy:
+    1. Prefer dense-ink horizontal strip in the middle of the system
+       (digit row usually has more compact ink than sparse lyrics).
+    2. Fallback: middle strip excluding top ``top_frac`` (chords) and
+       bottom ``bottom_frac`` (lyrics).
+
+    Returns ``(y0, y1)`` in image coordinates.
+    """
+    x1, y1, x2, y2 = system_rect
+    ih, iw = image_bgr.shape[:2]
+    xa, xb = max(0, int(x1)), min(iw, int(x2))
+    ya, yb = max(0, int(y1)), min(ih, int(y2))
+    if xb <= xa + 4 or yb <= ya + 4:
+        return (float(y1), float(y2))
+
+    gray = cv2.cvtColor(image_bgr[ya:yb, xa:xb], cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    row_ink = (bw > 0).sum(axis=1).astype(np.float32)
+    sh = len(row_ink)
+    if sh < 8 or row_ink.max() < 2:
+        # geometric fallback
+        y0 = y1 + top_frac * (y2 - y1)
+        y1b = y2 - bottom_frac * (y2 - y1)
+        if y1b <= y0 + 4:
+            return (float(y1), float(y2))
+        return (float(y0), float(y1b))
+
+    # Smooth and pick densest contiguous window (~40–55% of system height)
+    k = max(3, sh // 12)
+    kernel = np.ones(k, dtype=np.float32) / k
+    smooth = np.convolve(row_ink, kernel, mode="same")
+    win = max(6, int(0.42 * sh))
+    win = min(win, sh)
+    best_sum = -1.0
+    best_i = 0
+    csum = np.cumsum(np.insert(smooth, 0, 0.0))
+    for i in range(0, sh - win + 1):
+        s = csum[i + win] - csum[i]
+        if s > best_sum:
+            best_sum = s
+            best_i = i
+    # Slight pad
+    pad = max(2, int(0.08 * win))
+    a = max(0, best_i - pad)
+    b = min(sh, best_i + win + pad)
+    return (float(ya + a), float(ya + b))
+
+
+def gap_soft_bar_xs(
+    image_bgr: np.ndarray,
+    *,
+    y_range: tuple[float, float],
+    x_range: tuple[float, float],
+    min_gap: float = 36.0,
+    max_bars: int = 12,
+) -> list[float]:
+    """Place soft boundaries at large ink gaps between digit columns (#84).
+
+    Used when few graphic barlines are found. Returns x positions of gap
+    centers suitable as pseudo-barlines (not true ink bars).
+    """
+    if image_bgr is None or image_bgr.size == 0:
+        return []
+    h, w = image_bgr.shape[:2]
+    y0, y1 = y_range
+    x0, x1 = x_range
+    ya, yb = max(0, int(y0)), min(h, int(y1))
+    xa, xb = max(0, int(x0)), min(w, int(x1))
+    if yb <= ya + 2 or xb <= xa + 8:
+        return []
+
+    gray = cv2.cvtColor(image_bgr[ya:yb, xa:xb], cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    col = (bw > 0).sum(axis=0).astype(np.float32)
+    if col.max() < 2:
+        return []
+
+    thr = max(col.max() * 0.12, 1.0)
+    # Find ink runs (digit columns)
+    ink = col >= thr
+    gaps: list[tuple[int, int, float]] = []  # left, right, width
+    i = 0
+    n = len(ink)
+    while i < n:
+        if not ink[i]:
+            j = i
+            while j < n and not ink[j]:
+                j += 1
+            width = j - i
+            # gap must be interior and reasonably wide
+            if i > 2 and j < n - 2 and width >= max(4, int(min_gap * 0.25)):
+                gaps.append((i, j, float(width)))
+            i = j
+        else:
+            i += 1
+
+    if not gaps:
+        return []
+    # Keep largest gaps (bar-sized white space between measures)
+    gaps.sort(key=lambda g: -g[2])
+    chosen = sorted(gaps[:max_bars], key=lambda g: g[0])
+    # Filter: gap center should be reasonably spaced
+    xs: list[float] = []
+    for left, right, _w in chosen:
+        cx = xa + 0.5 * (left + right)
+        if not xs or abs(cx - xs[-1]) >= min_gap * 0.6:
+            xs.append(float(cx))
+        else:
+            xs[-1] = 0.5 * (xs[-1] + cx)
+    return sorted(xs)
 
 
 def pitch_y_bands_from_items(

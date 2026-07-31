@@ -126,6 +126,12 @@ def page_layout_to_score(
                         "barline_x_left": ml.barline_x_left,
                         "barline_x_right": ml.barline_x_right,
                         "l3_confidence": ml.confidence,
+                        # #84 measure provenance
+                        "measure_source": ml.extra.get("measure_source", "l3_barline"),
+                        "closed": ml.extra.get("closed", True),
+                        "parts": ml.extra.get("parts"),
+                        "cross_line": ml.extra.get("cross_line", False),
+                        "measure_id": ml.extra.get("measure_id"),
                         # L4/L5 meter check fields (if present)
                         "meter_capacity": ml.extra.get("meter_capacity"),
                         "meter_beats": ml.extra.get("meter_beats"),
@@ -236,23 +242,33 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                 confidence=sys.confidence,
             )
         )
+        # Prefer melody-band y for barline overlay (#84); fall back to system rect
+        mb = (sys.extra or {}).get("melody_band")
+        if isinstance(mb, (list, tuple)) and len(mb) >= 2:
+            by1, by2 = float(mb[0]), float(mb[1])
+        else:
+            by1, by2 = sys.rect.y1, sys.rect.y2
         for x in sys.barline_xs:
             barlines.append(
                 {
                     "system": sys.index,
                     "x": x,
-                    "y1": sys.rect.y1,
-                    "y2": sys.rect.y2,
+                    "y1": by1,
+                    "y2": by2,
                 }
             )
         for meas in sys.measures:
             global_m += 1
             # global_m follows system/measure iteration after geometry sort (#78)
+            src = (meas.extra or {}).get("measure_source", "")
+            label = f"m{global_m}"
+            if src and src not in ("l3_barline",):
+                label = f"m{global_m}/{src}"
             items.append(
                 StructureBox(
                     layer="L3",
                     id=f"l3-m{global_m}",
-                    label=f"m{global_m}",
+                    label=label,
                     box=meas.rect.as_box(),
                     kind="measure",
                     confidence=meas.confidence,
