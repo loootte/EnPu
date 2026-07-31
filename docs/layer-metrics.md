@@ -55,24 +55,29 @@ core\.venv\Scripts\python.exe scripts\eval-layers.py --run --engine mock --out r
 
 ## Desktop（#86）
 
-- 侧栏 **分层精度评测**：导入 GT → 对比当前识别 → F1 徽章 / P·R·F1 表
-- 结构层按钮显示 F1 色标（绿≥0.8 / 黄≥0.5 / 红）
-- 原稿 **误差叠图**：绿 TP / 红 FP / 黄 FN
-- **L3 min_measure_width** 参数扫描 + 折线，标最优值
+- 侧栏 **分层精度评测**
+  - **将编辑框存为标注**：无外部标注工具时，在结构层编辑模式改准 L1–L5 后一键冻结为几何 GT
+  - 对比对象：**自动框**（存标注时的识别）或 **当前结果**（重识别后）
+  - 导出/导入 GT；L3 `min_measure_width` 扫描
+- 结构层 F1 色标；原稿误差叠图（绿 TP / 红 FP / 黄 FN）
+
+### 无标注工具时的调参流程
+
+1. 识别（structure 管线）
+2. 结构「编辑模式」改准目标层（尤其 L3）
+3. **将编辑框存为标注**
+4. 对比「自动框」看自动识别误差；或重识别后对比「当前结果」
+5. **L3 参数扫描** 用同一 GT 找最优阈值
 
 ## 模块
 
 ```text
-core/app/evaluation/
-  types.py metrics.py gt_loader.py extract.py compare.py batch.py param_tuner.py
-core/app/api/v1/evaluation.py
-scripts/eval-layers.py
+core/app/evaluation/ …
+desktop/src/lib/structureGt.ts      # 编辑框 → GT JSON
 desktop/src/components/LayerMetricsPanel.tsx
 ```
 
 ## 后续
 
-- 更多可扫参数（投影阈值、旋律带比例）
-- 误差传导 L3→L4 连线高亮
-- 批量评测结果直接在 UI 导入/对比基线  
+- 更多可扫参数；误差传导 L3→L4 连线高亮  
 
