@@ -1454,6 +1454,7 @@ export function RecognizePage() {
             file={file}
             score={score}
             structure={structureDraft ?? result?.structure}
+            autoStructure={result?.structure ?? null}
             disabled={loading || structureRerunning}
             onErrorsChange={setMetricErrors}
             onLayerF1Change={setLayerF1}
