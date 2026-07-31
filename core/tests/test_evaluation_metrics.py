@@ -134,6 +134,45 @@ def test_load_real_gt() -> None:
     assert len(g["pitch_sequence"]) >= 1
 
 
+def test_param_tuner_grid() -> None:
+    import numpy as np
+    from app.evaluation.param_tuner import tune_param_on_image
+
+    img = np.full((120, 400, 3), 255, dtype=np.uint8)
+    img[40:90, 20:380] = 245
+    for x in (60, 150, 240, 330):
+        img[45:85, x : x + 2] = 0
+    gt = {
+        "pitch_sequence": ["1"],
+        "measure_count": 3,
+        "geometry": {},
+        "barline_xs": [],
+    }
+    r = tune_param_on_image(
+        img,
+        gt=gt,
+        param="l3_min_measure_width",
+        start=16,
+        stop=40,
+        step=8,
+    )
+    assert r.n_runs == 4
+    assert r.best_value is not None
+    assert all(0.0 <= p.f1 <= 1.0 for p in r.points)
+
+
+def test_baseline_diff() -> None:
+    from app.evaluation.param_tuner import diff_baselines
+
+    d = diff_baselines(
+        {"mean_f1": {"L3": 0.8, "L5": 0.5}},
+        {"mean_f1": {"L3": 0.6, "L5": 0.6}},
+    )
+    assert d["deltas"]["L3"] == pytest.approx(0.2)
+    assert "L3" in d["improved"]
+    assert "L5" in d["regressed"]
+
+
 def test_api_compare() -> None:
     body = {
         "sample_id": "api1",

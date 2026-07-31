@@ -14,6 +14,7 @@ import {
 import type {
   BoundingBox,
   CropRect,
+  MetricErrorBox,
   StructureBox,
   StructureDebug,
 } from "../lib/types";
@@ -52,6 +53,8 @@ export interface ImagePreviewProps {
   onSelectStructureId?: (id: string | null) => void;
   onStructureBoxChange?: (id: string, box: BoundingBox) => void;
   onStructureBoxAdd?: (box: BoundingBox, layer: StructureLayerId) => void;
+  /** #86 evaluation error overlay: green TP / red FP / yellow FN */
+  metricErrors?: MetricErrorBox[] | null;
 }
 
 type DragState = {
@@ -407,6 +410,7 @@ export function ImagePreview({
   onSelectStructureId,
   onStructureBoxChange,
   onStructureBoxAdd,
+  metricErrors = null,
 }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -904,6 +908,40 @@ export function ImagePreview({
                   title={`barline S${bl.system + 1}`}
                 />
               ))
+            : null}
+          {/* #86 evaluation TP/FP/FN overlay */}
+          {metricErrors?.length && natural.w > 0
+            ? metricErrors.map((err, i) => {
+                const b = err.box;
+                if (
+                  b == null ||
+                  b.x1 == null ||
+                  b.y1 == null ||
+                  b.x2 == null ||
+                  b.y2 == null
+                ) {
+                  return null;
+                }
+                const color =
+                  err.kind === "tp"
+                    ? "border-emerald-400 bg-emerald-400/15"
+                    : err.kind === "fp"
+                      ? "border-rose-500 bg-rose-500/20"
+                      : "border-amber-400 bg-amber-400/20";
+                return (
+                  <div
+                    key={`merr-${err.kind}-${i}`}
+                    className={`pointer-events-none absolute border-2 ${color}`}
+                    style={{
+                      left: b.x1 * scaleX,
+                      top: b.y1 * scaleY,
+                      width: Math.max(1, (b.x2 - b.x1) * scaleX),
+                      height: Math.max(1, (b.y2 - b.y1) * scaleY),
+                    }}
+                    title={`${err.kind.toUpperCase()}${err.iou != null ? ` IoU=${err.iou.toFixed(2)}` : ""}`}
+                  />
+                );
+              })
             : null}
           {activeRect && natural.w > 0 ? (
             <div

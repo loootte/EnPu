@@ -12,10 +12,12 @@ import type {
   PreprocessOptions,
   PreprocessResponse,
   RecognizeResponse,
+  SampleMetrics,
   Score,
   StructureBoxEdit,
   StructureDebug,
   StructureRerunResponse,
+  TuneParamResult,
 } from "./types";
 
 export const DEFAULT_CORE_BASE_URL = "http://127.0.0.1:8765";
@@ -369,4 +371,99 @@ export async function exportScore(
   } catch {
     throw new CoreApiError("导出响应不是合法 JSON", { kind: "parse" });
   }
+}
+
+/** POST /v1/evaluation/compare — layered metrics vs GT (#86). */
+export async function evaluateCompare(
+  body: {
+    sample_id?: string;
+    gt: Record<string, unknown>;
+    score?: Score | Record<string, unknown> | null;
+    structure?: StructureDebug | Record<string, unknown> | null;
+    iou_threshold?: number;
+    include_errors?: boolean;
+  },
+  baseUrl: string = getCoreBaseUrl(),
+  signal?: AbortSignal,
+): Promise<SampleMetrics> {
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/evaluation/compare`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sample_id: body.sample_id ?? "sample",
+        gt: body.gt,
+        score: body.score ?? null,
+        structure: body.structure ?? null,
+        iou_threshold: body.iou_threshold ?? 0.5,
+        include_errors: body.include_errors ?? true,
+      }),
+      signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+  if (!res.ok) {
+    let detail = `评测对比失败：HTTP ${res.status}`;
+    try {
+      const j = (await res.json()) as { detail?: unknown };
+      if (typeof j.detail === "string") detail = j.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+  const data = (await res.json()) as { metrics: SampleMetrics };
+  return data.metrics;
+}
+
+/** POST /v1/evaluation/tune-param/upload — L3 param grid search (#86). */
+export async function evaluateTuneParamUpload(
+  file: File,
+  opts: {
+    gt: Record<string, unknown>;
+    param?: string;
+    start?: number;
+    stop?: number;
+    step?: number;
+    layer?: string;
+    sample_id?: string;
+    baseUrl?: string;
+    signal?: AbortSignal;
+  },
+): Promise<TuneParamResult> {
+  const baseUrl = opts.baseUrl ?? getCoreBaseUrl();
+  const form = new FormData();
+  form.append("file", file, file.name || "score.png");
+  form.append("gt_json", JSON.stringify(opts.gt));
+  form.append("param", opts.param ?? "l3_min_measure_width");
+  form.append("start", String(opts.start ?? 16));
+  form.append("stop", String(opts.stop ?? 64));
+  form.append("step", String(opts.step ?? 8));
+  form.append("layer", opts.layer ?? "L3");
+  form.append("sample_id", opts.sample_id ?? "tune");
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/evaluation/tune-param/upload`, {
+      method: "POST",
+      body: form,
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw friendlyNetworkError(err, baseUrl);
+  }
+  if (!res.ok) {
+    let detail = `参数扫描失败：HTTP ${res.status}`;
+    try {
+      const j = (await res.json()) as { detail?: unknown };
+      if (typeof j.detail === "string") detail = j.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new CoreApiError(detail, { status: res.status, kind: "http" });
+  }
+  const data = (await res.json()) as { result: TuneParamResult };
+  return data.result;
 }

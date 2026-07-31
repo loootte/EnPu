@@ -66,3 +66,36 @@ class BatchEvalRequest(BaseModel):
 
 class BatchEvalResponse(BaseModel):
     report: dict[str, Any]
+
+
+class TuneParamRequest(BaseModel):
+    """Grid-search one L3 parameter against GT metrics."""
+
+    sample_id: str = "tune"
+    gt: dict[str, Any] = Field(..., description="Score / layer GT JSON")
+    # Image as base64 PNG/JPEG (without data: prefix) OR use multipart endpoint
+    image_base64: str | None = Field(
+        default=None,
+        description="Raw base64 image bytes (optional if using multipart)",
+    )
+    param: str = Field(
+        default="l3_min_measure_width",
+        description="l3_min_measure_width | l3_enable_cross_line",
+    )
+    start: float = 16.0
+    stop: float = 64.0
+    step: float = 8.0
+    layer: str = Field(default="L3", description="Metric layer to optimize (default L3)")
+
+
+class TuneParamResponse(BaseModel):
+    result: dict[str, Any]
+
+
+class BaselineDiffRequest(BaseModel):
+    current: dict[str, Any] = Field(..., description="Current batch report")
+    baseline: dict[str, Any] = Field(..., description="Saved baseline report")
+
+
+class BaselineDiffResponse(BaseModel):
+    diff: dict[str, Any]

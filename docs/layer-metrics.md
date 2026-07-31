@@ -49,18 +49,30 @@ core\.venv\Scripts\python.exe scripts\eval-layers.py --run --engine mock --out r
 
 - `POST /v1/evaluation/compare` — 单样本 GT + structure/score → 分层 metrics  
 - `POST /v1/evaluation/batch` — 批量 manifest 评测（`run_recognize` + engine）
+- `POST /v1/evaluation/tune-param` / `tune-param/upload` — L3 参数网格扫描（缓存 L1/L2）
+- `POST /v1/evaluation/baseline/diff` — 当前报告 vs 基线 mean_f1 差分
+- `POST /v1/evaluation/baseline/save` · `GET /baseline/{name}` — 基线读写（`reports/baselines/`）
+
+## Desktop（#86）
+
+- 侧栏 **分层精度评测**：导入 GT → 对比当前识别 → F1 徽章 / P·R·F1 表
+- 结构层按钮显示 F1 色标（绿≥0.8 / 黄≥0.5 / 红）
+- 原稿 **误差叠图**：绿 TP / 红 FP / 黄 FN
+- **L3 min_measure_width** 参数扫描 + 折线，标最优值
 
 ## 模块
 
 ```text
 core/app/evaluation/
-  types.py metrics.py gt_loader.py extract.py compare.py batch.py
+  types.py metrics.py gt_loader.py extract.py compare.py batch.py param_tuner.py
 core/app/api/v1/evaluation.py
 scripts/eval-layers.py
+desktop/src/components/LayerMetricsPanel.tsx
 ```
 
-## 后续（UI / 调参）
+## 后续
 
-- 节点画布 F1 徽章与误差三色叠图  
-- 参数扫描 `/v1/evaluation/tune-param`  
-- 基线版本管理与误差样本导出  
+- 更多可扫参数（投影阈值、旋律带比例）
+- 误差传导 L3→L4 连线高亮
+- 批量评测结果直接在 UI 导入/对比基线  
+
