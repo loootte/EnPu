@@ -134,7 +134,8 @@ $env:PYTHONPATH = ".\core"
 python scripts/export_layout_gt.py --project path\to\song.enpu.json --out samples\layout\L00x
 ```
 
-模块：`app/layout_gt/`（export + validate）。规范：[docs/train/l1-l3-data-spec.md](../docs/train/l1-l3-data-spec.md)。
+模块：`app/layout_gt/`（export + validate）。  
+规范：[l1-l3-data-spec.md](../docs/train/l1-l3-data-spec.md) · 模型方案：[l1-l3-model-design.md](../docs/train/l1-l3-model-design.md)（#94）。
 
 ## Sidecar 打包（可选，Issue #8）
 
