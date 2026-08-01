@@ -62,7 +62,7 @@ L5  音符节点   音高数字 OCR（+几何兜底）+ 时值线 / 高低音点
 桌面在结构模式下可叠图查看 L1–L5，L3 以分割线编辑为主。  
 完整说明：[architecture-structure-first.md](./docs/architecture-structure-first.md) · [l3-split-model.md](./docs/l3-split-model.md) · [architecture.md](./docs/architecture.md)。
 
-L1–L3 **布局训练**（#92–#95）：数据规范 [docs/train/l1-l3-data-spec.md](./docs/train/l1-l3-data-spec.md) · 模型方案 [l1-l3-model-design.md](./docs/train/l1-l3-model-design.md) · Framework [`train/`](./train/)。
+L1–L3 **布局训练**（#92–#95 / UI #101）：数据规范 [docs/train/l1-l3-data-spec.md](./docs/train/l1-l3-data-spec.md) · 模型方案 [l1-l3-model-design.md](./docs/train/l1-l3-model-design.md) · Framework + UI [`train/`](./train/)（`python scripts/run_ui.py`）。
 
 ---
 

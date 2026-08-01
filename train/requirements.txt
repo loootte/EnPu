@@ -1,7 +1,9 @@
-# EnPu train framework (#95)
+# EnPu train framework (#95) + UI (#101)
 # Install in a venv separate from core if preferred.
+# ASCII-only file: Windows pip may decode requirements as GBK.
 torch>=2.0
 numpy>=1.24
 Pillow>=10.0
 PyYAML>=6.0
 tqdm>=4.65
+streamlit>=1.28

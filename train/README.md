@@ -16,18 +16,17 @@ train/
   requirements.txt
   configs/mvp_l2_l3.yaml
   enpu_train/
-    data/       # Dataset + 合成样本
-    models/     # L2 page y-heat + L3 row x-heat
-    losses/
-    metrics/    # L2 IoU + L3 split count / mean_abs_x
-    engine/     # train / eval
-    export/     # state_dict + ONNX
+    data/ models/ losses/ metrics/ engine/ export/
+    ui_backend.py   # #101 UI 调用层
     viz.py
+  ui/
+    app.py          # Streamlit 训练 UI (#101)
   scripts/
     train.py
     eval.py
     viz_sample.py
     export_from_enpu_project.py
+    run_ui.py
   tests/
 ```
 
@@ -41,6 +40,30 @@ pip install -r requirements.txt
 ```
 
 需要 **Python 3.10+**、**PyTorch**。有 GPU 时可在配置里设 `train.device: cuda`。
+
+## 训练 UI（#101）
+
+图形界面：选择 `.enpu.json` → 导入 Layout → 一键训练 → 一键测试 → 看指标/日志。
+
+```powershell
+cd train
+.\.venv\Scripts\Activate.ps1
+# 需能 import 仓库 core（layout 导出）
+$env:PYTHONPATH = "$PWD;$PWD\..\core"
+python scripts\run_ui.py
+# 或: streamlit run ui/app.py
+```
+
+浏览器打开终端提示的本地 URL（默认 `http://localhost:8501`）。
+
+| 面板 | 功能 |
+|------|------|
+| 数据集 | 填写工程路径，导入到 `samples/layout/`；列表校验状态 |
+| 训练 | 任务/epochs/device，子进程训练，刷新进度与 loss 曲线 |
+| 测试 | 选 ckpt + 数据目录，展示 L2 IoU / L3 x 误差 |
+| 历史 | 扫描 `runs/` |
+
+**注意：** 改框/拖线仍在恩谱**桌面**完成；本 UI 只负责导入与训练闭环。
 
 ## 数据准备
 
@@ -109,6 +132,7 @@ python scripts\eval.py --ckpt runs\mvp_l2_l3\best.pt --data ..\samples\layout
 
 ```powershell
 cd train
+$env:PYTHONPATH = "$PWD;$PWD\..\core"
 python -m pytest tests -q
 ```
 
@@ -117,5 +141,6 @@ python -m pytest tests -q
 - 大规模真实集 / 完整合成流水线  
 - core 内完整 `learned_l1l3` 推理插件  
 - 精度超过几何基线的承诺  
+- 训练 UI 内嵌完整标注编辑器（#101 非目标）  
 
-父任务：[Issue #92](https://github.com/loootte/EnPu/issues/92) · 本任务 [#95](https://github.com/loootte/EnPu/issues/95)
+相关：父任务 [#92](https://github.com/loootte/EnPu/issues/92) · Framework [#95](https://github.com/loootte/EnPu/issues/95) · UI [#101](https://github.com/loootte/EnPu/issues/101)
