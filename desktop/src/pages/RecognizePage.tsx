@@ -699,28 +699,21 @@ export function RecognizePage() {
   }, [score?.parts]);
 
   /**
-   * Spatial map (#66): prefer structure L3 boxes (1:1 with Score measures);
+   * Spatial map (#66/#85): prefer structure L3 / split-derived boxes
+   * (including edit draft so highlights track dragged split lines);
    * else pitch-region row tiles.
    */
   const allMeasureRects = useMemo((): CropRect[] => {
     if (!nMeasures || !imageSize.w || !imageSize.h) return [];
-    const fromL3 = measureRectsFromStructure(result?.structure);
+    // Prefer live edit draft so dual-view tracks L3 split edits
+    const fromL3 = measureRectsFromStructure(
+      structureDraft ?? result?.structure,
+    );
     if (fromL3 && fromL3.length > 0) {
-      // Align length to Score measure count (pad/truncate edge cases)
-      if (fromL3.length === nMeasures) return fromL3;
+      // #85: trust split-derived geometry; do not invent pad rects that
+      // drift away from barlines. Truncate only if Score has fewer slots.
       if (fromL3.length > nMeasures) return fromL3.slice(0, nMeasures);
-      const padded = [...fromL3];
-      const last = fromL3[fromL3.length - 1]!;
-      while (padded.length < nMeasures) {
-        const w = Math.max(8, last.x2 - last.x1);
-        padded.push({
-          x1: last.x1,
-          y1: last.y2 + 4,
-          x2: last.x1 + w,
-          y2: last.y2 + 4 + Math.max(8, last.y2 - last.y1),
-        });
-      }
-      return padded;
+      return fromL3;
     }
     return buildMeasureRects(
       nMeasures,
@@ -738,6 +731,7 @@ export function RecognizePage() {
     nMeasures,
     noteCounts,
     result?.structure,
+    structureDraft,
   ]);
 
   const selectionPreviewRange = useMemo(() => {
@@ -900,7 +894,9 @@ export function RecognizePage() {
           measureFrom = 1;
           measureTo = n;
         } else {
-          const fromL3 = measureRectsFromStructure(result?.structure);
+          const fromL3 = measureRectsFromStructure(
+            structureDraft ?? result?.structure,
+          );
           const counts =
             base?.parts?.[0]?.measures?.map((m) =>
               Math.max(1, m.notes?.length ?? 1),

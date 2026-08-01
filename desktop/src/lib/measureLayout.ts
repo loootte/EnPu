@@ -19,23 +19,84 @@ import type {
 } from "./types";
 
 /**
- * Prefer structure-first L3 measure rects when present (#66).
+ * Prefer structure-first L3 measure rects when present (#66 / #85).
  * Order matches Score.parts[0].measures (system top→bottom, L→R).
+ *
+ * #85: measures may be ``kind=measure_derived`` (from split lines); also
+ * accept legacy ``measure`` and any L3 item with a box.
  */
 export function measureRectsFromStructure(
   structure?: StructureDebug | null,
 ): CropRect[] | null {
   if (!structure?.items?.length) return null;
-  const l3 = structure.items.filter(
-    (it) => it.layer === "L3" && it.kind === "measure" && it.box,
-  );
-  if (l3.length === 0) return null;
+  const l3 = structure.items
+    .filter((it) => {
+      if (it.layer !== "L3" || !it.box) return false;
+      const k = it.kind || "measure";
+      // Include derived measures from split model; exclude non-geometry noise
+      return (
+        k === "measure" ||
+        k === "measure_derived" ||
+        k === "" ||
+        k === "region"
+      );
+    })
+    .sort((a, b) => {
+      const acy = (a.box.y1 + a.box.y2) / 2;
+      const bcy = (b.box.y1 + b.box.y2) / 2;
+      const acx = (a.box.x1 + a.box.x2) / 2;
+      const bcx = (b.box.x1 + b.box.x2) / 2;
+      return acy - bcy || acx - bcx;
+    });
+  if (l3.length === 0) {
+    // Fallback: derive rects from L2 rows + barline splits (#85)
+    return measureRectsFromSplits(structure);
+  }
   return l3.map((it) => ({
     x1: it.box.x1,
     y1: it.box.y1,
     x2: it.box.x2,
     y2: it.box.y2,
   }));
+}
+
+/**
+ * Build measure rects from L2 systems + structure.barlines splits (#85).
+ * Same geometry rule as core ``splits_to_measures``.
+ */
+export function measureRectsFromSplits(
+  structure?: StructureDebug | null,
+): CropRect[] | null {
+  if (!structure?.items?.length) return null;
+  const systems = structure.items
+    .filter((it) => it.layer === "L2" && it.box)
+    .sort((a, b) => a.box.y1 - b.box.y1 || a.box.x1 - b.box.x1);
+  if (!systems.length) return null;
+  const barlines = structure.barlines ?? [];
+  const out: CropRect[] = [];
+  for (let order = 0; order < systems.length; order++) {
+    const sys = systems[order]!;
+    const bars = barlines
+      .filter((b) => b.system === order)
+      .map((b) => b.x)
+      .filter((x) => x > sys.box.x1 + 1 && x < sys.box.x2 - 1)
+      .sort((a, b) => a - b);
+    const xs: number[] = [sys.box.x1];
+    for (const x of bars) {
+      if (x - xs[xs.length - 1]! > 2) xs.push(x);
+    }
+    if (sys.box.x2 - xs[xs.length - 1]! > 2) xs.push(sys.box.x2);
+    else xs[xs.length - 1] = sys.box.x2;
+    for (let i = 0; i < xs.length - 1; i++) {
+      out.push({
+        x1: xs[i]!,
+        y1: sys.box.y1,
+        x2: xs[i + 1]!,
+        y2: sys.box.y2,
+      });
+    }
+  }
+  return out.length ? out : null;
 }
 
 /** Boxes used for measure geometry: pitch-only when regions available. */
