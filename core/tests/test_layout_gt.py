@@ -149,6 +149,30 @@ def test_validate_rejects_measure_split_count_mismatch() -> None:
     assert any("n_measures" in e for e in r.errors)
 
 
+def test_messy_barlines_prefer_measures_and_rederive() -> None:
+    """Real projects often have detector barlines that don't match L3 boxes."""
+    structure = _minimal_structure()
+    # 6 barlines + 3 measures → old code failed n_m == n_s+1
+    structure["barlines"] = [
+        {"system": 0, "x": 50, "y1": 80, "y2": 140},
+        {"system": 0, "x": 90, "y1": 80, "y2": 140},
+        {"system": 0, "x": 140, "y1": 80, "y2": 140},
+        {"system": 0, "x": 200, "y1": 80, "y2": 140},
+        {"system": 0, "x": 240, "y1": 80, "y2": 140},
+        {"system": 0, "x": 300, "y1": 80, "y2": 140},
+    ]
+    sample = layout_sample_from_structure(
+        structure,
+        image={"path": "image.png", "width": 400, "height": 300},
+    )
+    row = sample["l3"]["rows"][0]
+    # Prefer measure-derived interiors: 3 measures → 2 splits
+    assert len(row["splits"]) == 2
+    assert len(row["measures"]) == 3
+    r = validate_layout_sample(sample)
+    assert r.ok, r.errors
+
+
 def test_repo_sample_if_present() -> None:
     """Optional: samples/layout/*/layout.json committed for #93."""
     root = Path(__file__).resolve().parents[2] / "samples" / "layout"
