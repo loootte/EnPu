@@ -124,6 +124,18 @@ L1 版面 → L2 谱行 → L3 纵向分割线 → 派生小节 → L4 音符 RO
 结构调试字段：`structure.barlines[]`（可编辑分割线）、L3 items `kind=measure_derived`。  
 文档：[l3-split-model.md](../docs/l3-split-model.md) · [architecture-structure-first.md](../docs/architecture-structure-first.md) · 根 [README](../README.md)。
 
+### L1–L3 布局训练数据（#93）
+
+从桌面 **`.enpu.json`** 工程导出标准 layout 样本：
+
+```powershell
+# 仓库根
+$env:PYTHONPATH = ".\core"
+python scripts/export_layout_gt.py --project path\to\song.enpu.json --out samples\layout\L00x
+```
+
+模块：`app/layout_gt/`（export + validate）。规范：[docs/train/l1-l3-data-spec.md](../docs/train/l1-l3-data-spec.md)。
+
 ## Sidecar 打包（可选，Issue #8）
 
 ```powershell
