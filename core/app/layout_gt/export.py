@@ -121,6 +121,19 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _dedupe_xs(xs: list[float], *, min_gap: float = 4.0) -> list[float]:
+    xs = sorted(float(x) for x in xs)
+    if not xs:
+        return []
+    out = [xs[0]]
+    for x in xs[1:]:
+        if x - out[-1] >= min_gap:
+            out.append(x)
+        else:
+            out[-1] = 0.5 * (out[-1] + x)
+    return out
+
+
 def _interior_splits_from_edges(
     xs: list[float],
     *,
@@ -128,6 +141,7 @@ def _interior_splits_from_edges(
     x_right: float | None = None,
     n_measures: int | None = None,
     edge_eps: float = 2.0,
+    min_gap: float = 4.0,
 ) -> list[float]:
     """Convert barline x list to #85 **interior** splits.
 
@@ -136,11 +150,12 @@ def _interior_splits_from_edges(
     - **#85 interiors**: ``n_splits = n_measures - 1``
     - **#66 edges**: ``n_barlines = n_measures + 1`` (includes outer measure bounds)
     - raw detector xs that may hug L2 left/right
+    - messy detector sets (count ≠ edges/interiors) — caller should fall back
 
     We drop endpoints near L2 bounds and, when ``n_measures`` is known and
     ``len(xs) == n_measures + 1``, drop the first/last edge.
     """
-    xs = sorted(float(x) for x in xs)
+    xs = _dedupe_xs([float(x) for x in xs], min_gap=min_gap)
     if not xs:
         return []
 
@@ -151,6 +166,21 @@ def _interior_splits_from_edges(
     ):
         # Full edge chain → interiors
         return xs[1:-1] if len(xs) >= 2 else []
+
+    # n_barlines == n_measures: often interiors plus one outer edge
+    if (
+        n_measures is not None
+        and n_measures >= 2
+        and len(xs) == n_measures
+        and x_left is not None
+        and x_right is not None
+    ):
+        d_left = abs(xs[0] - x_left)
+        d_right = abs(xs[-1] - x_right)
+        if d_left <= d_right and d_left < 40:
+            xs = xs[1:]
+        elif d_right < 40:
+            xs = xs[:-1]
 
     out = list(xs)
     if x_left is not None:
@@ -176,6 +206,79 @@ def _measures_to_interior_xs(
         if not xs or x - xs[-1] >= min_gap:
             xs.append(x)
     return xs
+
+
+def _derive_measures_from_splits(
+    *,
+    x_left: float,
+    x_right: float,
+    y1: float,
+    y2: float,
+    split_xs: list[float],
+    system_index: int = 0,
+) -> list[dict[str, Any]]:
+    """Rebuild measure boxes so ``n_measures == n_splits + 1`` always holds."""
+    interiors = _dedupe_xs(
+        [x for x in split_xs if x_left + 1e-6 < x < x_right - 1e-6],
+        min_gap=2.0,
+    )
+    edges = [float(x_left), *interiors, float(x_right)]
+    out: list[dict[str, Any]] = []
+    for i in range(len(edges) - 1):
+        out.append(
+            {
+                "id": f"l3-m-sys{system_index}-{i}",
+                "label": f"m{i + 1}",
+                "box": {
+                    "x1": edges[i],
+                    "y1": float(y1),
+                    "x2": edges[i + 1],
+                    "y2": float(y2),
+                },
+                "kind": "measure_derived",
+            }
+        )
+    return out
+
+
+def _choose_interior_splits(
+    raw_xs: list[float],
+    *,
+    x_left: float,
+    x_right: float,
+    measure_boxes: list[dict[str, float]],
+) -> tuple[list[float], str]:
+    """Pick interior splits consistent with #85 when barlines and boxes disagree.
+
+    Preference:
+    1. barlines that already match ``n_measures - 1``
+    2. interiors derived from measure boxes (stable for messy detectors)
+    3. raw barline interiors even if count mismatches
+    """
+    n_meas = len(measure_boxes)
+    from_bar = _interior_splits_from_edges(
+        raw_xs,
+        x_left=x_left,
+        x_right=x_right,
+        n_measures=n_meas if n_meas > 0 else None,
+    )
+    from_meas = (
+        _measures_to_interior_xs(measure_boxes) if n_meas >= 2 else []
+    )
+    expected = n_meas - 1 if n_meas >= 1 else None
+
+    if expected is not None:
+        if len(from_bar) == expected:
+            return from_bar, "barlines"
+        if from_meas and len(from_meas) == expected:
+            return from_meas, "measures"
+        if from_meas:
+            return from_meas, "measures_fallback"
+        return from_bar, "barlines_unmatched"
+
+    if from_bar:
+        return from_bar, "barlines"
+    return from_meas, "measures"
 
 
 # ---------------------------------------------------------------------------
@@ -342,23 +445,18 @@ def layout_sample_from_structure(
             candidates = list(raw_by_sys.get(si, []))
 
         raw_xs = [float(b["x"]) for b in candidates]
-        n_meas = len(measures_by_sys.get(si) or [])
-        interiors = _interior_splits_from_edges(
+        measure_boxes = [m["box"] for m in measures_by_sys.get(si) or []]
+        interiors, split_src = _choose_interior_splits(
             raw_xs,
-            x_left=s["bbox"]["x1"],
-            x_right=s["bbox"]["x2"],
-            n_measures=n_meas if n_meas > 0 else None,
+            x_left=float(s["bbox"]["x1"]),
+            x_right=float(s["bbox"]["x2"]),
+            measure_boxes=measure_boxes,
         )
-        # Fallback: derive from measure boxes
-        if not interiors and n_meas >= 2:
-            interiors = _measures_to_interior_xs(
-                [m["box"] for m in measures_by_sys[si]]
-            )
 
         # Attach metadata from nearest raw barline when possible
         splits: list[dict[str, Any]] = []
         for i, x in enumerate(interiors):
-            src = "migrate"
+            src = split_src if split_src.startswith("bar") else "migrate"
             sid = f"s{si}-{i}"
             conf = None
             y1 = s["bbox"]["y1"]
@@ -370,8 +468,8 @@ def layout_sample_from_structure(
                 if d < best_d:
                     best_d = d
                     best = b
-            if best is not None and best_d <= 4.0:
-                src = str(best.get("source") or "detect")
+            if best is not None and best_d <= 8.0:
+                src = str(best.get("source") or src or "detect")
                 if best.get("id"):
                     sid = str(best["id"])
                 if best.get("confidence") is not None:
@@ -395,16 +493,19 @@ def layout_sample_from_structure(
             "system_id": s["id"],
             "system_index": si,
             "splits": splits,
+            "split_source": split_src,
         }
-        if include_derived_measures and measures_by_sys.get(si):
-            row["measures"] = [
-                {
-                    "id": m.get("id"),
-                    "label": m.get("label"),
-                    "box": m["box"],
-                }
-                for m in measures_by_sys[si]
-            ]
+        # Always re-derive measures from final splits so n_m == n_s+1
+        # (structure L3 boxes can disagree with messy barlines on real projects).
+        if include_derived_measures:
+            row["measures"] = _derive_measures_from_splits(
+                x_left=float(s["bbox"]["x1"]),
+                x_right=float(s["bbox"]["x2"]),
+                y1=float(s["bbox"]["y1"]),
+                y2=float(s["bbox"]["y2"]),
+                split_xs=[float(sp["x"]) for sp in splits],
+                system_index=si,
+            )
         rows.append(row)
 
     sample: dict[str, Any] = {
