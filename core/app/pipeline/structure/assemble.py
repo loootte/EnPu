@@ -248,21 +248,45 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
             by1, by2 = float(mb[0]), float(mb[1])
         else:
             by1, by2 = sys.rect.y1, sys.rect.y2
-        for x in sys.barline_xs:
-            barlines.append(
-                {
-                    "system": sys.index,
-                    "x": x,
-                    "y1": by1,
-                    "y2": by2,
-                }
-            )
+        # #85: splits are primary L3; barlines carry id/source for UI drag-edit
+        split_list = list(getattr(sys, "splits", None) or [])
+        if split_list:
+            for i, sp in enumerate(split_list):
+                x = float(getattr(sp, "x", sp) if not isinstance(sp, (int, float)) else sp)
+                sid = getattr(sp, "split_id", None) or f"l3-split-sys{sys.index}-{i}"
+                src = getattr(sp, "source", None) or "detect"
+                conf = getattr(sp, "confidence", None)
+                barlines.append(
+                    {
+                        "system": sys.index,
+                        "x": x,
+                        "y1": by1,
+                        "y2": by2,
+                        "id": sid,
+                        "source": src,
+                        "confidence": conf,
+                        "editable": True,
+                    }
+                )
+        else:
+            for i, x in enumerate(sys.barline_xs):
+                barlines.append(
+                    {
+                        "system": sys.index,
+                        "x": x,
+                        "y1": by1,
+                        "y2": by2,
+                        "id": f"l3-split-sys{sys.index}-{i}",
+                        "source": "detect",
+                        "editable": True,
+                    }
+                )
         for meas in sys.measures:
             global_m += 1
             # global_m follows system/measure iteration after geometry sort (#78)
             src = (meas.extra or {}).get("measure_source", "")
             label = f"m{global_m}"
-            if src and src not in ("l3_barline",):
+            if src and src not in ("l3_barline", "l3_split"):
                 label = f"m{global_m}/{src}"
             items.append(
                 StructureBox(
@@ -270,7 +294,8 @@ def page_layout_to_structure_debug(layout: PageLayout) -> StructureDebug:
                     id=f"l3-m{global_m}",
                     label=label,
                     box=meas.rect.as_box(),
-                    kind="measure",
+                    # derived from splits — UI treats as read-only when editing L3 lines
+                    kind="measure_derived",
                     confidence=meas.confidence,
                 )
             )

@@ -257,6 +257,12 @@ def barline_x_metrics(
             "n_pred": len(pred_xs),
             "max_dist": max_dist,
             "mean_abs_dist": (sum(dists) / len(dists)) if dists else None,
+            # #85 line-level report aliases
+            "split_count_mae": float(abs(len(pred_xs) - len(gt_xs))),
+            "split_count_exact": 1.0 if len(pred_xs) == len(gt_xs) else 0.0,
+            "split_mean_abs_x_error": (sum(dists) / len(dists)) if dists else None,
+            "split_fp": fp,
+            "split_fn": fn,
             "abs_delta_count": abs(len(pred_xs) - len(gt_xs)),
         },
     )

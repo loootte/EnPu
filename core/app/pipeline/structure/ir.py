@@ -99,7 +99,7 @@ class NoteCandidate:
 
 @dataclass
 class MeasureLayout:
-    """L3: one measure on a staff system."""
+    """L3: one measure on a staff system (usually **derived** from splits, #85)."""
 
     index: int  # 0-based within system
     rect: Rect
@@ -111,13 +111,39 @@ class MeasureLayout:
 
 
 @dataclass
+class SplitLine:
+    """L3 interior vertical split on a staff system (#85). Full-image pixel x."""
+
+    x: float
+    split_id: str = ""
+    source: str = "detect"  # detect | user | soft_gap | migrate
+    confidence: float = 0.7
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "x": self.x,
+            "split_id": self.split_id,
+            "source": self.source,
+            "confidence": self.confidence,
+            **({"extra": self.extra} if self.extra else {}),
+        }
+
+
+@dataclass
 class StaffSystem:
-    """L2: one horizontal staff / jianpu row."""
+    """L2: one horizontal staff / jianpu row.
+
+    **#85**: L3 primary state is ``splits`` (interior vertical dividers).
+    ``measures`` and ``barline_xs`` are derived for L4/Score compatibility.
+    """
 
     index: int
     rect: Rect
     measures: list[MeasureLayout] = field(default_factory=list)
     barline_xs: list[float] = field(default_factory=list)
+    # Interior split lines (full-image x); not including L2 left/right bounds
+    splits: list[SplitLine] = field(default_factory=list)
     confidence: float = 0.5
     extra: dict[str, Any] = field(default_factory=dict)
 

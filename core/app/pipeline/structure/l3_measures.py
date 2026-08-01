@@ -1,10 +1,10 @@
-"""L3: barlines + measure segmentation on each staff system (#58 / #66 / #84).
+"""L3: vertical splits on each L2 system (#58 / #66 / #84 / #85).
 
-#84 focus:
-- Detect barlines inside the **melody (pitch-digit) band**, not full staff height
-- Suppress silent whole-line single measure; tag ``measure_source``
-- Soft gap fallbacks when graphic bars are sparse
-- Simple cross-line open-measure merge (P1)
+**#85 model**: L3 primary state is ordered **interior split lines** (x).
+Measure rectangles are **derived** from L2 y-band + ``[x_left, …splits, x_right]``.
+
+#84 still applies for detection: melody-band constrained vertical line finding,
+soft-gap fallbacks, measure_source tags.
 """
 
 from __future__ import annotations
@@ -19,9 +19,11 @@ from app.pipeline.barlines import (
     gap_soft_bar_xs,
 )
 from app.pipeline.structure.ir import MeasureLayout, Rect, StaffSystem
+from app.pipeline.structure.splits import normalize_splits, splits_to_measures
 
-# measure_source values (#84)
+# measure_source values (#84 / #85)
 SRC_L3_BARLINE = "l3_barline"
+SRC_L3_SPLIT = "l3_split"
 SRC_FALLBACK_GAP = "fallback_gap"
 SRC_WHOLE_LINE = "whole_line"
 SRC_CROSS_LINE = "cross_line"
@@ -127,24 +129,15 @@ def _segment_one_system(
     )
 
     xs = _merge_unique_xs(xs_mel + xs_full, min_gap=dedup)
-    # Keep xs inside system x range with margin
+    # Keep xs strictly interior to L2 bounds
     xs = [x for x in xs if x_lo + 8 < x < x_hi - 8]
     xs = _dedup_xs(sorted(xs), min_gap=dedup)
 
-    measures: list[MeasureLayout] = []
-    source = SRC_L3_BARLINE
+    source = SRC_L3_SPLIT
+    split_source = "detect"
 
-    if len(xs) >= 2:
-        measures = _measures_between_barlines(
-            xs,
-            y0=y0,
-            y1=y1,
-            min_measure_width=min_measure_width,
-            source=SRC_L3_BARLINE,
-        )
-
-    # #84: not enough bars → soft gap cut inside melody band
-    if len(measures) < 2 and p.soft_gap_enabled:
+    # #84/#85: soft-gap interiors when too few graphic splits
+    if len(xs) < 1 and p.soft_gap_enabled:
         soft_xs = gap_soft_bar_xs(
             image_bgr,
             y_range=(my0, my1),
@@ -152,147 +145,77 @@ def _segment_one_system(
             min_gap=max(min_gap, min_measure_width),
         )
         soft_xs = [x for x in soft_xs if x_lo + 8 < x < x_hi - 8]
-        # Combine graphic bars with soft gaps as split points
-        split_xs = _dedup_xs(sorted(set(xs + soft_xs)), min_gap=min_measure_width * 0.45)
-        # Need endpoints for soft segmentation: left/right content bounds
-        if len(split_xs) >= 1:
-            # Add virtual ends at content margins (inner 4%) so soft cuts work
-            ends = [x_lo + 4.0, x_hi - 4.0]
-            all_xs = _dedup_xs(sorted(ends + split_xs), min_gap=min_measure_width * 0.4)
-            soft_measures = _measures_between_barlines(
-                all_xs,
-                y0=y0,
-                y1=y1,
-                min_measure_width=min_measure_width,
-                source=SRC_FALLBACK_GAP,
+        if soft_xs:
+            xs = _dedup_xs(sorted(soft_xs), min_gap=min_measure_width * 0.45)
+            source = SRC_FALLBACK_GAP
+            split_source = "soft_gap"
+            warnings.append(
+                f"L3: system {sys.index} soft-gap splits → {len(xs)} line(s)"
             )
-            if len(soft_measures) > len(measures):
-                measures = soft_measures
-                xs = all_xs
-                source = SRC_FALLBACK_GAP
-                warnings.append(
-                    f"L3: system {sys.index} soft-gap split → "
-                    f"{len(measures)} measure(s) (measure_source={source})"
-                )
 
-    if not measures:
-        # Last resort: whole line, low confidence, explicit tag
-        measures = [
-            MeasureLayout(
-                index=0,
-                rect=Rect(sys.rect.x1, sys.rect.y1, sys.rect.x2, sys.rect.y2),
-                confidence=0.25,
-                extra={
-                    "segment": "whole_line",
-                    "measure_source": SRC_WHOLE_LINE,
-                    "closed": True,
-                    "parts": [
-                        {
-                            "line_id": sys.index,
-                            "x0": sys.rect.x1,
-                            "x1": sys.rect.x2,
-                            "y0": sys.rect.y1,
-                            "y1": sys.rect.y2,
-                        }
-                    ],
-                },
-            )
-        ]
+    splits = normalize_splits(
+        xs,
+        x_left=x_lo,
+        x_right=x_hi,
+        min_gap=max(4.0, dedup * 0.5),
+        default_source=split_source,
+    )
+
+    # #85: measures always derived from L2 bounds + interior splits
+    measures = splits_to_measures(
+        x_left=x_lo,
+        x_right=x_hi,
+        y_top=y0,
+        y_bot=y1,
+        splits=splits,
+        min_measure_width=min_measure_width,
+        measure_source=source if splits else SRC_WHOLE_LINE,
+    )
+    if not splits:
         source = SRC_WHOLE_LINE
-        if len(xs) < 2:
-            warnings.append(
-                f"L3: system {sys.index} has {len(xs)} barline(s); "
-                f"whole_line fallback (measure_source={SRC_WHOLE_LINE})"
-            )
-        else:
-            warnings.append(
-                f"L3: system {sys.index} bar pairs too narrow; "
-                f"whole_line fallback (measure_source={SRC_WHOLE_LINE})"
-            )
-    else:
-        # Ensure every measure carries source + parts
-        for m in measures:
-            m.extra.setdefault("measure_source", source)
-            m.extra.setdefault("closed", True)
-            m.extra.setdefault(
-                "parts",
-                [
-                    {
-                        "line_id": sys.index,
-                        "x0": m.rect.x1,
-                        "x1": m.rect.x2,
-                        "y0": m.rect.y1,
-                        "y1": m.rect.y2,
-                    }
-                ],
-            )
+        warnings.append(
+            f"L3: system {sys.index} has 0 split lines; "
+            f"whole_line measure (measure_source={SRC_WHOLE_LINE})"
+        )
 
-    # Open trailing only when ink exists after last bar (not empty margin) (#84 / #66)
-    if (
-        p.open_trailing_enabled
-        and measures
-        and source == SRC_L3_BARLINE
-        and len(xs) >= 2
-    ):
-        last_bar = xs[-1]
-        if x_hi - last_bar > min_measure_width * 1.2 and _has_ink_in_band(
-            image_bgr,
-            x0=last_bar + 2,
-            x1=x_hi - 2,
-            y0=my0,
-            y1=my1,
-            min_pixels=12,
-        ):
-            stub = MeasureLayout(
-                index=len(measures),
-                rect=Rect(last_bar, y0, x_hi, y1),
-                barline_x_left=last_bar,
-                barline_x_right=None,
-                confidence=0.4,
-                extra={
-                    "segment": "open_trailing",
-                    "measure_source": SRC_L3_BARLINE,
-                    "closed": False,
-                    "parts": [
-                        {
-                            "line_id": sys.index,
-                            "x0": last_bar,
-                            "x1": x_hi,
-                            "y0": y0,
-                            "y1": y1,
-                        }
-                    ],
-                },
-            )
-            measures.append(stub)
-            warnings.append(
-                f"L3: system {sys.index} open trailing after last bar "
-                f"(for cross-line)"
-            )
+    for m in measures:
+        m.extra.setdefault("measure_source", source)
+        m.extra.setdefault("closed", True)
+        m.extra.setdefault("from_splits", True)
+        m.extra.setdefault(
+            "parts",
+            [
+                {
+                    "line_id": sys.index,
+                    "x0": m.rect.x1,
+                    "x1": m.rect.x2,
+                    "y0": m.rect.y1,
+                    "y1": m.rect.y2,
+                }
+            ],
+        )
+
+    # barline_xs kept as interior split xs for overlay / legacy consumers
+    bar_xs = [s.x for s in splits]
 
     sys2 = StaffSystem(
         index=sys.index,
         rect=sys.rect,
         measures=measures,
-        barline_xs=xs,
+        barline_xs=bar_xs,
+        splits=splits,
         confidence=sys.confidence,
         extra={
             **dict(sys.extra),
             "melody_band": [my0, my1],
             "measure_source": source,
+            "l3_model": "splits",
         },
     )
-    if source == SRC_L3_BARLINE and len(measures) >= 1:
-        warnings.append(
-            f"L3: system {sys.index} → {len(measures)} measure(s), "
-            f"{len(xs)} barline(s) (between-barlines only; "
-            f"measure_source={source})"
-        )
-    elif source != SRC_WHOLE_LINE:
-        warnings.append(
-            f"L3: system {sys.index} → {len(measures)} measure(s), "
-            f"{len(xs)} barline(s) (measure_source={source})"
-        )
+    warnings.append(
+        f"L3: system {sys.index} → {len(splits)} split(s), "
+        f"{len(measures)} measure(s) derived (measure_source={source})"
+    )
     return sys2, warnings
 
 

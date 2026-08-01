@@ -55,6 +55,12 @@ export interface ImagePreviewProps {
   onStructureBoxAdd?: (box: BoundingBox, layer: StructureLayerId) => void;
   /** #86 evaluation error overlay: green TP / red FP / yellow FN */
   metricErrors?: MetricErrorBox[] | null;
+  /** #85: L3 split-line edit */
+  onBarlineMove?: (id: string, x: number) => void;
+  onBarlineAdd?: (system: number, x: number, y1: number, y2: number) => void;
+  onBarlineDelete?: (id: string) => void;
+  selectedBarlineId?: string | null;
+  onSelectBarlineId?: (id: string | null) => void;
 }
 
 type DragState = {
@@ -411,7 +417,14 @@ export function ImagePreview({
   onStructureBoxChange,
   onStructureBoxAdd,
   metricErrors = null,
+  onBarlineMove,
+  onBarlineAdd: _onBarlineAdd,
+  onBarlineDelete,
+  selectedBarlineId = null,
+  onSelectBarlineId,
 }: ImagePreviewProps) {
+  // onBarlineAdd is used by parent via structureAdd → onStructureBoxAdd for L3
+  void _onBarlineAdd;
   const imgRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
@@ -870,10 +883,15 @@ export function ImagePreview({
                 const sid = it.id || `${it.layer}-${it.label}`;
                 const isEditLayer =
                   !structureEditMode || it.layer === structureEditLayer;
+                const isDerivedMeasure =
+                  it.layer === "L3" &&
+                  (it.kind === "measure" || it.kind === "measure_derived");
                 const canEdit =
                   structureEditMode &&
                   !structureAddMode &&
-                  it.layer === structureEditLayer;
+                  it.layer === structureEditLayer &&
+                  // #85: L3 measures are derived from splits — not free-drag
+                  !(structureEditLayer === "L3" && isDerivedMeasure);
                 return (
                   <StructureItemOverlay
                     key={sid}
@@ -887,7 +905,12 @@ export function ImagePreview({
                     onBoxChange={canEdit ? onStructureBoxChange : undefined}
                     naturalW={natural.w}
                     naturalH={natural.h}
-                    dimmed={structureEditMode && !isEditLayer}
+                    dimmed={
+                      (structureEditMode && !isEditLayer) ||
+                      (structureEditMode &&
+                        structureEditLayer === "L3" &&
+                        isDerivedMeasure)
+                    }
                   />
                 );
               })
@@ -896,18 +919,65 @@ export function ImagePreview({
           natural.w > 0 &&
           overlayMode === "structure" &&
           structureLayers?.L3 !== false
-            ? structure.barlines.map((bl, i) => (
-                <div
-                  key={`bar-${i}-${bl.x}`}
-                  className="pointer-events-none absolute w-0.5 bg-rose-500/90 shadow-[0_0_4px_rgba(244,63,94,0.8)]"
-                  style={{
-                    left: bl.x * scaleX,
-                    top: bl.y1 * scaleY,
-                    height: Math.max(1, (bl.y2 - bl.y1) * scaleY),
-                  }}
-                  title={`barline S${bl.system + 1}`}
-                />
-              ))
+            ? structure.barlines.map((bl, i) => {
+                const bid = bl.id || `bar-${bl.system}-${i}`;
+                const editingL3 =
+                  structureEditMode && structureEditLayer === "L3";
+                const selected = selectedBarlineId === bid;
+                return (
+                  <div
+                    key={bid}
+                    role={editingL3 ? "slider" : undefined}
+                    className={[
+                      "absolute w-1 -ml-0.5",
+                      editingL3
+                        ? "cursor-ew-resize pointer-events-auto z-20"
+                        : "pointer-events-none",
+                      selected
+                        ? "bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.95)]"
+                        : "bg-rose-500/90 shadow-[0_0_4px_rgba(244,63,94,0.8)]",
+                    ].join(" ")}
+                    style={{
+                      left: bl.x * scaleX,
+                      top: bl.y1 * scaleY,
+                      height: Math.max(1, (bl.y2 - bl.y1) * scaleY),
+                    }}
+                    title={
+                      editingL3
+                        ? `分割线 S${bl.system + 1} · 拖动 · 双击删除`
+                        : `barline S${bl.system + 1}`
+                    }
+                    onPointerDown={(e) => {
+                      if (!editingL3 || !onBarlineMove) return;
+                      e.stopPropagation();
+                      e.preventDefault();
+                      onSelectBarlineId?.(bid);
+                      const el = e.currentTarget;
+                      el.setPointerCapture(e.pointerId);
+                      const onMove = (ev: PointerEvent) => {
+                        const pt = toImageCoords(ev.clientX, ev.clientY);
+                        if (pt) onBarlineMove(bid, pt.x);
+                      };
+                      const onUp = (ev: PointerEvent) => {
+                        try {
+                          el.releasePointerCapture(ev.pointerId);
+                        } catch {
+                          /* ignore */
+                        }
+                        window.removeEventListener("pointermove", onMove);
+                        window.removeEventListener("pointerup", onUp);
+                      };
+                      window.addEventListener("pointermove", onMove);
+                      window.addEventListener("pointerup", onUp);
+                    }}
+                    onDoubleClick={(e) => {
+                      if (!editingL3 || !onBarlineDelete) return;
+                      e.stopPropagation();
+                      onBarlineDelete(bid);
+                    }}
+                  />
+                );
+              })
             : null}
           {/* #86 evaluation TP/FP/FN overlay */}
           {metricErrors?.length && natural.w > 0

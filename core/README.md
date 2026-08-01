@@ -108,15 +108,21 @@ ENPU_RECOGNIZE_ENGINE=mock pytest -q
 5. **parse** — OCR → `Score` v0.1（音高/时值/小节；失败回退 hints / ocr_only）  
 6. **export** — `POST /v1/export` 将 Score 转为 MusicXML / MIDI（music21，#11）
 
-### structure（#58）
+### structure（#58 / #85）
 
 `ENPU_PIPELINE_MODE=structure` 时：
 
 ```text
-L1 版面 → L2 谱行 → L3 小节 → L4 音符 ROI → L5 局部 OCR+几何 → Score
+L1 版面 → L2 谱行 → L3 纵向分割线 → 派生小节 → L4 音符 ROI → L5 局部 OCR+几何 → Score
 ```
 
-代码：`core/app/pipeline/structure/`。详见仓库根 [README](../README.md) 与 [docs/architecture-structure-first.md](../docs/architecture-structure-first.md)。
+| 层 | 要点 |
+|----|------|
+| L3（#85） | 主存 **interior splits**（全图像素 x）；`splits_to_measures` 派生小节矩形；端点取 L2 行边界 |
+| 模块 | `structure/splits.py`（纯函数）、`l3_measures.py`（检测）、`ir.SplitLine`、`assemble`/`rebuild` |
+
+结构调试字段：`structure.barlines[]`（可编辑分割线）、L3 items `kind=measure_derived`。  
+文档：[l3-split-model.md](../docs/l3-split-model.md) · [architecture-structure-first.md](../docs/architecture-structure-first.md) · 根 [README](../README.md)。
 
 ## Sidecar 打包（可选，Issue #8）
 

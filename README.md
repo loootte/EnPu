@@ -46,7 +46,7 @@
 ```text
 L1  页面级     标题 / 调号 / 拍号 / 主谱面 ROI
 L2  主谱面     谱行（systems；pitch+和弦+歌词绑定为同一行）
-L3  谱行内     小节线 → 小节（measures）
+L3  谱行内     纵向分割线 splits → 派生小节 measures（#85）
 L4  小节内     音符 / 和弦 / 歌词候选 ROI（几何为主）
 L5  音符节点   音高数字 OCR（+几何兜底）+ 时值线 / 高低音点等几何
                → 组装 Score JSON
@@ -55,10 +55,12 @@ L5  音符节点   音高数字 OCR（+几何兜底）+ 时值线 / 高低音点
 | 原则 | 说明 |
 |------|------|
 | L1–L4 | **OpenCV / 几何 / 版面**为主，不依赖整页 OCR 文本顺序 |
+| L3 | **主存分割线**，小节框由 L2 行边界 + 线推导；桌面拖线编辑 |
 | L5 | **音高数字**以 OCR 为主，并与同节点几何特征绑定 |
 | 开关 | `ENPU_PIPELINE_MODE=structure` 或 `legacy` |
 
-桌面在结构模式下可叠图查看 L1–L5。完整说明见 [docs/architecture-structure-first.md](./docs/architecture-structure-first.md) · [docs/architecture.md](./docs/architecture.md)。
+桌面在结构模式下可叠图查看 L1–L5，L3 以分割线编辑为主。  
+完整说明：[architecture-structure-first.md](./docs/architecture-structure-first.md) · [l3-split-model.md](./docs/l3-split-model.md) · [architecture.md](./docs/architecture.md)。
 
 ---
 
