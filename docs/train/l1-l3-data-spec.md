@@ -251,6 +251,8 @@ python scripts/export_layout_gt.py --validate-only samples/layout/L001_zuozai_ba
 ## 10. 相关
 
 - 父任务 [#92](https://github.com/loootte/EnPu/issues/92) · 本任务 [#93](https://github.com/loootte/EnPu/issues/93)  
+- 模型方案 [#94](https://github.com/loootte/EnPu/issues/94) · [l1-l3-model-design.md](./l1-l3-model-design.md)  
+- Framework [#95](https://github.com/loootte/EnPu/issues/95)  
 - [#85](https://github.com/loootte/EnPu/issues/85) L3 分割线模型 · [l3-split-model.md](../l3-split-model.md)  
 - [architecture-structure-first.md](../architecture-structure-first.md)  
 - 桌面工程 I/O：`desktop/src/lib/projectIo.ts`（`project_version` 0.2）  

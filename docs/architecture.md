@@ -57,7 +57,8 @@ L5  音符节点
 流水线：`preprocess → L1 → L2 → L3 → L4 → L5 → assemble Score`。
 
 - L3 分割线模型：[l3-split-model.md](./l3-split-model.md)（#85）  
-- 结构优先总述：[architecture-structure-first.md](./architecture-structure-first.md)
+- 结构优先总述：[architecture-structure-first.md](./architecture-structure-first.md)  
+- L1–L3 训练数据 / 模型方案：[train/l1-l3-data-spec.md](./train/l1-l3-data-spec.md) · [train/l1-l3-model-design.md](./train/l1-l3-model-design.md)
 
 ## 2. 部署形态
 
