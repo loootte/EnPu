@@ -1,0 +1,32 @@
+# MVP-1: L2 systems (page y-heat) + L3 splits (row x-heat) — #95 / #94
+tasks: [l2, l3]
+
+data:
+  # real data-spec samples (#93)
+  roots:
+    - ../samples/layout
+  # synthetic pages generated under train/data_cache/synth
+  synth_count: 8
+  synth_dir: data_cache/synth
+  page_size: [384, 512]   # H, W
+  row_size: [64, 256]
+  l2_heat_len: 128
+  l3_heat_len: 128
+  augment: true
+  val_ratio: 0.25
+
+train:
+  epochs: 3
+  batch_size: 2
+  lr: 0.001
+  weight_decay: 0.0001
+  l2_loss_weight: 1.0
+  l3_loss_weight: 1.5
+  device: cpu            # set cuda if available
+  num_workers: 0
+  out_dir: runs/mvp_l2_l3
+  log_every: 1
+
+export:
+  state_dict: runs/mvp_l2_l3/export/layout_net.pt
+  onnx_dir: runs/mvp_l2_l3/export/onnx

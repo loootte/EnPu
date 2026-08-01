@@ -2,7 +2,7 @@
 
 > 状态：设计定稿 v0.1（#94 / 父任务 #92）  
 > 数据契约：[`l1-l3-data-spec.md`](./l1-l3-data-spec.md)（`layout_schema_version` **0.1**）  
-> 实现骨架：训练 Framework **#95**；core 推理插件为 **P2**（另开 Issue）
+> 实现骨架：训练 Framework **#95** 见仓库 [`train/`](../../train/)；core 推理插件为 **P2**
 
 ---
 
@@ -264,21 +264,23 @@ learned_l1l3:
 
 ---
 
-## 8. 训练 Framework 接口预期（给 #95）
+## 8. 训练 Framework（#95 已落地）
 
-最小可实现切片（与 #95 验收对齐）：
+目录：`train/`（说明见 [`train/README.md`](../../train/README.md)）。
 
 | 模块 | 职责 |
 |------|------|
-| `data/` | 读 data-spec；collate；可视化图+框+竖线 |
-| `models/` | L2 det ± L3 heat（L1 可选） |
-| `metrics/` | L2 IoU/mAP；L3 count + mean_abs_x |
-| `engine/` | train/eval loop、ckpt |
-| `export/` | state_dict / ONNX + README「core 如何加载」段落 |
-| `configs/mvp_l2_l3.yaml` | 任务开关、路径、超参 |
+| `enpu_train/data/` | data-spec Dataset + 合成样本 + 可视化 |
+| `enpu_train/models/` | L2 page **y-heat** + L3 row **x-heat**（轻量 CNN） |
+| `enpu_train/metrics/` | L2 条带 IoU；L3 count + mean_abs_x |
+| `enpu_train/engine/` | train/eval、ckpt |
+| `enpu_train/export/` | state_dict（+ 可选 ONNX） |
+| `configs/mvp_l2_l3.yaml` | 任务与超参 |
 
-一条命令：`python scripts/train.py --config configs/mvp_l2_l3.yaml`  
-数据：≥1 真实样本 + 合成/增强；至少 1 个 epoch 不报错。
+```powershell
+cd train
+python scripts/train.py --config configs/mvp_l2_l3.yaml
+```
 
 ---
 
