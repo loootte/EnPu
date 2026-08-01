@@ -1,0 +1,6 @@
+# EnPu train framework (#95) — install in a venv separate from core if preferred
+torch>=2.0
+numpy>=1.24
+Pillow>=10.0
+PyYAML>=6.0
+tqdm>=4.65

@@ -123,3 +123,9 @@ logs/
 # local process state for start/stop scripts
 scripts/.run/
 
+
+# Train framework local runs (#95)
+train/runs/
+train/data_cache/
+train/.venv/
+
