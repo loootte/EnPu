@@ -35,13 +35,15 @@ L1  页面级
 L2  主谱面
     └── 谱行 systems（旋律数字 + 和弦 + 歌词绑定为同一逻辑行）
 
-L3  谱行
-    └── 小节 measures（小节线切分；Score 小节权威来源）
+L3  谱行内（#85）
+    ├── 主存：有序纵向分割线 splits（全图像素 x）
+    ├── 派生：小节 measures = [L2.x1, …splits, L2.x2] × L2.y
+    └── Score 小节权威来自派生 measures
 
 L4  小节内
     ├── 音符候选 ROI（pitch）
     ├── 和弦 / 歌词候选（独立 kind）
-    └── 小节线（可视化）
+    └── 分割线叠图（与 L3 splits 同源）
 
 L5  音符节点
     ├── 音高数字          ← 主要 OCR 位置（可有几何兜底）
@@ -54,7 +56,8 @@ L5  音符节点
 
 流水线：`preprocess → L1 → L2 → L3 → L4 → L5 → assemble Score`。
 
-详见 [architecture-structure-first.md](./architecture-structure-first.md)。
+- L3 分割线模型：[l3-split-model.md](./l3-split-model.md)（#85）  
+- 结构优先总述：[architecture-structure-first.md](./architecture-structure-first.md)
 
 ## 2. 部署形态
 

@@ -8,7 +8,7 @@
 |----|--------------|------------------|
 | L1 | 区域框 IoU P/R/F1 | 是否检出谱面（presence） |
 | L2 | 谱行框 IoU | `system_count` 数量差 |
-| L3 | 小节框 IoU；小节线 x 距离匹配 | `measure_count` / \|Δbars\| |
+| L3 | **线级优先**（#85）：split 数量 + x 距离；派生小节框 IoU 为辅 | `measure_count` / \|Δbars\|；`split_*` extra |
 | L4 | 候选 ROI IoU | 音符 token 数 vs L4 pitch 框数（proxy） |
 | L5 | — | 音高序列 LCS P/R/F1 |
 
@@ -26,6 +26,7 @@
   "layers": {
     "L3": {
       "measures": [ { "box": { "x1":0,"y1":0,"x2":100,"y2":40 } } ],
+      "splits": [ { "x": 50 } ],
       "barlines": [0, 50, 100]
     },
     "L4": {

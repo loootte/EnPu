@@ -5,8 +5,8 @@
 > 目标格式：MusicXML / MIDI / 自定义 JSON。
 
 **仓库**：https://github.com/loootte/EnPu  
-**最后更新**：2026-07-25  
-**当前阶段**：#34/#35/#38 ✅；**#58 结构优先分层内核**（可选 `ENPU_PIPELINE_MODE=structure`）；精度 **#36/#37**；体验 **#45–#52**；目标 **v0.1.0**；云端 #13 可并行  
+**最后更新**：2026-08-01  
+**当前阶段**：#34/#35/#38 ✅；**#58 结构优先** + **#85 L3 分割线模型** ✅；#84/#86/#89 分层评测/调优 ✅；精度 **#36/#37**；体验 **#45–#52**；目标 **v0.1.0**；云端 #13 可并行  
 
 ---
 
@@ -336,7 +336,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集（≥15） | P4 | **P0** | ⬜ **下一步（精度）** |
 | [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | P1 | ⬜ |
 | [#43](https://github.com/loootte/EnPu/issues/43) | 产品/体验演进清单入 Roadmap | docs | P0 | ✅ [PR #44](https://github.com/loootte/EnPu/pull/44) |
-| [#58](https://github.com/loootte/EnPu/issues/58) | 结构优先分层识别内核（L1–L5，先几何后 OCR） | P4 / core | **P0** | 🔄 脚手架 `pipeline_mode=structure` |
+| [#58](https://github.com/loootte/EnPu/issues/58) | 结构优先分层识别内核（L1–L5，先几何后 OCR） | P4 / core | **P0** | 🔄 持续迭代（L1–L5 已可跑；L3 见 #85） |
 | [#45](https://github.com/loootte/EnPu/issues/45) | 原稿对照双视图校对（P4-F） | P4 | **P0** | ⬜ v0.1 体验加分 |
 | [#46](https://github.com/loootte/EnPu/issues/46) | 错误标记与问题导航（P4-G） | P4 | **P0** | ⬜ v0.1 体验加分 |
 | [#47](https://github.com/loootte/EnPu/issues/47) | 图像预处理工具箱（P4-H） | P4 | P1 | ⬜ |
@@ -359,6 +359,10 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | [#33](https://github.com/loootte/EnPu/issues/33) | 基于基线更新产品与技术路线 | docs | ✅ |
 | [#34](https://github.com/loootte/EnPu/issues/34) | 版面/谱行分类，过滤非谱行数字 | P4 | ✅ |
 | [#35](https://github.com/loootte/EnPu/issues/35) | 小节线检测与切分加固 | P4 | ✅ |
+| [#84](https://github.com/loootte/EnPu/issues/84) | 旋律带小节线检测 | P4 / L3 | ✅ |
+| [#85](https://github.com/loootte/EnPu/issues/85) | L3 行内纵向分割线模型（主存 splits → 派生 measures） | P4 / L3 | ✅ |
+| [#86](https://github.com/loootte/EnPu/issues/86) | 分层准确度量化 + 编辑框作 GT | P4 / eval | ✅ |
+| [#89](https://github.com/loootte/EnPu/issues/89) | 单层自动调优循环（L3） | P4 / eval | ✅ |
 | [#36](https://github.com/loootte/EnPu/issues/36) | 扩充真实敬拜谱评测集 | P4 | ⬜ OPEN |
 | [#37](https://github.com/loootte/EnPu/issues/37) | 高密度谱与时值线检测 | P4 | ⬜ OPEN |
 | [#38](https://github.com/loootte/EnPu/issues/38) | print_clear F1 CI 门槛 | P1 | ✅ |
@@ -398,6 +402,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 | 2026-07-24 | **#33** 转向结构精度：#34 过滤 → #35 小节 → #36 真实集；v0.1.0 不阻塞于云端 |
 | 2026-07-25 | **#43** 产品/体验清单入 Roadmap；子 Issue **#45–#52** 已开；**#34/#35/#38** 已关闭 |
 | 2026-07-25 | Issue 索引同步：OPEN = #13/#36/#37/#43/#45–#52；精度下一步 **#36** |
+| 2026-08-01 | **#85** L3 主存分割线、派生小节、桌面拖线、双谱高亮对齐；文档 `l3-split-model.md`；**#84/#86/#89** 已合 |
 
 ### Phase 摘要
 
@@ -405,7 +410,7 @@ Issues 列表：https://github.com/loootte/EnPu/issues
 
 **Phase 1 收尾**：评测与基线完成（#29）。  
 
-**精度**：#34/#35/#38 ✅；收尾 **#36** 真实评测集 + **#37** 高密度。  
+**精度**：#34/#35/#38 ✅；结构 L3 **#85**（分割线）✅ + #84/#86/#89 评测调优 ✅；收尾 **#36** 真实评测集 + **#37** 高密度。  
 
 **产品体验（#43 → #45–#52）**：校对工具链 + 编辑增强已拆 Issue。  
 
