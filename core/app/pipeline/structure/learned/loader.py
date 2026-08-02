@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from app.pipeline.structure.learned.model import LayoutNet, LayoutNetConfig
+from app.pipeline.structure.learned.model import LayoutNetConfig, build_layout_net
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def load_layout_weights(
     path: str | Path,
     *,
     device: str = "cpu",
-) -> tuple[LayoutNet, dict[str, Any]]:
+) -> tuple[Any, dict[str, Any]]:
     """Load ``enpu_layout_net_v0`` or train ``best.pt`` / ``last.pt``.
 
     Returns (model.eval(), meta dict with format/path/cfg fields).
@@ -82,7 +82,10 @@ def load_layout_weights(
 
     fmt = str(payload.get("format") or "train_ckpt")
     cfg = _cfg_from_payload(payload)
-    model = LayoutNet(cfg)
+    try:
+        model = build_layout_net(cfg)
+    except ImportError as e:
+        raise WeightsLoadError(str(e)) from e
     try:
         model.load_state_dict(payload["model"], strict=True)
     except Exception as e:
@@ -111,7 +114,7 @@ def load_layout_weights(
 def get_cached_layout_model(
     path: str,
     device: str = "cpu",
-) -> tuple[LayoutNet, dict[str, Any]]:
+) -> tuple[Any, dict[str, Any]]:
     """Process-level cache keyed by path+device."""
     return load_layout_weights(path, device=device)
 

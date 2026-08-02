@@ -58,11 +58,21 @@ L5  音符节点   音高数字 OCR（+几何兜底）+ 时值线 / 高低音点
 | L3 | **主存分割线**，小节框由 L2 行边界 + 线推导；桌面拖线编辑 |
 | L5 | **音高数字**以 OCR 为主，并与同节点几何特征绑定 |
 | 开关 | `ENPU_PIPELINE_MODE=structure` 或 `legacy` |
+| L1–L3 引擎 | 默认 **rule**（OpenCV）；可选 **learned**（#104，需本机 `torch` + 权重，**不进 CI / 精简安装包**） |
 
 桌面在结构模式下可叠图查看 L1–L5，L3 以分割线编辑为主。  
 完整说明：[architecture-structure-first.md](./docs/architecture-structure-first.md) · [l3-split-model.md](./docs/l3-split-model.md) · [architecture.md](./docs/architecture.md)。
 
-L1–L3 **布局训练**（#92–#95 / UI #101）：数据规范 [docs/train/l1-l3-data-spec.md](./docs/train/l1-l3-data-spec.md) · 模型方案 [l1-l3-model-design.md](./docs/train/l1-l3-model-design.md) · Framework + UI [`train/`](./train/)（`python scripts/run_ui.py`）。
+L1–L3 **布局训练与推理**（#92–#104）：
+
+| 项 | 链接 |
+|----|------|
+| 数据规范 | [docs/train/l1-l3-data-spec.md](./docs/train/l1-l3-data-spec.md) |
+| 模型方案 | [docs/train/l1-l3-model-design.md](./docs/train/l1-l3-model-design.md) |
+| Framework + 训练 UI | [`train/`](./train/)（`python scripts/run_ui.py`） |
+| Core 加载权重 | [docs/train/core-inference.md](./docs/train/core-inference.md)（`ENPU_STRUCTURE_L1L3_ENGINE=learned`） |
+
+**CI**：`core/requirements-ci.txt` **不含 torch**；默认 `rule` 路径单测。learned 相关用例在无 torch 时自动 skip。
 
 ---
 

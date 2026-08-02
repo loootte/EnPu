@@ -1,4 +1,7 @@
-"""Tests for learned L1–L3 structure engine (#104)."""
+"""Tests for learned L1–L3 structure engine (#104).
+
+Most tests run without torch (CI). Weight load / forward tests skip if torch missing.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +24,15 @@ from app.pipeline.structure.learned.postprocess import (
 )
 from app.pipeline.structure.pipeline import run_structure_recognize
 
+try:
+    import torch as _torch_mod
 
+    HAS_TORCH = True
+except ImportError:
+    _torch_mod = None  # type: ignore[assignment]
+    HAS_TORCH = False
+
+requires_torch = pytest.mark.skipif(not HAS_TORCH, reason="torch not installed (optional)")
 def test_decode_peaks_and_boxes() -> None:
     heat = np.zeros(64, dtype=np.float32)
     heat[10] = 0.9
@@ -55,6 +66,7 @@ def test_load_missing_weights() -> None:
         load_layout_weights(Path("does_not_exist.pt"))
 
 
+@requires_torch
 def test_load_real_weights_if_present() -> None:
     root = Path(__file__).resolve().parents[2]
     candidates = [
@@ -67,14 +79,10 @@ def test_load_real_weights_if_present() -> None:
     clear_layout_model_cache()
     model, meta = load_layout_weights(path, device="cpu")
     assert "l2" in meta["tasks"]
-    # forward smoke
-    import torch
-
-    page = torch.rand(1, 3, model.cfg.page_h, model.cfg.page_w)
-    with torch.no_grad():
+    page = _torch_mod.rand(1, 3, model.cfg.page_h, model.cfg.page_w)
+    with _torch_mod.no_grad():
         out = model(page=page)
     assert out["l2_logits"].shape[-1] == model.cfg.l2_heat_len
-
 
 def test_pipeline_rule_default_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
     clear_settings_cache()
@@ -123,6 +131,7 @@ def test_pipeline_learned_fallback_when_no_weights(
     assert any("fallback" in w.lower() or "failed" in w.lower() for w in warns)
 
 
+@requires_torch
 def test_pipeline_learned_with_weights_if_present(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
