@@ -45,11 +45,13 @@ structure recognize
 
 | 场景 | 依赖 |
 |------|------|
-| 默认 core / CI / 精简安装包 | **不需要** torch；`engine=rule` |
+| 默认 core / **CI** / 精简安装包 | **不需要** torch；`engine=rule` |
 | 本机 learned 推理 | `pip install torch`（与训练环境可共用） |
 | Windows 默认 NSIS 包 | **不**捆绑 torch；仅 rule |
 
-可选：在 `requirements.txt` 注释中说明；勿把 torch 写入 `requirements-ci.txt` / sidecar 默认。
+- `core/requirements-ci.txt` **不得**加入 torch。  
+- `structure/learned` 在 **import 时不强制加载 torch**（懒加载）；仅 `load_layout_weights` / `run_learned_l2_l3` 需要。  
+- 无 torch 时设 `ENPU_STRUCTURE_L1L3_ENGINE=learned` 会 **fallback 到 rule**（默认 `ENPU_L1L3_FALLBACK=rule`）。
 
 ## 使用示例
 
