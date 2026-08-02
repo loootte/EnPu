@@ -2,7 +2,9 @@
 
 Run from train/ directory::
 
-    streamlit run ui/app.py
+    streamlit run ui/streamlit_app.py
+
+Note: file must NOT be named ``app.py`` — that shadows ``core/app`` package.
 
 Flow: import .enpu.json -> Layout GT list -> train -> eval -> metrics.
 """
@@ -16,8 +18,20 @@ from pathlib import Path
 import streamlit as st
 
 TRAIN_ROOT = Path(__file__).resolve().parents[1]
-if str(TRAIN_ROOT) not in sys.path:
-    sys.path.insert(0, str(TRAIN_ROOT))
+CORE_ROOT = TRAIN_ROOT.parent / "core"
+# core first so ``import app.layout_gt`` resolves to EnPu core, not this UI file
+for _p in (str(TRAIN_ROOT), str(CORE_ROOT)):
+    if _p in sys.path:
+        sys.path.remove(_p)
+sys.path.insert(0, str(TRAIN_ROOT))
+sys.path.insert(0, str(CORE_ROOT))
+# Drop a non-package ``app`` module if Streamlit already loaded a shadow
+_app_mod = sys.modules.get("app")
+if _app_mod is not None and not hasattr(_app_mod, "layout_gt"):
+    del sys.modules["app"]
+    for _k in list(sys.modules):
+        if _k.startswith("app."):
+            del sys.modules[_k]
 
 from enpu_train.ui_backend import (  # noqa: E402
     DEFAULT_LAYOUT_ROOT,

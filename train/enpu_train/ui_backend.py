@@ -26,9 +26,20 @@ JOBS_DIR = DEFAULT_RUNS / "ui_jobs"
 
 
 def _ensure_sys_path() -> None:
-    for p in (str(TRAIN_ROOT), str(CORE_ROOT)):
-        if p not in sys.path:
-            sys.path.insert(0, p)
+    """Prefer ``core/`` so ``import app.*`` is EnPu core, not a local app.py."""
+    core, train = str(CORE_ROOT), str(TRAIN_ROOT)
+    # Drop shadow module (e.g. train/ui/app.py loaded as top-level ``app``)
+    mod = sys.modules.get("app")
+    if mod is not None and not hasattr(mod, "layout_gt"):
+        del sys.modules["app"]
+        for k in list(sys.modules):
+            if k.startswith("app."):
+                del sys.modules[k]
+    for p in (train, core):
+        while p in sys.path:
+            sys.path.remove(p)
+    sys.path.insert(0, train)
+    sys.path.insert(0, core)
 
 
 def discover_layout_samples(roots: list[str | Path] | None = None) -> list[Path]:

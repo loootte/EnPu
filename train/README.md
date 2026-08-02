@@ -20,7 +20,7 @@ train/
     ui_backend.py   # #101 UI 调用层
     viz.py
   ui/
-    app.py          # Streamlit 训练 UI (#101)
+    streamlit_app.py  # Streamlit 训练 UI (#101; not app.py — avoids shadowing core/app)
   scripts/
     train.py
     eval.py
@@ -49,9 +49,10 @@ pip install -r requirements.txt
 cd train
 .\.venv\Scripts\Activate.ps1
 # 需能 import 仓库 core（layout 导出）
-$env:PYTHONPATH = "$PWD;$PWD\..\core"
+$env:PYTHONPATH = "$PWD\..\core;$PWD"
 python scripts\run_ui.py
-# 或: streamlit run ui/app.py
+# 或: streamlit run ui/streamlit_app.py
+# 注意: 不要使用名为 app.py 的入口，会与 core/app 包冲突
 ```
 
 浏览器打开终端提示的本地 URL（默认 `http://localhost:8501`）。
