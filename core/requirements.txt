@@ -25,6 +25,9 @@ music21>=9.1,<10
 # Layer param YAML (#89)
 PyYAML>=6.0,<7
 
+# Optional: learned L1–L3 structure engine (#104). Not required for rule path / CI / slim installer.
+# pip install torch
+
 # tests
 httpx>=0.27,<1
 pytest>=8.0,<9

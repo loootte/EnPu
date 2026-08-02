@@ -96,6 +96,10 @@ ENPU_RECOGNIZE_ENGINE=mock pytest -q
 | `ENPU_MAX_UPLOAD_BYTES` | `20971520` | 最大上传 |
 | `ENPU_CORS_ORIGINS` | `*` | CORS |
 | `ENPU_PIPELINE_MODE` | `legacy` | `legacy`：整页 OCR→parse；`structure`：L1–L5 结构优先（#58） |
+| `ENPU_STRUCTURE_L1L3_ENGINE` | `rule` | `rule` \| `learned`（#104；learned 需 torch + 权重） |
+| `ENPU_L1L3_WEIGHTS` | | `best.pt` / `layout_net.pt` 路径 |
+| `ENPU_L1L3_DEVICE` | `cpu` | `cpu` / `cuda` |
+| `ENPU_L1L3_FALLBACK` | `rule` | 失败时回退 rule 或 `none` |
 
 ## 流水线说明
 
@@ -135,7 +139,8 @@ python scripts/export_layout_gt.py --project path\to\song.enpu.json --out sample
 ```
 
 模块：`app/layout_gt/`（export + validate）。  
-规范：[l1-l3-data-spec.md](../docs/train/l1-l3-data-spec.md) · 模型方案：[l1-l3-model-design.md](../docs/train/l1-l3-model-design.md)（#94）。
+规范：[l1-l3-data-spec.md](../docs/train/l1-l3-data-spec.md) · 模型方案：[l1-l3-model-design.md](../docs/train/l1-l3-model-design.md)（#94）。  
+推理接入：[core-inference.md](../docs/train/core-inference.md)（#104：`structure/learned/`）。
 
 ## Sidecar 打包（可选，Issue #8）
 

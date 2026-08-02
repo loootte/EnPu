@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     # legacy = OCR-first (current default); structure = L1–L5 geometry-first (#58)
     pipeline_mode: str = "legacy"
 
+    # structure L1–L3 engine (#104): rule (OpenCV) | learned (train weights)
+    structure_l1l3_engine: str = "rule"
+    # path to layout_net.pt / best.pt (required when engine=learned)
+    l1l3_weights: str = ""
+    l1l3_device: str = "cpu"
+    # on load/infer failure: rule | none (raise)
+    l1l3_fallback: str = "rule"
+
     # OCR / preprocess
     ocr_lang: str = "ch"
     ocr_use_angle_cls: bool = True

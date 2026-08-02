@@ -110,20 +110,75 @@ def run_structure_recognize(
     if geometric:
         warnings.append(f"preprocess_toolbox: {' → '.join(pre.steps)}")
 
-    # --- L1
+    l1l3_engine = (settings.structure_l1l3_engine or "rule").strip().lower()
+    used_engine = "rule"
+    layout_debug: dict = {"preprocess_steps": list(pre.steps), "scale": pre.scale}
+
+    # --- L1 (always rule geometry for score/title; learned may refine score band)
     regions, w1 = detect_page_regions(work)
     warnings.extend(w1)
     score_rect = next((r.rect for r in regions if r.role == RegionRole.score), None)
     if score_rect is None:
         score_rect = Rect(0, 0, float(w), float(h))
 
-    # --- L2
-    systems, w2 = detect_staff_systems(work, score_rect)
-    warnings.extend(w2)
+    systems = []
+    if l1l3_engine == "learned":
+        try:
+            from app.pipeline.structure.learned.infer_l1l3 import (
+                LearnedL1L3Error,
+                run_learned_l2_l3,
+            )
 
-    # --- L3
-    systems, w3 = segment_measures_on_systems(work, systems)
-    warnings.extend(w3)
+            learned_layout = run_learned_l2_l3(
+                work, settings=settings, l1_regions=regions
+            )
+            # Prefer learned systems + measures/splits; keep rule L1 if richer
+            systems = learned_layout.systems
+            if learned_layout.regions:
+                # merge: keep rule title/key_time, use learned score if present
+                rule_by_role = {r.role: r for r in regions}
+                learned_by_role = {r.role: r for r in learned_layout.regions}
+                merged = []
+                for role in (RegionRole.title, RegionRole.key_time, RegionRole.score):
+                    if role in rule_by_role and role != RegionRole.score:
+                        merged.append(rule_by_role[role])
+                    elif role in learned_by_role:
+                        merged.append(learned_by_role[role])
+                    elif role in rule_by_role:
+                        merged.append(rule_by_role[role])
+                regions = merged or regions
+                score_rect = next(
+                    (r.rect for r in regions if r.role == RegionRole.score),
+                    score_rect,
+                )
+            warnings.extend(learned_layout.warnings)
+            layout_debug["l1l3"] = learned_layout.debug
+            used_engine = "learned"
+            warnings.append("l1l3_engine=learned (L2+L3 from weights; L1 hybrid)")
+        except Exception as exc:  # noqa: BLE001 — fallback path
+            fb = (settings.l1l3_fallback or "rule").strip().lower()
+            msg = f"learned L1–L3 failed: {exc}"
+            logger.warning(msg)
+            warnings.append(msg)
+            if fb == "rule":
+                warnings.append("l1l3_fallback=rule (#104)")
+                used_engine = "rule"
+                systems, w2 = detect_staff_systems(work, score_rect)
+                warnings.extend(w2)
+                systems, w3 = segment_measures_on_systems(work, systems)
+                warnings.extend(w3)
+            else:
+                raise StructurePipelineError(msg, status_code=500) from exc
+    else:
+        warnings.append("l1l3_engine=rule")
+        # --- L2
+        systems, w2 = detect_staff_systems(work, score_rect)
+        warnings.extend(w2)
+        # --- L3
+        systems, w3 = segment_measures_on_systems(work, systems)
+        warnings.extend(w3)
+
+    layout_debug["l1l3_engine"] = used_engine
 
     # --- L4
     systems, w4 = detect_note_candidates(work, systems)
@@ -160,7 +215,7 @@ def run_structure_recognize(
         time_signature=time_sig,
         title=title,
         warnings=warnings,
-        debug={"preprocess_steps": list(pre.steps), "scale": pre.scale},
+        debug=layout_debug,
     )
 
     return _layout_to_response(
@@ -169,7 +224,7 @@ def run_structure_recognize(
         filename=filename,
         content_type=content_type,
         started=started,
-        preprocess_steps=list(pre.steps) + ["structure_l1_l5"],
+        preprocess_steps=list(pre.steps) + ["structure_l1_l5", f"l1l3={used_engine}"],
     )
 
 
